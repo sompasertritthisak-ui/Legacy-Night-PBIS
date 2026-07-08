@@ -249,9 +249,26 @@ body.dashboard-active #dashboard-view{display:block !important;}
 .dash-checkin-undo{background:var(--gray);color:var(--gray-mid);border:none;padding:7px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;}
 .dash-arrived-pill{display:inline-flex;align-items:center;gap:5px;color:#1a7a45;font-weight:700;font-size:12.5px;}
 .dash-empty{text-align:center;padding:48px 24px;color:var(--gray-mid);font-size:13.5px;}
+.dash-row-action{background:none;border:none;font-size:15px;cursor:pointer;padding:4px 6px;border-radius:6px;}
+.dash-row-action:hover{background:var(--gray);}
+
+/* Edit Guest modal — reuses the same modal-backdrop/modal shell as RSVP */
+.edit-guest-body{padding:24px 28px 28px;}
+.edit-guest-body .form-row{margin-bottom:16px;}
+.edit-guest-actions{display:flex;gap:10px;margin-top:8px;}
+.edit-guest-actions .form-submit{margin-top:0;}
+.edit-guest-cancel{flex:0 0 auto;background:var(--gray);color:var(--text);border:none;padding:0 22px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;}
+
+/* Follow Up tab */
+.followup-textarea{width:100%;min-height:180px;padding:14px 16px;border:1.5px solid var(--gray);border-radius:10px;font-size:14px;font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);resize:vertical;margin-bottom:18px;}
+.followup-textarea:focus{outline:none;border-color:var(--gold);background:var(--white);}
+.followup-file-row{display:flex;align-items:center;gap:14px;padding:16px;border:1.5px dashed var(--gray);border-radius:10px;margin-bottom:20px;background:var(--cream);}
+.followup-file-row input[type="file"]{flex:1;font-size:13px;}
+#followup-file-name{font-size:12px;color:var(--gray-mid);}
+.followup-warn{background:#fffbeb;border:1.5px solid #c9a84c;border-radius:10px;padding:14px 18px;margin-bottom:20px;font-size:12.5px;color:#5a4a1a;line-height:1.6;}
 .dash-toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(120%);background:var(--navy);color:#fff;padding:13px 24px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 12px 32px rgba(0,0,0,0.3);z-index:99999;transition:transform 0.3s ease;border:1px solid rgba(201,168,76,0.3);}
 .dash-toast.show{transform:translateX(-50%) translateY(0);}
-body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo{opacity:0.3;pointer-events:none;filter:grayscale(1);}
+body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,body.role-marketing .dash-row-action,body.role-marketing #followup-send-btn,body.role-marketing #followup-file-input{opacity:0.3;pointer-events:none;filter:grayscale(1);}
 .dash-marketing-notice{background:rgba(59,130,246,0.12);border-bottom:1px solid rgba(59,130,246,0.25);padding:8px 24px;font-size:12px;color:rgba(30,30,30,0.7);text-align:center;letter-spacing:0.03em;}
 @media (max-width:768px){
   .dash-main{padding:20px 16px;}
@@ -582,12 +599,70 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo{opa
     <button class="dash-tab" onclick="switchDashTab('checkin',this)" id="dtab-checkin">
       ✅ Check-In <span class="dash-tab-count" id="checkin-tab-count">0</span>
     </button>
+    <button class="dash-tab" onclick="switchDashTab('followup',this)" id="dtab-followup">
+      📧 Follow Up
+    </button>
   </div>
 
   <div class="dash-main">
     <div id="dash-tab-content-overview"><!-- populated by JS --></div>
     <div id="dash-tab-content-guestlist" style="display:none;"><!-- populated by JS --></div>
     <div id="dash-tab-content-checkin" style="display:none;"><!-- populated by JS --></div>
+    <div id="dash-tab-content-followup" style="display:none;"><!-- populated by JS --></div>
+  </div>
+</div>
+
+<!-- EDIT GUEST MODAL -->
+<div class="modal-backdrop" id="edit-guest-backdrop" onclick="if(event.target===this)closeEditGuestModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <button class="modal-close" onclick="closeEditGuestModal()">✕</button>
+      <h2>Edit Guest</h2>
+      <p>Changes save straight back to the sheet</p>
+    </div>
+    <div class="edit-guest-body">
+      <input type="hidden" id="edit-guest-ts">
+      <div class="form-row two">
+        <div>
+          <label>First Name *</label>
+          <input type="text" id="edit-fname" required>
+        </div>
+        <div>
+          <label>Last Name *</label>
+          <input type="text" id="edit-lname" required>
+        </div>
+      </div>
+      <div class="form-row">
+        <label>Email *</label>
+        <input type="email" id="edit-email" required>
+      </div>
+      <div class="form-row">
+        <label>Phone *</label>
+        <input type="tel" id="edit-phone" required>
+      </div>
+      <div class="form-row">
+        <label>Guest Type *</label>
+        <select id="edit-guest-type" required>
+          <option value="Parent">Parent</option>
+          <option value="VIP">VIP Guest</option>
+          <option value="MOU Partner">MOU Partner</option>
+          <option value="Alumni">Alumni</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>Organization</label>
+        <input type="text" id="edit-organization">
+      </div>
+      <div class="form-row">
+        <label>Message</label>
+        <textarea id="edit-notes"></textarea>
+      </div>
+      <div class="edit-guest-actions">
+        <button class="edit-guest-cancel" onclick="closeEditGuestModal()">Cancel</button>
+        <button class="form-submit" id="edit-guest-save-btn" onclick="saveEditGuest()">Save Changes</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1036,10 +1111,11 @@ async function loadDashboardData() {
 function switchDashTab(tab, btn) {
   document.querySelectorAll('.dash-tab').forEach(t => t.classList.remove('active'));
   btn.classList.add('active');
-  ['overview','guestlist','checkin'].forEach(t => {
+  ['overview','guestlist','checkin','followup'].forEach(t => {
     const el = document.getElementById('dash-tab-content-' + t);
     if(el) el.style.display = (t === tab) ? 'block' : 'none';
   });
+  if (tab === 'followup') renderFollowUpTab();
 }
 
 const GUEST_TYPE_COLORS = {
@@ -1128,6 +1204,10 @@ function renderGuestListTab() {
       <td>${guestBadge(g.guest_type)}</td>
       <td>${g.organization||'—'}</td>
       <td>${g.checked_in ? '<span class="dash-arrived-pill">✓ Arrived</span>' : '<span style="color:var(--gray-mid);font-size:12px;">Not yet</span>'}</td>
+      <td style="white-space:nowrap;">
+        <button class="dash-row-action" onclick="openEditGuestModal('${g.ts}')" title="Edit">✏️</button>
+        <button class="dash-row-action" onclick="confirmDeleteGuest('${g.ts}')" title="Delete">🗑️</button>
+      </td>
     </tr>`).join('');
 
   el.innerHTML = `
@@ -1144,7 +1224,7 @@ function renderGuestListTab() {
       </div>
       <div class="dash-table-wrap">
         <table class="dash-table">
-          <thead><tr><th>Guest Name</th><th>Phone</th><th>Email</th><th>Type</th><th>Organization</th><th>Status</th></tr></thead>
+          <thead><tr><th>Guest Name</th><th>Phone</th><th>Email</th><th>Type</th><th>Organization</th><th>Status</th><th></th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
       </div>
@@ -1230,6 +1310,186 @@ function markGuestCheckedIn(ts, checkedIn) {
   postToSheets({ action: 'markCheckedIn', ts: ts, checked_in: checkedIn, admin_key: ADMIN_ACTION_KEY }).then(() => {
     showDashToast(checkedIn ? `✓ ${guest.fname} checked in` : `↩ Check-in undone for ${guest.fname}`);
   });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   EDIT / DELETE GUEST — writes straight back to the sheet, so it's
+   the same data whether viewed from the dashboard or the sheet
+   itself. Changes made directly in the sheet show up here too, on
+   the next resync (manual or the 90-second auto-sync) — reading the
+   sheet fresh every time is what makes that direction "just work"
+   with no extra code needed.
+   ══════════════════════════════════════════════════════════════ */
+function openEditGuestModal(ts) {
+  const guest = _dashGuestsCache.find(g => g.ts === ts);
+  if (!guest) return;
+
+  document.getElementById('edit-guest-ts').value = ts;
+  document.getElementById('edit-fname').value = guest.fname || '';
+  document.getElementById('edit-lname').value = guest.lname || '';
+  document.getElementById('edit-email').value = guest.email || '';
+  document.getElementById('edit-phone').value = guest.phone || '';
+  document.getElementById('edit-guest-type').value = guest.guest_type || 'Other';
+  document.getElementById('edit-organization').value = guest.organization || '';
+  document.getElementById('edit-notes').value = guest.notes || '';
+
+  document.getElementById('edit-guest-backdrop').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeEditGuestModal() {
+  document.getElementById('edit-guest-backdrop').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function saveEditGuest() {
+  const ts = document.getElementById('edit-guest-ts').value;
+  const guest = _dashGuestsCache.find(g => g.ts === ts);
+  if (!guest) return;
+
+  const get = id => document.getElementById(id).value;
+  const fname = get('edit-fname').trim();
+  const lname = get('edit-lname').trim();
+  const email = get('edit-email').trim();
+  const phone = get('edit-phone').trim();
+
+  if (!fname || !lname || !email || !phone) {
+    showDashToast('⚠️ First name, last name, email, and phone are required.');
+    return;
+  }
+
+  const updated = {
+    fname, lname, email, phone,
+    guest_type:   get('edit-guest-type'),
+    organization: get('edit-organization').trim(),
+    notes:        get('edit-notes').trim(),
+  };
+
+  Object.assign(guest, updated); // optimistic local update
+  closeEditGuestModal();
+  renderGuestListTab();
+  renderOverviewTab();
+  renderCheckInTab();
+
+  postToSheets(Object.assign({ action: 'updateLegacyGuest', ts: ts, admin_key: ADMIN_ACTION_KEY }, updated)).then(() => {
+    showDashToast(`✓ ${fname} ${lname} updated`);
+  });
+}
+
+function confirmDeleteGuest(ts) {
+  const guest = _dashGuestsCache.find(g => g.ts === ts);
+  if (!guest) return;
+  const ok = confirm(`Delete ${guest.fname || 'this guest'} ${guest.lname || ''}'s RSVP?\n\nThis removes their row from the sheet entirely and can't be undone from here.`);
+  if (!ok) return;
+
+  _dashGuestsCache = _dashGuestsCache.filter(g => g.ts !== ts); // optimistic local removal
+  renderGuestListTab();
+  renderOverviewTab();
+  renderCheckInTab();
+
+  postToSheets({ action: 'deleteLegacyGuest', ts: ts, admin_key: ADMIN_ACTION_KEY }).then(() => {
+    showDashToast(`🗑️ ${guest.fname || 'Guest'}'s RSVP deleted`);
+  });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   FOLLOW UP TAB — admin composes a message + optional attachment
+   (PDF/JPEG/PNG) and sends it to every current RSVP in one go.
+   Intended mainly for distributing event passes / QR codes once
+   they're ready.
+   ══════════════════════════════════════════════════════════════ */
+let _followUpFile = null;
+
+function renderFollowUpTab() {
+  const el = document.getElementById('dash-tab-content-followup');
+  const guests = _dashGuestsCache;
+  const recipientCount = guests.filter(g => g.email).length;
+
+  el.innerHTML = `
+    <div class="dash-panel">
+      <div class="dash-panel-title">Send Follow-Up Email <span>${recipientCount} recipient${recipientCount===1?'':'s'}</span></div>
+      <div class="followup-warn">This sends to <strong>every current RSVP</strong> with an email address (${recipientCount} right now) in a single send. Most commonly used for distributing each guest's event pass / QR code once it's ready. The same attached file goes to everyone — there's no per-guest personalisation of the attachment yet.</div>
+
+      <label style="display:block;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--navy);margin-bottom:8px;">Message</label>
+      <textarea class="followup-textarea" id="followup-message" placeholder=""></textarea>
+
+      <label style="display:block;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--navy);margin-bottom:8px;">Attachment <span style="text-transform:none;font-weight:400;color:var(--gray-mid);">(PDF, JPEG, or PNG — optional)</span></label>
+      <div class="followup-file-row">
+        <input type="file" id="followup-file-input" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" onchange="handleFollowUpFileSelect(event)">
+        <span id="followup-file-name">No file selected</span>
+      </div>
+
+      <button class="form-submit" id="followup-send-btn" onclick="sendFollowUpEmail()" style="max-width:320px;">📧 Send Email to ${recipientCount} Guest${recipientCount===1?'':'s'}</button>
+    </div>`;
+}
+
+function handleFollowUpFileSelect(e) {
+  const file = e.target.files[0];
+  const nameEl = document.getElementById('followup-file-name');
+  if (!file) { _followUpFile = null; nameEl.textContent = 'No file selected'; return; }
+
+  const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
+  if (!allowedTypes.includes(file.type)) {
+    showDashToast('⚠️ Only PDF, JPEG, or PNG files are supported.');
+    e.target.value = '';
+    _followUpFile = null;
+    nameEl.textContent = 'No file selected';
+    return;
+  }
+  if (file.size > 20 * 1024 * 1024) {
+    showDashToast('⚠️ File is too large (max 20MB).');
+    e.target.value = '';
+    _followUpFile = null;
+    nameEl.textContent = 'No file selected';
+    return;
+  }
+
+  _followUpFile = file;
+  nameEl.textContent = `${file.name} (${(file.size/1024).toFixed(0)} KB)`;
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]); // strip data: prefix
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function sendFollowUpEmail() {
+  const message = document.getElementById('followup-message').value.trim();
+  if (!message) { showDashToast('⚠️ Write a message before sending.'); return; }
+
+  const recipientCount = _dashGuestsCache.filter(g => g.email).length;
+  if (!recipientCount) { showDashToast('⚠️ No guests with an email address to send to.'); return; }
+
+  const ok = confirm(`Send this email to all ${recipientCount} RSVP'd guests now?\n\nThis can't be undone once sent.`);
+  if (!ok) return;
+
+  const btn = document.getElementById('followup-send-btn');
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+
+  const payload = { action: 'sendFollowUpEmail', message: message, admin_key: ADMIN_ACTION_KEY };
+
+  try {
+    if (_followUpFile) {
+      const base64 = await fileToBase64(_followUpFile);
+      payload.file = { filename: _followUpFile.name, mimeType: _followUpFile.type, base64: base64 };
+    }
+    await postToSheets(payload);
+    showDashToast(`✅ Follow-up email sent to ${recipientCount} guest${recipientCount===1?'':'s'}`);
+    document.getElementById('followup-message').value = '';
+    document.getElementById('followup-file-input').value = '';
+    _followUpFile = null;
+    document.getElementById('followup-file-name').textContent = 'No file selected';
+  } catch (e) {
+    showDashToast('⚠️ Something went wrong reading the attachment — please try again.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = `📧 Send Email to ${recipientCount} Guest${recipientCount===1?'':'s'}`;
+  }
 }
 </script>
 
