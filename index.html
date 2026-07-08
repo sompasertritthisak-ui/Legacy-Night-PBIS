@@ -26,10 +26,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);
 
 /* ── NAV ── */
 .nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(5,15,10,0.85);backdrop-filter:blur(10px);border-bottom:1px solid rgba(201,168,76,0.2);padding:14px 32px;display:flex;align-items:center;justify-content:space-between;}
-.nav-brand{display:flex;align-items:center;gap:10px;}
+.nav-brand{display:flex;align-items:center;gap:10px;text-decoration:none;}
+.nav-brand,.nav-brand:visited,.nav-brand:hover,.nav-brand:active{text-decoration:none;color:inherit;}
 .nav-brand img{height:38px;width:auto;object-fit:contain;filter:drop-shadow(0 2px 8px rgba(201,168,76,0.3));}
-.nav-brand-text{font-family:'DM Serif Display',serif;color:var(--white);font-size:13px;line-height:1.2;}
-.nav-brand-text span{display:block;font-size:9px;color:var(--gold);letter-spacing:0.12em;text-transform:uppercase;font-family:'DM Sans',sans-serif;}
+.nav-brand-text{font-family:'DM Serif Display',serif;color:var(--white);font-size:13px;line-height:1.2;text-decoration:none;}
+.nav-brand-text span{display:block;font-size:9px;color:var(--gold);letter-spacing:0.12em;text-transform:uppercase;font-family:'DM Sans',sans-serif;text-decoration:none;}
 .nav-cta{background:linear-gradient(135deg,var(--gold),var(--gold-light));color:var(--deep);border:none;padding:10px 22px;border-radius:100px;font-size:12px;font-weight:600;letter-spacing:0.03em;cursor:pointer;font-family:'DM Sans',sans-serif;}
 .nav-cta:hover{filter:brightness(1.08);}
 
@@ -379,23 +380,17 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo{opa
           <label>Phone *</label>
           <input type="tel" id="rsvp-phone" required>
         </div>
-        <div class="form-row two">
-          <div>
-            <label>Guest Type *</label>
-            <select id="rsvp-guest-type" required>
-              <option value="">Select...</option>
-              <option value="Parent">Parent</option>
-              <option value="VIP">VIP Guest</option>
-              <option value="MOU Partner">MOU Partner</option>
-              <option value="Alumni">Alumni</option>
-              <option value="Staff">Staff</option>
-              <option value="Other">Other</option>
-            </select>
-          </div>
-          <div>
-            <label>Number of Guests *</label>
-            <input type="number" id="rsvp-num-guests" min="1" max="10" value="1" required>
-          </div>
+        <div class="form-row">
+          <label>Guest Type *</label>
+          <select id="rsvp-guest-type" required>
+            <option value="">Select...</option>
+            <option value="Parent">Parent</option>
+            <option value="VIP">VIP Guest</option>
+            <option value="MOU Partner">MOU Partner</option>
+            <option value="Alumni">Alumni</option>
+            <option value="Staff">Staff</option>
+            <option value="Other">Other</option>
+          </select>
         </div>
         <div class="form-row">
           <label>Organization <span style="text-transform:none;">(if applicable)</span></label>
@@ -550,7 +545,6 @@ function handleRSVPSubmit(e) {
     email: sanitize(get('rsvp-email')),
     phone: sanitize(get('rsvp-phone')),
     guest_type: get('rsvp-guest-type'),
-    num_guests: get('rsvp-num-guests'),
     organization: sanitize(get('rsvp-organization')),
     notes: sanitize(get('rsvp-notes')),
     ts: new Date().toISOString()
@@ -842,7 +836,6 @@ function renderOverviewTab() {
     return;
   }
 
-  const totalAttendees = guests.reduce((s,g) => s + (Number(g.num_guests)||1), 0);
   const arrivedCount = guests.filter(g => g.checked_in).length;
   const typeBreakdown = {};
   guests.forEach(g => { const t = g.guest_type || 'Guest'; typeBreakdown[t] = (typeBreakdown[t]||0)+1; });
@@ -865,7 +858,6 @@ function renderOverviewTab() {
     <div class="dash-stats-row">
       <div class="dash-stat-card"><div class="dash-stat-value">${daysLeft}</div><div class="dash-stat-label">Days Until Legacy Night</div></div>
       <div class="dash-stat-card"><div class="dash-stat-value">${guests.length}</div><div class="dash-stat-label">Total RSVPs</div></div>
-      <div class="dash-stat-card"><div class="dash-stat-value">${totalAttendees}</div><div class="dash-stat-label">Total Attendees</div></div>
       <div class="dash-stat-card"><div class="dash-stat-value">${arrivedCount}</div><div class="dash-stat-label">Checked In So Far</div></div>
     </div>
     <div class="dash-panel">
@@ -902,7 +894,6 @@ function renderGuestListTab() {
       <td><a href="mailto:${g.email}" style="color:var(--gold);text-decoration:none;font-size:12px;">${g.email||'—'}</a></td>
       <td>${guestBadge(g.guest_type)}</td>
       <td>${g.organization||'—'}</td>
-      <td style="text-align:center;">${g.num_guests||1}</td>
       <td>${g.checked_in ? '<span class="dash-arrived-pill">✓ Arrived</span>' : '<span style="color:var(--gray-mid);font-size:12px;">Not yet</span>'}</td>
     </tr>`).join('');
 
@@ -920,7 +911,7 @@ function renderGuestListTab() {
       </div>
       <div class="dash-table-wrap">
         <table class="dash-table">
-          <thead><tr><th>Guest Name</th><th>Phone</th><th>Email</th><th>Type</th><th>Organization</th><th>Guests</th><th>Status</th></tr></thead>
+          <thead><tr><th>Guest Name</th><th>Phone</th><th>Email</th><th>Type</th><th>Organization</th><th>Status</th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
       </div>
@@ -930,10 +921,10 @@ function renderGuestListTab() {
 function exportGuestListCSV() {
   const guests = _dashGuestsCache;
   if(!guests.length) { alert('No guests to export yet.'); return; }
-  const headers = ['First Name','Last Name','Email','Phone','Guest Type','Organization','Number of Guests','Checked In','RSVP Date'];
+  const headers = ['First Name','Last Name','Email','Phone','Guest Type','Organization','Checked In','RSVP Date'];
   const rows = guests.map(g => [
     g.fname||'', g.lname||'', g.email||'', g.phone||'',
-    g.guest_type||'', g.organization||'', g.num_guests||1,
+    g.guest_type||'', g.organization||'',
     g.checked_in ? 'Yes' : 'No',
     g.ts ? new Date(g.ts).toLocaleDateString('en-GB') : ''
   ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(','));
@@ -962,7 +953,6 @@ function renderCheckInTab() {
     !_checkinSearchTerm || (g.fname+' '+g.lname).toLowerCase().includes(_checkinSearchTerm.toLowerCase())
   );
   const arrivedCount = guests.filter(g => g.checked_in).length;
-  const expectedCount = guests.reduce((s,g)=>s+(Number(g.num_guests)||1),0);
 
   const rows = filtered.slice().reverse().map(g => {
     const tid = g.ts.replace(/[^a-zA-Z0-9]/g,'');
@@ -972,7 +962,6 @@ function renderCheckInTab() {
     return `<tr id="checkin-row-${tid}">
       <td style="font-weight:600;color:var(--navy);white-space:nowrap;">${g.fname||'—'} ${g.lname||''}</td>
       <td>${guestBadge(g.guest_type)}</td>
-      <td style="text-align:center;">${g.num_guests||1}</td>
       <td>${action}</td>
     </tr>`;
   }).join('');
@@ -981,7 +970,6 @@ function renderCheckInTab() {
     <div class="dash-stats-row">
       <div class="dash-stat-card"><div class="dash-stat-value">${arrivedCount}</div><div class="dash-stat-label">Guests Arrived</div></div>
       <div class="dash-stat-card"><div class="dash-stat-value">${guests.length - arrivedCount}</div><div class="dash-stat-label">Not Yet Arrived</div></div>
-      <div class="dash-stat-card"><div class="dash-stat-value">${expectedCount}</div><div class="dash-stat-label">Total Expected Attendees</div></div>
     </div>
     <div class="dash-panel">
       <div class="dash-panel-title">Day-Of Check-In</div>
@@ -990,7 +978,7 @@ function renderCheckInTab() {
       </div>
       <div class="dash-table-wrap">
         <table class="dash-table">
-          <thead><tr><th>Guest Name</th><th>Type</th><th>Party Size</th><th></th></tr></thead>
+          <thead><tr><th>Guest Name</th><th>Type</th><th></th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
       </div>
