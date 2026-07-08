@@ -127,6 +127,11 @@ footer a{color:var(--gold);text-decoration:none;}
 .form-submit:hover{filter:brightness(1.05);}
 .form-submit:disabled{opacity:0.7;cursor:default;}
 .form-note{text-align:center;font-size:11px;color:var(--gray-mid);margin-top:14px;}
+.rsvp-consent-box{display:flex;align-items:flex-start;gap:12px;background:var(--cream);border:1.5px solid var(--gold);border-radius:10px;padding:16px 18px;margin-bottom:18px;cursor:pointer;}
+.rsvp-consent-box input[type="checkbox"]{width:20px;height:20px;flex-shrink:0;margin-top:2px;accent-color:var(--gold);cursor:pointer;}
+.rsvp-consent-box span{font-size:13px;line-height:1.6;color:var(--text);}
+.form-back-link{display:block;width:100%;text-align:center;background:none;border:none;color:var(--gray-mid);font-size:12px;margin-top:12px;cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:underline;}
+.form-back-link:hover{color:var(--navy);}
 
 @media (max-width:640px){
   .form-row.two{grid-template-columns:1fr;}
@@ -432,46 +437,57 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo{opa
       <p>PBIS Legacy Night · 25 September 2026 · 5:00 PM</p>
     </div>
     <div class="modal-body">
-      <form id="rsvp-form" onsubmit="handleRSVPSubmit(event)">
-        <div class="form-row two">
-          <div>
-            <label>First Name *</label>
-            <input type="text" id="rsvp-fname" required>
+      <form id="rsvp-form" onsubmit="return false;">
+        <div id="rsvp-step-1">
+          <div class="form-row two">
+            <div>
+              <label>First Name *</label>
+              <input type="text" id="rsvp-fname" required>
+            </div>
+            <div>
+              <label>Last Name *</label>
+              <input type="text" id="rsvp-lname" required>
+            </div>
           </div>
-          <div>
-            <label>Last Name *</label>
-            <input type="text" id="rsvp-lname" required>
+          <div class="form-row">
+            <label>Email *</label>
+            <input type="email" id="rsvp-email" required>
           </div>
+          <div class="form-row">
+            <label>Phone *</label>
+            <input type="tel" id="rsvp-phone" required>
+          </div>
+          <div class="form-row">
+            <label>Guest Type *</label>
+            <select id="rsvp-guest-type" required>
+              <option value="">Select...</option>
+              <option value="Parent">Parent</option>
+              <option value="VIP">VIP Guest</option>
+              <option value="MOU Partner">MOU Partner</option>
+              <option value="Alumni">Alumni</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>Organization <span style="text-transform:none;">(if applicable)</span></label>
+            <input type="text" id="rsvp-organization" placeholder="e.g. company or institution name">
+          </div>
+          <div class="form-row">
+            <label>Message <span style="text-transform:none;">(optional)</span></label>
+            <textarea id="rsvp-notes" placeholder="Dietary requirements, questions, or anything else we should know"></textarea>
+          </div>
+          <button type="button" class="form-submit" id="rsvp-next-btn" onclick="goToRsvpConfirmStep()">Continue</button>
+          <p class="form-note">You'll receive a confirmation email with full event details.</p>
         </div>
-        <div class="form-row">
-          <label>Email *</label>
-          <input type="email" id="rsvp-email" required>
+
+        <div id="rsvp-step-2" style="display:none;">
+          <label class="rsvp-consent-box" for="rsvp-consent-check">
+            <input type="checkbox" id="rsvp-consent-check" onchange="toggleRsvpFinalSubmit()">
+            <span>Thank you for your RSVP. Please note that admission is valid only for the name you have just registered and may not be transferred to another guest. We look forward to welcoming you to the event.</span>
+          </label>
+          <button type="button" class="form-submit" id="rsvp-submit-btn" onclick="handleRSVPSubmit(event)" disabled>Confirm My Attendance</button>
+          <button type="button" class="form-back-link" onclick="backToRsvpFormStep()">← Back to edit my details</button>
         </div>
-        <div class="form-row">
-          <label>Phone *</label>
-          <input type="tel" id="rsvp-phone" required>
-        </div>
-        <div class="form-row">
-          <label>Guest Type *</label>
-          <select id="rsvp-guest-type" required>
-            <option value="">Select...</option>
-            <option value="Parent">Parent</option>
-            <option value="VIP">VIP Guest</option>
-            <option value="MOU Partner">MOU Partner</option>
-            <option value="Alumni">Alumni</option>
-            <option value="Other">Other</option>
-          </select>
-        </div>
-        <div class="form-row">
-          <label>Organization <span style="text-transform:none;">(if applicable)</span></label>
-          <input type="text" id="rsvp-organization" placeholder="e.g. company or institution name">
-        </div>
-        <div class="form-row">
-          <label>Message <span style="text-transform:none;">(optional)</span></label>
-          <textarea id="rsvp-notes" placeholder="Dietary requirements, questions, or anything else we should know"></textarea>
-        </div>
-        <button type="submit" class="form-submit" id="rsvp-submit-btn">Confirm My Attendance</button>
-        <p class="form-note">You'll receive a confirmation email with full event details.</p>
       </form>
     </div>
   </div>
@@ -610,10 +626,31 @@ function sanitize(str) {
 function openRSVP() {
   document.getElementById('rsvp-backdrop').classList.add('open');
   document.body.style.overflow = 'hidden';
+  showRsvpStep(1);
 }
 function closeRSVP() {
   document.getElementById('rsvp-backdrop').classList.remove('open');
   document.body.style.overflow = '';
+}
+
+function showRsvpStep(step) {
+  document.getElementById('rsvp-step-1').style.display = step === 1 ? 'block' : 'none';
+  document.getElementById('rsvp-step-2').style.display = step === 2 ? 'block' : 'none';
+}
+
+function goToRsvpConfirmStep() {
+  const form = document.getElementById('rsvp-form');
+  if (!form.reportValidity()) return; // shows native browser validation on required fields
+  showRsvpStep(2);
+}
+
+function backToRsvpFormStep() {
+  showRsvpStep(1);
+}
+
+function toggleRsvpFinalSubmit() {
+  const checked = document.getElementById('rsvp-consent-check').checked;
+  document.getElementById('rsvp-submit-btn').disabled = !checked;
 }
 
 function toggleWhatsAppPanel() {
@@ -641,6 +678,8 @@ function postToSheets(data) {
 
 function handleRSVPSubmit(e) {
   e.preventDefault();
+
+  if (!document.getElementById('rsvp-consent-check').checked) return;
 
   _rsvpSubmitCount++;
   const btn = document.getElementById('rsvp-submit-btn');
