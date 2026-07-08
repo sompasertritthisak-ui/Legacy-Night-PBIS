@@ -88,9 +88,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);
 
 /* ── CONTACT / FOOTER ── */
 .contact-section{background:var(--white);text-align:center;}
-.contact-card{max-width:520px;margin:56px auto 0;background:var(--navy);border-radius:20px;padding:40px 32px;}
-.contact-card p.label{font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(201,168,76,0.6);margin-bottom:8px;}
-.contact-card p.phone{font-size:26px;font-weight:700;color:var(--gold-light);margin-bottom:6px;}
+.contact-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px;max-width:900px;margin:56px auto 0;}
+.contact-card{background:var(--navy);border-radius:20px;padding:32px 26px;}
+.contact-card .campus-emoji{font-size:28px;margin-bottom:10px;}
+.contact-card p.label{font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(201,168,76,0.6);margin-bottom:10px;}
+.contact-card a.phone{display:block;font-size:22px;font-weight:700;color:var(--gold-light);margin-bottom:8px;text-decoration:none;}
+.contact-card a.phone:hover{text-decoration:underline;}
 .contact-card a.email{color:rgba(255,255,255,0.55);text-decoration:none;font-size:13px;}
 .contact-card a.email:hover{text-decoration:underline;}
 
@@ -255,7 +258,7 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo{opa
   <div class="hero-meta">
     <div class="hero-meta-item">📅 <b>Friday, 25 September 2026</b></div>
     <div class="hero-meta-item">🕔 <b>5:00 PM</b></div>
-    <div class="hero-meta-item">📍 <b>Primary Campus</b></div>
+    <div class="hero-meta-item">📍 <b>Souphratta Hotel Vientiane</b></div>
   </div>
   <button class="hero-cta" onclick="openRSVP()">Confirm My Attendance</button>
   <p class="hero-note">Kindly RSVP so we can prepare a seat for you and your family</p>
@@ -297,9 +300,9 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo{opa
       <div class="detail-card">
         <div class="detail-icon">📍</div>
         <h4>Venue</h4>
-        <p>Primary Campus</p>
-        <span>Saphanthong Neua, Sisattanak District, Vientiane</span>
-        <a href="https://maps.app.goo.gl/QrFHMTkAREZ5YCrM8" target="_blank">View on Maps →</a>
+        <p>Souphattra Hotel Vientiane</p>
+        <span>23 Singha Road, Ban Phonxay, Xaysettha District, Vientiane</span>
+        <a href="https://maps.app.goo.gl/ev5PrXMQYLumNBVL9" target="_blank">View on Maps →</a>
       </div>
       <div class="detail-card">
         <div class="detail-icon">👔</div>
@@ -322,7 +325,6 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo{opa
       <div class="guest-card"><div class="guest-icon">⭐</div><h4>VIP Guests</h4><p>Honoured special guests</p></div>
       <div class="guest-card"><div class="guest-icon">🤝</div><h4>MOU Partners</h4><p>Institutional partners</p></div>
       <div class="guest-card"><div class="guest-icon">🎓</div><h4>Alumni</h4><p>Former students & families</p></div>
-      <div class="guest-card"><div class="guest-icon">🏫</div><h4>Staff</h4><p>Faculty & administration</p></div>
       <div class="guest-card"><div class="guest-icon">💫</div><h4>Friends of PBIS</h4><p>Community & supporters</p></div>
     </div>
   </div>
@@ -340,10 +342,25 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo{opa
   <div class="section-inner">
     <p class="section-eyebrow">Questions?</p>
     <h2 class="section-title">Get in Touch</h2>
-    <div class="contact-card">
-      <p class="label">Primary Campus — Admissions Team</p>
-      <p class="phone">+856 20 5538 6636</p>
-      <a class="email" href="mailto:admissions@pbis.edu.la">admissions@pbis.edu.la</a>
+    <div class="contact-grid">
+      <div class="contact-card">
+        <div class="campus-emoji">🌱</div>
+        <p class="label">Early Years — Admissions Team</p>
+        <a class="phone" href="tel:+8562057280925">+856 20 5728 0925</a>
+        <a class="email" href="mailto:admissions@pbis.edu.la">admissions@pbis.edu.la</a>
+      </div>
+      <div class="contact-card">
+        <div class="campus-emoji">🏫</div>
+        <p class="label">Primary Campus — Admissions Team</p>
+        <a class="phone" href="tel:+8562055386636">+856 20 5538 6636</a>
+        <a class="email" href="mailto:admissions@pbis.edu.la">admissions@pbis.edu.la</a>
+      </div>
+      <div class="contact-card">
+        <div class="campus-emoji">🎓</div>
+        <p class="label">Secondary Campus — Admissions Team</p>
+        <a class="phone" href="tel:+8562055386672">+856 20 5538 6672</a>
+        <a class="email" href="mailto:admissions@pbis.edu.la">admissions@pbis.edu.la</a>
+      </div>
     </div>
   </div>
 </section>
@@ -388,7 +405,6 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo{opa
             <option value="VIP">VIP Guest</option>
             <option value="MOU Partner">MOU Partner</option>
             <option value="Alumni">Alumni</option>
-            <option value="Staff">Staff</option>
             <option value="Other">Other</option>
           </select>
         </div>
