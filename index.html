@@ -851,7 +851,7 @@ function handleRSVPSubmit(e) {
 // sha256Salted below). This is a genuine improvement over the old
 // unsalted hashes copied from Open Day: those were hashed once with
 // no salt, and I never had access to the original plaintext passwords
-// behind them, so they couldn't be safely upgraded. These 14 are
+// behind them, so they couldn't be safely upgraded. These 16 are
 // brand-new passwords generated specifically for Legacy Night, so
 // they're salted from the start. Give each person their password from
 // the list you were given — changing PASSWORD_SALT or any hash below
@@ -861,21 +861,24 @@ const PASSWORD_SALT = '965448f37605e816fe6ab00e78aa1b06';
 
 const STAFF_DIRECTORY = [
   // ── ADMISSIONS TEAM (full access) ──
-  { name:'Potter', role:'admissions', hash:'8c67a82caf0637e72c7aa6234e6d980b416adb4310e6b58031d8228da881ecad' },
-  { name:'Katty',  role:'admissions', hash:'843aa4b896188931559324897984c32651e8c96cd0f552433f9d78ef9267be0c' },
-  { name:'Rosa',   role:'admissions', hash:'33c888f94ae8b1a5b23d648c69c8e9ce3f24f16493783be292d1bfaf53010442' },
-  { name:'Anny',   role:'admissions', hash:'2acfc8c6dd799ac430d5d7049bbde8c5df70e74966d074312fe502074f3cca49' },
-  { name:'Vieng',  role:'admissions', hash:'109e5732c0b5c5dc30b405b9ea5b8b2b3d28b609c416e9426fc18af78c401d8c' },
-  { name:'Sarah',  role:'admissions', hash:'5f1acd4396fd382efa557f027e35566ad0b6f1f167f587623acfa53ecb1b838b' },
-  { name:'Nanfa',  role:'admissions', hash:'d2835648c295d2048accacb7ddcf77698221aace42a733a31e1b3c523dcee3cc' },
-  { name:'Ana',    role:'admissions', hash:'5cc108c8162c0ac6816ce7dab604331e66c745f0a3a6bcd7933ec33439fd257b' },
-  { name:'Anny (Phonethida)', role:'admissions', hash:'4d1934e7839c4ecf06938893b9049f3e53c34dacb1584e09717c92a4cc8ddd15' },
+  { name:'Potter', role:'admissions', team:'Admissions', hash:'8c67a82caf0637e72c7aa6234e6d980b416adb4310e6b58031d8228da881ecad' },
+  { name:'Katty',  role:'admissions', team:'Admissions', hash:'843aa4b896188931559324897984c32651e8c96cd0f552433f9d78ef9267be0c' },
+  { name:'Rosa',   role:'admissions', team:'Admissions', hash:'33c888f94ae8b1a5b23d648c69c8e9ce3f24f16493783be292d1bfaf53010442' },
+  { name:'Anny',   role:'admissions', team:'Admissions', hash:'2acfc8c6dd799ac430d5d7049bbde8c5df70e74966d074312fe502074f3cca49' },
+  { name:'Vieng',  role:'admissions', team:'Admissions', hash:'109e5732c0b5c5dc30b405b9ea5b8b2b3d28b609c416e9426fc18af78c401d8c' },
+  { name:'Sarah',  role:'admissions', team:'Admissions', hash:'5f1acd4396fd382efa557f027e35566ad0b6f1f167f587623acfa53ecb1b838b' },
+  { name:'Nanfa',  role:'admissions', team:'Admissions', hash:'d2835648c295d2048accacb7ddcf77698221aace42a733a31e1b3c523dcee3cc' },
+  { name:'Ana',    role:'admissions', team:'Admissions', hash:'5cc108c8162c0ac6816ce7dab604331e66c745f0a3a6bcd7933ec33439fd257b' },
+  { name:'Anny (Phonethida)', role:'admissions', team:'Admissions', hash:'4d1934e7839c4ecf06938893b9049f3e53c34dacb1584e09717c92a4cc8ddd15' },
   // ── MARKETING TEAM (view-only access) ──
-  { name:'Top',    role:'marketing',  hash:'b335d5536de6135d9b112aaa5a0982c92bdc99f35fda0e8b94e406fd50a68e32' },
-  { name:'Yos',    role:'marketing',  hash:'d2f5849a09b337214c7dcd8937e3c64108c1b04bf495fbfd69f591062497df63' },
-  { name:'Kop',    role:'marketing',  hash:'07c2b43d649dcd94753556db670ef7f0165052d5b167ba1bf6da97d6d64d4db1' },
-  { name:'Tobee',  role:'marketing',  hash:'9b69d91144cbad9b81742f23e50b3635d115603cf39e3660fa9a805fbe89d7a9' },
-  { name:'Simon',  role:'marketing',  hash:'1c431527c804ce55aa86f38f66f513d92ceebc729322aff463e410701bc9234a' },
+  { name:'Top',    role:'marketing',  team:'Marketing', hash:'b335d5536de6135d9b112aaa5a0982c92bdc99f35fda0e8b94e406fd50a68e32' },
+  { name:'Yos',    role:'marketing',  team:'Marketing', hash:'d2f5849a09b337214c7dcd8937e3c64108c1b04bf495fbfd69f591062497df63' },
+  { name:'Kop',    role:'marketing',  team:'Marketing', hash:'07c2b43d649dcd94753556db670ef7f0165052d5b167ba1bf6da97d6d64d4db1' },
+  { name:'Tobee',  role:'marketing',  team:'Marketing', hash:'9b69d91144cbad9b81742f23e50b3635d115603cf39e3660fa9a805fbe89d7a9' },
+  { name:'Simon',  role:'marketing',  team:'Marketing', hash:'1c431527c804ce55aa86f38f66f513d92ceebc729322aff463e410701bc9234a' },
+  // ── EVENTS TEAM (same full access as Admissions) ──
+  { name:'Mina',    role:'admissions', team:'Events Team', hash:'5dd5f91fc3b7af02bf542cf420671864dcbc62f545054ceedc75fb3e739a0be8' },
+  { name:'Richard', role:'admissions', team:'Events Team', hash:'04b6fdf85e226e12a0b2522b83411c0a35c0973529683677c4fd0be4e86bcd1e' },
 ];
 let _currentUser = null;
 const MAX_ATTEMPTS = 4;
@@ -971,11 +974,11 @@ async function submitLogin() {
   const matched = STAFF_DIRECTORY.find(s => s.hash === entered_hash);
 
   if(matched) {
-    _currentUser = { name: matched.name, role: matched.role };
+    _currentUser = { name: matched.name, role: matched.role, team: matched.team || (matched.role === 'marketing' ? 'Marketing' : 'Admissions') };
     _loginAttempts = 0;
     setLockoutState({ strikes: 0, until: 0 }); // successful login clears lockout escalation
     _sessionExpiry = Date.now() + (SESSION_MINS * 60 * 1000);
-    try { sessionStorage.setItem('legacy_session', JSON.stringify({exp:_sessionExpiry,name:_currentUser.name,role:_currentUser.role})); } catch(e){}
+    try { sessionStorage.setItem('legacy_session', JSON.stringify({exp:_sessionExpiry,name:_currentUser.name,role:_currentUser.role,team:_currentUser.team})); } catch(e){}
     closeLoginModal();
     enterLegacyDashboard();
   } else {
@@ -1042,20 +1045,23 @@ function enterLegacyDashboard() {
   if(existing) existing.remove();
 
   if(_currentUser) {
-    const roleColor = _currentUser.role === 'admissions' ? '#c9a84c' : '#3b82f6';
-    const roleBg    = _currentUser.role === 'admissions' ? 'rgba(201,168,76,0.18)' : 'rgba(59,130,246,0.18)';
-    const roleLabel = _currentUser.role === 'admissions' ? 'Admissions' : 'Marketing';
+    const TEAM_COLORS = {
+      'Admissions':  { color:'#c9a84c', bg:'rgba(201,168,76,0.18)' },
+      'Marketing':   { color:'#3b82f6', bg:'rgba(59,130,246,0.18)' },
+      'Events Team': { color:'#8b5cf6', bg:'rgba(139,92,246,0.18)' },
+    };
+    const teamLabel = _currentUser.team || (_currentUser.role === 'marketing' ? 'Marketing' : 'Admissions');
+    const teamInfo  = TEAM_COLORS[teamLabel] || TEAM_COLORS['Admissions'];
     const initials  = _currentUser.name.slice(0,2).toUpperCase();
-    const avatarBg  = _currentUser.role === 'admissions' ? '#c9a84c' : '#3b82f6';
 
     const badge = document.createElement('div');
     badge.className = 'dash-user-badge';
     badge.id = 'dash-user-badge';
     badge.innerHTML =
-      `<div class="dash-user-avatar" style="background:${avatarBg};">${initials}</div>` +
+      `<div class="dash-user-avatar" style="background:${teamInfo.color};">${initials}</div>` +
       `<div style="display:flex;flex-direction:column;">` +
         `<span class="dash-user-name">${_currentUser.name}</span>` +
-        `<span class="dash-user-role" style="color:${roleColor};background:${roleBg};">${roleLabel}</span>` +
+        `<span class="dash-user-role" style="color:${teamInfo.color};background:${teamInfo.bg};">${teamLabel}</span>` +
       `</div>`;
     right.insertBefore(badge, right.firstChild);
     if(subtitle) subtitle.textContent = `Panyathip British International School · Logged in as ${_currentUser.name}`;
