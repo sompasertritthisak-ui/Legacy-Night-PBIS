@@ -272,8 +272,8 @@ body.dashboard-active #dashboard-view{display:block !important;}
 .followup-file-chip button{background:none;border:none;color:#e05252;font-size:15px;cursor:pointer;flex-shrink:0;padding:0 2px;line-height:1;}
 .followup-file-empty{font-size:12px;color:var(--gray-mid);margin-bottom:20px;}
 .followup-modal-recipient{color:rgba(255,255,255,0.6);font-size:13px;}
-.dash-toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(120%);background:var(--navy);color:#fff;padding:13px 24px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 12px 32px rgba(0,0,0,0.3);z-index:99999;transition:transform 0.3s ease;border:1px solid rgba(201,168,76,0.3);}
-.dash-toast.show{transform:translateX(-50%) translateY(0);}
+.dash-toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(200%);opacity:0;visibility:hidden;pointer-events:none;background:var(--navy);color:#fff;padding:13px 24px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 12px 32px rgba(0,0,0,0.3);z-index:99999;transition:transform 0.3s ease,opacity 0.3s ease,visibility 0.3s;border:1px solid rgba(201,168,76,0.3);}
+.dash-toast.show{transform:translateX(-50%) translateY(0);opacity:1;visibility:visible;pointer-events:auto;}
 body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,body.role-marketing .dash-row-action,body.role-marketing #followup-modal-send-btn,body.role-marketing #followup-modal-file-input,body.role-marketing .followup-compose-btn{opacity:0.3;pointer-events:none;filter:grayscale(1);}
 .dash-marketing-notice{background:rgba(59,130,246,0.12);border-bottom:1px solid rgba(59,130,246,0.25);padding:8px 24px;font-size:12px;color:rgba(30,30,30,0.7);text-align:center;letter-spacing:0.03em;}
 @media (max-width:768px){
