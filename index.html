@@ -7,7 +7,7 @@
 <meta name="description" content="Join us for PBIS Legacy Night, celebrating 25 years of Panyathip British International School. Friday, 25 September 2026, 5:00 PM.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;800;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
   --navy:#0a2818; --navy-mid:#0f3320; --gold:#c9a84c; --gold-light:#e8c96e;
@@ -31,7 +31,7 @@ img{max-width:100%;height:auto;}
 .nav-brand{display:flex;align-items:center;gap:10px;text-decoration:none;}
 .nav-brand,.nav-brand:visited,.nav-brand:hover,.nav-brand:active{text-decoration:none;color:inherit;}
 .nav-brand img{height:38px;width:auto;object-fit:contain;filter:drop-shadow(0 2px 8px rgba(201,168,76,0.3));}
-.nav-brand-text{font-family:'DM Serif Display',serif;color:var(--white);font-size:13px;line-height:1.2;text-decoration:none;}
+.nav-brand-text{font-family:'Cinzel',serif;font-weight:700;color:var(--white);font-size:13px;line-height:1.2;text-decoration:none;}
 .nav-brand-text span{display:block;font-size:9px;color:var(--gold);letter-spacing:0.12em;text-transform:uppercase;font-family:'DM Sans',sans-serif;text-decoration:none;}
 .nav-cta{background:linear-gradient(135deg,var(--gold),var(--gold-light));color:var(--deep);border:none;padding:10px 22px;border-radius:100px;font-size:12px;font-weight:600;letter-spacing:0.03em;cursor:pointer;font-family:'DM Sans',sans-serif;}
 .nav-cta:hover{filter:brightness(1.08);}
@@ -39,15 +39,16 @@ img{max-width:100%;height:auto;}
 /* ── HERO ── */
 .hero{position:relative;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:radial-gradient(ellipse at 50% 0%, #10381f 0%, var(--navy) 45%, var(--deep) 100%);padding:140px 24px 80px;overflow:hidden;}
 .hero-crest{width:110px;height:110px;object-fit:contain;margin-bottom:20px;filter:drop-shadow(0 4px 20px rgba(201,168,76,0.35));}
+@keyframes goldShimmer{0%{background-position:0% center;}100%{background-position:200% center;}}
 .hero-eyebrow{font-size:12px;letter-spacing:0.28em;text-transform:uppercase;color:var(--gold);margin-bottom:6px;}
 .hero-school{font-size:13px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.55);margin-bottom:28px;}
-.hero-divider{width:64px;height:1px;background:var(--gold);margin:0 auto 28px;opacity:0.6;}
-.hero-title{font-family:'DM Serif Display',serif;font-size:clamp(44px,7vw,84px);line-height:1.05;color:var(--white);margin-bottom:18px;background:linear-gradient(135deg,#fff 30%,var(--gold-light) 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+.hero-divider{width:84px;height:2px;background:linear-gradient(90deg,rgba(45,158,95,0) 0%,#2d9e5f 18%,var(--gold-light) 50%,#2d9e5f 82%,rgba(45,158,95,0) 100%);margin:0 auto 28px;opacity:0.9;box-shadow:0 0 14px rgba(201,168,76,0.45);}
+.hero-title{font-family:'Cinzel',serif;font-weight:700;letter-spacing:0.01em;font-size:clamp(44px,7vw,84px);line-height:1.05;margin-bottom:18px;color:var(--gold-light);background-image:linear-gradient(100deg,#8a6a26 0%,#e8c96e 20%,#fff6d6 36%,#f5e2a0 50%,#c9a84c 64%,#e8c96e 80%,#8a6a26 100%);background-size:220% auto;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:goldShimmer 6s linear infinite;text-shadow:0 0 46px rgba(45,158,95,0.28);}
 .hero-slogan{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:clamp(17px,2.2vw,24px);color:rgba(232,201,110,0.85);letter-spacing:0.02em;max-width:640px;margin:0 auto 44px;font-weight:300;}
 .hero-meta{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin-bottom:44px;}
 .hero-meta-item{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(201,168,76,0.25);border-radius:100px;padding:10px 22px;color:var(--white);font-size:13px;letter-spacing:0.02em;}
 .hero-meta-item b{color:var(--gold-light);font-weight:600;}
-.hero-cta{background:linear-gradient(135deg,var(--gold),var(--gold-light));color:var(--deep);border:none;padding:18px 48px;border-radius:100px;font-size:15px;font-weight:700;letter-spacing:0.04em;cursor:pointer;font-family:'DM Sans',sans-serif;box-shadow:0 8px 32px rgba(201,168,76,0.3);transition:transform 0.2s;}
+.hero-cta{background:linear-gradient(135deg,var(--gold),var(--gold-light));color:var(--deep);border:none;padding:18px 48px;border-radius:100px;font-size:15px;font-weight:700;letter-spacing:0.04em;cursor:pointer;font-family:'DM Sans',sans-serif;box-shadow:0 8px 32px rgba(201,168,76,0.3),0 0 0 1px rgba(45,158,95,0.3);transition:transform 0.2s;}
 .hero-cta:hover{transform:translateY(-2px);}
 .hero-note{margin-top:18px;color:rgba(255,255,255,0.4);font-size:12px;}
 .hero-scroll{position:absolute;bottom:28px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,0.35);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;}
@@ -56,7 +57,7 @@ img{max-width:100%;height:auto;}
 .section{padding:100px 24px;}
 .section-inner{max-width:1080px;margin:0 auto;}
 .section-eyebrow{text-align:center;font-size:11px;letter-spacing:0.24em;text-transform:uppercase;color:var(--gold);margin-bottom:14px;}
-.section-title{text-align:center;font-family:'DM Serif Display',serif;font-size:clamp(28px,4vw,44px);color:var(--navy);margin-bottom:20px;}
+.section-title{text-align:center;font-family:'Cinzel',serif;font-weight:700;letter-spacing:0.01em;font-size:clamp(28px,4vw,44px);margin-bottom:20px;color:var(--navy);background-image:linear-gradient(100deg,#8a6a26 0%,#c9a84c 20%,#e8c96e 38%,#c9a84c 55%,#8a6a26 72%,#c9a84c 88%,#8a6a26 100%);background-size:220% auto;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:goldShimmer 7s linear infinite;text-shadow:0 2px 30px rgba(45,158,95,0.16);}
 .section-lead{text-align:center;font-size:16px;color:var(--gray-mid);max-width:620px;margin:0 auto 60px;line-height:1.75;}
 
 /* ── LEGACY / ABOUT ── */
@@ -73,7 +74,7 @@ img{max-width:100%;height:auto;}
 .details-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:22px;margin-top:56px;}
 .detail-card{background:rgba(255,255,255,0.05);border:1px solid rgba(201,168,76,0.25);border-radius:16px;padding:32px 26px;text-align:center;}
 .detail-icon{font-size:30px;margin-bottom:16px;}
-.detail-card h4{font-family:'DM Serif Display',serif;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;font-weight:400;}
+.detail-card h4{font-family:'Cinzel',serif;font-weight:700;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;}
 .detail-card p{color:var(--white);font-size:16px;font-weight:500;line-height:1.5;}
 .detail-card span{display:block;color:rgba(255,255,255,0.45);font-size:12px;margin-top:6px;}
 .detail-card a{color:var(--gold-light);text-decoration:none;font-size:13px;display:inline-block;margin-top:10px;}
@@ -85,7 +86,7 @@ img{max-width:100%;height:auto;}
 .guest-card{background:var(--white);border:1px solid var(--gray);border-radius:16px;padding:30px 20px;text-align:center;transition:transform 0.2s, box-shadow 0.2s;}
 .guest-card:hover{transform:translateY(-4px);box-shadow:0 12px 32px rgba(10,40,24,0.08);}
 .guest-icon{font-size:32px;margin-bottom:14px;}
-.guest-card h4{font-family:'DM Serif Display',serif;font-size:17px;color:var(--navy);margin-bottom:8px;font-weight:400;}
+.guest-card h4{font-family:'Cinzel',serif;font-weight:700;font-size:17px;color:var(--navy);margin-bottom:8px;}
 .guest-card p{font-size:12.5px;color:var(--gray-mid);line-height:1.5;}
 
 /* ── CONTACT / FOOTER ── */
@@ -105,7 +106,7 @@ footer a{color:var(--gold);text-decoration:none;}
 
 /* ── FINAL CTA ── */
 .final-cta{background:linear-gradient(135deg,var(--navy),var(--deep));text-align:center;padding:100px 24px;}
-.final-cta h2{font-family:'DM Serif Display',serif;font-size:clamp(28px,4.4vw,46px);color:var(--white);margin-bottom:18px;}
+.final-cta h2{font-family:'Cinzel',serif;font-weight:700;letter-spacing:0.01em;font-size:clamp(28px,4.4vw,46px);margin-bottom:18px;color:var(--gold-light);background-image:linear-gradient(100deg,#8a6a26 0%,#e8c96e 20%,#fff6d6 36%,#f5e2a0 50%,#c9a84c 64%,#e8c96e 80%,#8a6a26 100%);background-size:220% auto;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:goldShimmer 6s linear infinite;text-shadow:0 0 40px rgba(45,158,95,0.25);}
 .final-cta p{color:rgba(255,255,255,0.6);font-size:15px;margin-bottom:36px;}
 
 /* ── RSVP MODAL ── */
@@ -113,7 +114,7 @@ footer a{color:var(--gold);text-decoration:none;}
 .modal-backdrop.open{display:flex;}
 .modal{background:var(--white);border-radius:20px;max-width:520px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 30px 80px rgba(0,0,0,0.4);}
 .modal-header{background:linear-gradient(135deg,var(--navy),var(--navy-mid));border-radius:20px 20px 0 0;padding:32px 32px 26px;text-align:center;position:relative;}
-.modal-header h2{font-family:'DM Serif Display',serif;color:var(--white);font-size:26px;margin-bottom:8px;}
+.modal-header h2{font-family:'Cinzel',serif;font-weight:700;color:var(--white);font-size:26px;margin-bottom:8px;}
 .modal-header p{color:rgba(255,255,255,0.55);font-size:13px;}
 .modal-close{position:absolute;top:14px;right:16px;background:rgba(255,255,255,0.1);border:none;color:var(--white);width:38px;height:38px;border-radius:50%;cursor:pointer;font-size:16px;line-height:1;}
 .modal-body{padding:28px 32px 32px;}
@@ -177,7 +178,7 @@ footer a{color:var(--gold);text-decoration:none;}
 .login-gold-bar{height:3px;background:linear-gradient(90deg,var(--gold),var(--gold-light),var(--gold));}
 .login-modal-logo{width:72px;height:72px;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;}
 .login-modal-logo img{width:100%;height:100%;object-fit:contain;}
-.login-modal-header h2{font-family:'DM Serif Display',serif;font-size:20px;color:var(--white);margin:0 0 4px;font-weight:400;}
+.login-modal-header h2{font-family:'Cinzel',serif;font-weight:700;font-size:20px;color:var(--white);margin:0 0 4px;}
 .login-modal-header p{font-size:11px;color:rgba(255,255,255,0.45);letter-spacing:0.1em;text-transform:uppercase;margin:0;}
 .login-modal-body{padding:28px 32px 32px;}
 .login-modal-body label{display:block;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--navy);margin-bottom:8px;}
@@ -210,7 +211,7 @@ body.dashboard-active #dashboard-view{display:block !important;}
 .dash-topbar-left{display:flex;align-items:center;gap:14px;}
 .dash-topbar-left img{height:38px;width:auto;object-fit:contain;}
 .dash-topbar-title{color:var(--white);}
-.dash-topbar-title h1{font-family:'DM Serif Display',serif;font-size:17px;line-height:1.2;margin:0;}
+.dash-topbar-title h1{font-family:'Cinzel',serif;font-weight:700;font-size:17px;line-height:1.2;margin:0;}
 .dash-topbar-title span{font-size:10.5px;color:var(--gold);letter-spacing:0.08em;text-transform:uppercase;}
 .dash-topbar-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
 .dash-user-badge{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(201,168,76,0.25);border-radius:100px;padding:5px 14px 5px 5px;}
@@ -228,7 +229,7 @@ body.dashboard-active #dashboard-view{display:block !important;}
 .dash-tab.active .dash-tab-count{background:rgba(201,168,76,0.18);color:var(--gold);}
 .dash-main{padding:28px 32px;max-width:1300px;margin:0 auto;}
 .dash-panel{background:var(--white);border-radius:14px;padding:22px 24px;border:1px solid var(--gray);margin-bottom:20px;}
-.dash-panel-title{font-family:'DM Serif Display',serif;font-size:16px;color:var(--navy);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.dash-panel-title{font-family:'Cinzel',serif;font-weight:700;font-size:16px;color:var(--navy);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
 .dash-panel-title span{font-size:11px;font-weight:600;color:var(--gray-mid);font-family:'DM Sans',sans-serif;background:var(--cream);padding:3px 10px;border-radius:100px;}
 .dash-stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px;margin-bottom:20px;}
 .dash-stat-card{background:var(--white);border:1px solid var(--gray);border-radius:14px;padding:22px;text-align:center;position:relative;overflow:hidden;}
@@ -1193,7 +1194,7 @@ function svgDonut(data, size) {
   const emptyRing = total === 0 ? `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#ede9df" stroke-width="18"/>` : '';
   return `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">
     ${emptyRing}${segments}
-    <text x="${cx}" y="${cy-2}" text-anchor="middle" font-size="24" font-family="'DM Serif Display',serif" fill="#0a2818">${total}</text>
+    <text x="${cx}" y="${cy-2}" text-anchor="middle" font-size="24" font-family="'Cinzel',serif" font-weight="700" fill="#0a2818">${total}</text>
     <text x="${cx}" y="${cy+16}" text-anchor="middle" font-size="9" letter-spacing="0.08em" fill="#9a9080">TOTAL</text>
   </svg>`;
 }
