@@ -254,6 +254,13 @@ body.dashboard-active #dashboard-view{display:block !important;}
 .dash-arrived-pill{display:inline-flex;align-items:center;gap:5px;color:#1a7a45;font-weight:700;font-size:12.5px;}
 .dash-empty{text-align:center;padding:48px 24px;color:var(--gray-mid);font-size:13.5px;}
 
+/* ── OVERDUE TAB ── */
+.dash-overdue-warn{background:#fdf3f1;border:1.5px solid #dba39c;border-radius:10px;padding:14px 18px;margin-bottom:20px;font-size:12.5px;color:#7a3530;line-height:1.6;}
+.dash-noshow-btn{background:linear-gradient(135deg,#a4453e,#c0605a);color:#fff;border:none;padding:7px 16px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.dash-noshow-btn:hover{filter:brightness(1.08);}
+.dash-noshow-undo{background:var(--gray);color:var(--gray-mid);border:none;padding:7px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;margin-left:8px;}
+.dash-noshow-pill{display:inline-flex;align-items:center;gap:5px;background:rgba(164,69,62,0.1);color:#a4453e;border:1px solid rgba(164,69,62,0.3);padding:4px 12px;border-radius:100px;font-size:11.5px;font-weight:700;}
+
 /* ── ANALYTICS CHARTS (Overview tab) ── */
 .dash-charts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:20px;margin-bottom:20px;}
 .dash-chart-flex{display:flex;align-items:center;gap:26px;flex-wrap:wrap;}
@@ -297,7 +304,7 @@ body.dashboard-active #dashboard-view{display:block !important;}
 .followup-modal-recipient{color:rgba(255,255,255,0.6);font-size:13px;}
 .dash-toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(200%);opacity:0;visibility:hidden;pointer-events:none;background:var(--navy);color:#fff;padding:13px 24px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 12px 32px rgba(0,0,0,0.3);z-index:99999;transition:transform 0.3s ease,opacity 0.3s ease,visibility 0.3s;border:1px solid rgba(201,168,76,0.3);}
 .dash-toast.show{transform:translateX(-50%) translateY(0);opacity:1;visibility:visible;pointer-events:auto;}
-body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,body.role-marketing .dash-row-action,body.role-marketing #followup-modal-send-btn,body.role-marketing #followup-modal-file-input,body.role-marketing .followup-compose-btn{opacity:0.3;pointer-events:none;filter:grayscale(1);}
+body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,body.role-marketing .dash-row-action,body.role-marketing #followup-modal-send-btn,body.role-marketing #followup-modal-file-input,body.role-marketing .followup-compose-btn,body.role-marketing .dash-noshow-btn,body.role-marketing .dash-noshow-undo,body.role-marketing #export-csv-btn,body.role-marketing #edit-guest-save-btn{opacity:0.3;pointer-events:none;filter:grayscale(1);}
 .dash-marketing-notice{background:rgba(59,130,246,0.12);border-bottom:1px solid rgba(59,130,246,0.25);padding:8px 24px;font-size:12px;color:rgba(30,30,30,0.7);text-align:center;letter-spacing:0.03em;}
 @media (max-width:768px){
   .dash-main{padding:20px 16px;}
@@ -617,6 +624,9 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,bod
     <button class="dash-tab" onclick="switchDashTab('checkin',this)" id="dtab-checkin">
       ✅ Check-In <span class="dash-tab-count" id="checkin-tab-count">0</span>
     </button>
+    <button class="dash-tab" onclick="switchDashTab('overdue',this)" id="dtab-overdue">
+      ⏰ Overdue <span class="dash-tab-count" id="overdue-tab-count">0</span>
+    </button>
     <button class="dash-tab" onclick="switchDashTab('followup',this)" id="dtab-followup">
       📧 Follow Up
     </button>
@@ -626,6 +636,7 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,bod
     <div id="dash-tab-content-overview"><!-- populated by JS --></div>
     <div id="dash-tab-content-guestlist" style="display:none;"><!-- populated by JS --></div>
     <div id="dash-tab-content-checkin" style="display:none;"><!-- populated by JS --></div>
+    <div id="dash-tab-content-overdue" style="display:none;"><!-- populated by JS --></div>
     <div id="dash-tab-content-followup" style="display:none;"><!-- populated by JS --></div>
   </div>
 </div>
@@ -1144,6 +1155,7 @@ async function loadDashboardData() {
   renderOverviewTab();
   renderGuestListTab();
   renderCheckInTab();
+  renderOverdueTab();
 
   if (btn) { btn.disabled = false; btn.textContent = '↻ Resync'; }
 }
@@ -1152,11 +1164,12 @@ async function loadDashboardData() {
 function switchDashTab(tab, btn) {
   document.querySelectorAll('.dash-tab').forEach(t => t.classList.remove('active'));
   btn.classList.add('active');
-  ['overview','guestlist','checkin','followup'].forEach(t => {
+  ['overview','guestlist','checkin','overdue','followup'].forEach(t => {
     const el = document.getElementById('dash-tab-content-' + t);
     if(el) el.style.display = (t === tab) ? 'block' : 'none';
   });
   if (tab === 'followup') renderFollowUpTab();
+  if (tab === 'overdue') renderOverdueTab();
 }
 
 /* ── LIGHTWEIGHT INLINE SVG CHART HELPERS (no external chart library) ── */
@@ -1241,6 +1254,7 @@ function renderOverviewTab() {
   }
 
   const arrivedCount     = guests.filter(g => g.checked_in).length;
+  const noShowCount      = guests.filter(g => g.no_show).length;
   const withEmailCount   = guests.filter(g => g.email).length;
   const followUpEligible = withEmailCount;
   const followUpSent     = guests.filter(g => g.followup_sent).length;
@@ -1289,6 +1303,7 @@ function renderOverviewTab() {
       <div class="dash-stat-card"><div class="dash-stat-value">${daysLeft}</div><div class="dash-stat-label">Days Until Legacy Night</div></div>
       <div class="dash-stat-card"><div class="dash-stat-value">${guests.length}</div><div class="dash-stat-label">Total RSVPs</div></div>
       <div class="dash-stat-card"><div class="dash-stat-value">${arrivedCount}</div><div class="dash-stat-label">Checked In So Far</div></div>
+      <div class="dash-stat-card"><div class="dash-stat-value">${noShowCount}</div><div class="dash-stat-label">Marked No-Show</div></div>
       <div class="dash-stat-card"><div class="dash-stat-value">${withEmailCount}</div><div class="dash-stat-label">Guests With Email</div></div>
       <div class="dash-stat-card"><div class="dash-stat-value">${followUpSent}</div><div class="dash-stat-label">Follow-Ups Sent</div></div>
       <div class="dash-stat-card"><div class="dash-stat-value">${avgPerDay}</div><div class="dash-stat-label">Avg RSVPs / Day</div></div>
@@ -1353,7 +1368,7 @@ function renderGuestListTab() {
   el.innerHTML = `
     <div class="dash-panel">
       <div class="dash-panel-title">Guest List <span>${filtered.length} of ${guests.length} RSVPs</span>
-        <button class="dash-btn" onclick="exportGuestListCSV()" style="margin-left:auto;">⬇ Export CSV</button>
+        <button class="dash-btn" id="export-csv-btn" onclick="exportGuestListCSV()" style="margin-left:auto;">⬇ Export CSV</button>
       </div>
       <div class="dash-search-row">
         <input type="text" placeholder="Search by name or email…" value="${_guestSearchTerm}" oninput="_guestSearchTerm=this.value;renderGuestListTab();">
@@ -1438,12 +1453,125 @@ function markGuestCheckedIn(ts, checkedIn) {
   if(!guest) return;
   guest.checked_in = checkedIn;
   guest.checked_in_at = checkedIn ? new Date().toISOString() : '';
+  // Bidirectional sync with Overdue tab: a guest who checks in clearly
+  // did show up, so any earlier no-show mark no longer applies.
+  const clearingNoShow = checkedIn && guest.no_show;
+  if (clearingNoShow) { guest.no_show = false; guest.no_show_at = ''; }
   renderCheckInTab();
   renderOverviewTab();
   renderGuestListTab();
+  renderOverdueTab();
 
-  postToSheets({ action: 'markCheckedIn', ts: ts, checked_in: checkedIn, admin_key: ADMIN_ACTION_KEY }).then(() => {
+  const payload = { action: 'markCheckedIn', ts: ts, checked_in: checkedIn, admin_key: ADMIN_ACTION_KEY };
+  if (clearingNoShow) payload.clear_no_show = true;
+
+  postToSheets(payload).then(() => {
     showDashToast(checkedIn ? `✓ ${guest.fname} checked in` : `↩ Check-in undone for ${guest.fname}`);
+  });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   OVERDUE TAB — guests who RSVP'd but have not checked in. Once
+   the event has concluded, Admissions and Events Team staff can
+   formally mark someone as a No-Show here (Marketing stays
+   view-only, same lock pattern as Check-In). This stays in sync
+   with the Check-In tab both ways: marking someone here doesn't
+   touch their check-in status, but checking someone in later
+   automatically clears their no-show mark (see markGuestCheckedIn
+   above) since they clearly did show up after all.
+   ══════════════════════════════════════════════════════════════ */
+let _overdueSearchTerm = '';
+
+function renderOverdueTab() {
+  const el = document.getElementById('dash-tab-content-overdue');
+  if (!el) return;
+  const guests = _dashGuestsCache;
+
+  const countEl = document.getElementById('overdue-tab-count');
+  if (countEl) countEl.textContent = guests.filter(g => g.no_show).length;
+
+  if (!guests.length) {
+    el.innerHTML = `<div class="dash-panel"><div class="dash-empty">No RSVPs yet.</div></div>`;
+    return;
+  }
+
+  const noShowGuests = guests.filter(g => g.no_show);
+  const pendingGuests = guests.filter(g => !g.checked_in && !g.no_show).filter(g =>
+    !_overdueSearchTerm || (g.fname+' '+g.lname).toLowerCase().includes(_overdueSearchTerm.toLowerCase())
+  );
+
+  const pendingRows = pendingGuests.slice().reverse().map(g => `
+    <tr>
+      <td style="font-weight:600;color:var(--navy);white-space:nowrap;">${g.fname||'—'} ${g.lname||''}</td>
+      <td><a href="mailto:${g.email}" style="color:var(--gold);text-decoration:none;font-size:12px;">${g.email||'—'}</a></td>
+      <td>${g.organization||'—'}</td>
+      <td style="white-space:nowrap;"><button class="dash-noshow-btn" onclick="markGuestNoShow('${g.ts}',true)">Mark No-Show</button></td>
+    </tr>`).join('');
+
+  const noShowRows = noShowGuests.slice().reverse().map(g => `
+    <tr>
+      <td style="font-weight:600;color:var(--navy);white-space:nowrap;">${g.fname||'—'} ${g.lname||''}</td>
+      <td><a href="mailto:${g.email}" style="color:var(--gold);text-decoration:none;font-size:12px;">${g.email||'—'}</a></td>
+      <td>${g.organization||'—'}</td>
+      <td style="white-space:nowrap;">
+        <span class="dash-noshow-pill">⏰ No-Show${g.no_show_at ? ' · ' + new Date(g.no_show_at).toLocaleDateString('en-GB') : ''}</span>
+        <button class="dash-noshow-undo" onclick="markGuestNoShow('${g.ts}',false)">Undo</button>
+      </td>
+    </tr>`).join('');
+
+  el.innerHTML = `
+    <div class="dash-stats-row">
+      <div class="dash-stat-card"><div class="dash-stat-value">${guests.length}</div><div class="dash-stat-label">Total RSVPs</div></div>
+      <div class="dash-stat-card"><div class="dash-stat-value">${noShowGuests.length}</div><div class="dash-stat-label">Marked No-Show</div></div>
+      <div class="dash-stat-card"><div class="dash-stat-value">${pendingGuests.length}</div><div class="dash-stat-label">Not Yet Arrived</div></div>
+    </div>
+
+    <div class="dash-panel">
+      <div class="dash-overdue-warn">Guests here RSVP'd but haven't checked in yet. Once the evening has wrapped up, mark anyone who never arrived as a <strong>No-Show</strong> — if they turn up later and get checked in at the door, their mark clears automatically.</div>
+      <div class="dash-panel-title">Awaiting Arrival <span>${pendingGuests.length} guest${pendingGuests.length===1?'':'s'}</span></div>
+      <div class="dash-search-row">
+        <input type="text" placeholder="Search by name…" value="${_overdueSearchTerm}" oninput="_overdueSearchTerm=this.value;renderOverdueTab();">
+      </div>
+      <div class="dash-table-wrap">
+        <table class="dash-table">
+          <thead><tr><th>Guest Name</th><th>Email</th><th>Organization</th><th></th></tr></thead>
+          <tbody>${pendingRows || `<tr><td colspan="4" style="text-align:center;color:var(--gray-mid);padding:24px;">Everyone's either checked in or already marked.</td></tr>`}</tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="dash-panel">
+      <div class="dash-panel-title">Marked No-Show <span>${noShowGuests.length} guest${noShowGuests.length===1?'':'s'}</span></div>
+      <div class="dash-table-wrap">
+        <table class="dash-table">
+          <thead><tr><th>Guest Name</th><th>Email</th><th>Organization</th><th></th></tr></thead>
+          <tbody>${noShowRows || `<tr><td colspan="4" style="text-align:center;color:var(--gray-mid);padding:24px;">No one has been marked as a no-show yet.</td></tr>`}</tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+function markGuestNoShow(ts, noShow) {
+  const guest = _dashGuestsCache.find(g => g.ts === ts);
+  if (!guest) return;
+
+  if (noShow && guest.checked_in) {
+    showDashToast(`⚠️ ${guest.fname} already checked in — can't mark as no-show.`);
+    return;
+  }
+
+  if (noShow) {
+    const ok = confirm(`Mark ${guest.fname || 'this guest'} ${guest.lname || ''} as a No-Show?\n\nThis records that they RSVP'd but never arrived. If they're checked in later, this clears automatically.`);
+    if (!ok) return;
+  }
+
+  guest.no_show = noShow;
+  guest.no_show_at = noShow ? new Date().toISOString() : '';
+  renderOverdueTab();
+  renderOverviewTab();
+
+  postToSheets({ action: 'markNoShow', ts: ts, no_show: noShow, admin_key: ADMIN_ACTION_KEY }).then(() => {
+    showDashToast(noShow ? `⏰ ${guest.fname} marked as no-show` : `↩ No-show undone for ${guest.fname}`);
   });
 }
 
@@ -1503,6 +1631,7 @@ function saveEditGuest() {
   renderGuestListTab();
   renderOverviewTab();
   renderCheckInTab();
+  renderOverdueTab();
 
   postToSheets(Object.assign({ action: 'updateLegacyGuest', ts: ts, admin_key: ADMIN_ACTION_KEY }, updated)).then(() => {
     showDashToast(`✓ ${fname} ${lname} updated`);
@@ -1519,6 +1648,7 @@ function confirmDeleteGuest(ts) {
   renderGuestListTab();
   renderOverviewTab();
   renderCheckInTab();
+  renderOverdueTab();
 
   postToSheets({ action: 'deleteLegacyGuest', ts: ts, admin_key: ADMIN_ACTION_KEY }).then(() => {
     showDashToast(`🗑️ ${guest.fname || 'Guest'}'s RSVP deleted`);
