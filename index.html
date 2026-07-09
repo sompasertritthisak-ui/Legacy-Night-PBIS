@@ -262,13 +262,19 @@ body.dashboard-active #dashboard-view{display:block !important;}
 /* Follow Up tab */
 .followup-textarea{width:100%;min-height:180px;padding:14px 16px;border:1.5px solid var(--gray);border-radius:10px;font-size:14px;font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);resize:vertical;margin-bottom:18px;}
 .followup-textarea:focus{outline:none;border-color:var(--gold);background:var(--white);}
-.followup-file-row{display:flex;align-items:center;gap:14px;padding:16px;border:1.5px dashed var(--gray);border-radius:10px;margin-bottom:20px;background:var(--cream);}
+.followup-file-row{display:flex;align-items:center;gap:14px;padding:16px;border:1.5px dashed var(--gray);border-radius:10px;margin-bottom:12px;background:var(--cream);}
 .followup-file-row input[type="file"]{flex:1;font-size:13px;}
-#followup-file-name{font-size:12px;color:var(--gray-mid);}
 .followup-warn{background:#fffbeb;border:1.5px solid #c9a84c;border-radius:10px;padding:14px 18px;margin-bottom:20px;font-size:12.5px;color:#5a4a1a;line-height:1.6;}
+.followup-file-list{display:flex;flex-direction:column;gap:8px;margin-bottom:20px;}
+.followup-file-chip{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--white);border:1.5px solid var(--gray);border-radius:8px;padding:9px 14px;font-size:12.5px;color:var(--text);}
+.followup-file-chip .fname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.followup-file-chip .fsize{color:var(--gray-mid);font-size:11px;flex-shrink:0;margin-left:8px;}
+.followup-file-chip button{background:none;border:none;color:#e05252;font-size:15px;cursor:pointer;flex-shrink:0;padding:0 2px;line-height:1;}
+.followup-file-empty{font-size:12px;color:var(--gray-mid);margin-bottom:20px;}
+.followup-modal-recipient{color:rgba(255,255,255,0.6);font-size:13px;}
 .dash-toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(120%);background:var(--navy);color:#fff;padding:13px 24px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 12px 32px rgba(0,0,0,0.3);z-index:99999;transition:transform 0.3s ease;border:1px solid rgba(201,168,76,0.3);}
 .dash-toast.show{transform:translateX(-50%) translateY(0);}
-body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,body.role-marketing .dash-row-action,body.role-marketing #followup-send-btn,body.role-marketing #followup-file-input{opacity:0.3;pointer-events:none;filter:grayscale(1);}
+body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,body.role-marketing .dash-row-action,body.role-marketing #followup-modal-send-btn,body.role-marketing #followup-modal-file-input,body.role-marketing .followup-compose-btn{opacity:0.3;pointer-events:none;filter:grayscale(1);}
 .dash-marketing-notice{background:rgba(59,130,246,0.12);border-bottom:1px solid rgba(59,130,246,0.25);padding:8px 24px;font-size:12px;color:rgba(30,30,30,0.7);text-align:center;letter-spacing:0.03em;}
 @media (max-width:768px){
   .dash-main{padding:20px 16px;}
@@ -661,6 +667,34 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,bod
       <div class="edit-guest-actions">
         <button class="edit-guest-cancel" onclick="closeEditGuestModal()">Cancel</button>
         <button class="form-submit" id="edit-guest-save-btn" onclick="saveEditGuest()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FOLLOW-UP SEND MODAL (per-guest) -->
+<div class="modal-backdrop" id="followup-modal-backdrop" onclick="if(event.target===this)closeFollowUpModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <button class="modal-close" onclick="closeFollowUpModal()">✕</button>
+      <h2>Send Follow-Up</h2>
+      <p class="followup-modal-recipient" id="followup-modal-recipient">To: —</p>
+    </div>
+    <div class="edit-guest-body">
+      <input type="hidden" id="followup-modal-ts">
+
+      <label style="display:block;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--navy);margin-bottom:8px;">Message</label>
+      <textarea class="followup-textarea" id="followup-modal-message" placeholder="e.g. Dear [Name], your personal invitation and event QR code are attached below…"></textarea>
+
+      <label style="display:block;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--navy);margin-bottom:8px;">Attachments <span style="text-transform:none;font-weight:400;color:var(--gray-mid);">(PDF, JPEG, or PNG — add as many as you need, e.g. an invitation card + this guest's unique QR code)</span></label>
+      <div class="followup-file-row">
+        <input type="file" id="followup-modal-file-input" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" multiple onchange="handleFollowUpFilesSelect(event)">
+      </div>
+      <div id="followup-modal-file-list"></div>
+
+      <div class="edit-guest-actions">
+        <button class="edit-guest-cancel" onclick="closeFollowUpModal()">Cancel</button>
+        <button class="form-submit" id="followup-modal-send-btn" onclick="sendIndividualFollowUpEmail()">📧 Send to This Guest</button>
       </div>
     </div>
   </div>
@@ -1393,59 +1427,141 @@ function confirmDeleteGuest(ts) {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   FOLLOW UP TAB — admin composes a message + optional attachment
-   (PDF/JPEG/PNG) and sends it to every current RSVP in one go.
-   Intended mainly for distributing event passes / QR codes once
-   they're ready.
+   FOLLOW UP TAB — every RSVP'd guest is listed individually. Click
+   a guest to compose a message + attach one or more files (e.g. an
+   invitation card PDF plus that guest's unique QR code image) and
+   send it to that guest alone. Intentionally NOT a bulk/one-click-
+   send-to-everyone tool, since each guest's pass/QR is unique to
+   them.
    ══════════════════════════════════════════════════════════════ */
-let _followUpFile = null;
+let _followUpFiles = [];       // array of File objects staged for the guest currently open in the modal
+let _followUpTargetTs = null;  // ts of the guest currently open in the modal
+let _followUpSearchTerm = '';
+
+const FOLLOWUP_MAX_FILE_BYTES = 20 * 1024 * 1024;   // 20MB per file
+const FOLLOWUP_MAX_TOTAL_BYTES = 24 * 1024 * 1024;  // ~24MB combined (Gmail's own cap is ~25MB per message)
+const FOLLOWUP_ALLOWED_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
 
 function renderFollowUpTab() {
   const el = document.getElementById('dash-tab-content-followup');
-  const guests = _dashGuestsCache;
-  const recipientCount = guests.filter(g => g.email).length;
+  const emailable = _dashGuestsCache.filter(g => g.email);
+
+  if (!emailable.length) {
+    el.innerHTML = `<div class="dash-panel"><div class="dash-empty">No RSVPs with an email address yet. Once guests confirm, they'll appear here to follow up with individually.</div></div>`;
+    return;
+  }
+
+  const filtered = emailable.filter(g =>
+    !_followUpSearchTerm || (g.fname+' '+g.lname+' '+g.email).toLowerCase().includes(_followUpSearchTerm.toLowerCase())
+  );
+  const sentCount = emailable.filter(g => g.followup_sent).length;
+
+  const rows = filtered.slice().reverse().map(g => {
+    const statusCell = g.followup_sent
+      ? `<span class="dash-arrived-pill">✓ Sent${g.followup_sent_at ? ' · ' + new Date(g.followup_sent_at).toLocaleDateString('en-GB') : ''}</span>`
+      : `<span style="color:var(--gray-mid);font-size:12px;">Not sent yet</span>`;
+    return `<tr>
+      <td style="font-weight:600;color:var(--navy);white-space:nowrap;">${g.fname||'—'} ${g.lname||''}</td>
+      <td><a href="mailto:${g.email}" style="color:var(--gold);text-decoration:none;font-size:12px;">${g.email}</a></td>
+      <td>${guestBadge(g.guest_type)}</td>
+      <td>${statusCell}</td>
+      <td style="white-space:nowrap;"><button class="dash-checkin-btn followup-compose-btn" onclick="openFollowUpModal('${g.ts}')">📧 Compose &amp; Send</button></td>
+    </tr>`;
+  }).join('');
 
   el.innerHTML = `
+    <div class="dash-stats-row">
+      <div class="dash-stat-card"><div class="dash-stat-value">${emailable.length}</div><div class="dash-stat-label">Guests With Email</div></div>
+      <div class="dash-stat-card"><div class="dash-stat-value">${sentCount}</div><div class="dash-stat-label">Follow-Ups Sent</div></div>
+      <div class="dash-stat-card"><div class="dash-stat-value">${emailable.length - sentCount}</div><div class="dash-stat-label">Still To Send</div></div>
+    </div>
     <div class="dash-panel">
-      <div class="dash-panel-title">Send Follow-Up Email <span>${recipientCount} recipient${recipientCount===1?'':'s'}</span></div>
-      <div class="followup-warn">This sends to <strong>every current RSVP</strong> with an email address (${recipientCount} right now) in a single send. Most commonly used for distributing each guest's event pass / QR code once it's ready. The same attached file goes to everyone — there's no per-guest personalisation of the attachment yet.</div>
-
-      <label style="display:block;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--navy);margin-bottom:8px;">Message</label>
-      <textarea class="followup-textarea" id="followup-message" placeholder=""></textarea>
-
-      <label style="display:block;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--navy);margin-bottom:8px;">Attachment <span style="text-transform:none;font-weight:400;color:var(--gray-mid);">(PDF, JPEG, or PNG — optional)</span></label>
-      <div class="followup-file-row">
-        <input type="file" id="followup-file-input" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" onchange="handleFollowUpFileSelect(event)">
-        <span id="followup-file-name">No file selected</span>
+      <div class="dash-panel-title">Follow-Up / Event Pass Delivery <span>${filtered.length} of ${emailable.length} guests</span></div>
+      <div class="followup-warn">Each guest here gets their <strong>own individual email</strong> — click a guest, write a message, attach their invitation card and/or unique QR code (multiple files supported), then send just to them. There is no send-to-everyone button, since every guest's attachment is unique to them.</div>
+      <div class="dash-search-row">
+        <input type="text" placeholder="Search by name or email…" value="${_followUpSearchTerm}" oninput="_followUpSearchTerm=this.value;renderFollowUpTab();">
       </div>
-
-      <button class="form-submit" id="followup-send-btn" onclick="sendFollowUpEmail()" style="max-width:320px;">📧 Send Email to ${recipientCount} Guest${recipientCount===1?'':'s'}</button>
+      <div class="dash-table-wrap">
+        <table class="dash-table">
+          <thead><tr><th>Guest Name</th><th>Email</th><th>Type</th><th>Follow-Up Status</th><th></th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
     </div>`;
 }
 
-function handleFollowUpFileSelect(e) {
-  const file = e.target.files[0];
-  const nameEl = document.getElementById('followup-file-name');
-  if (!file) { _followUpFile = null; nameEl.textContent = 'No file selected'; return; }
+function openFollowUpModal(ts) {
+  const guest = _dashGuestsCache.find(g => g.ts === ts);
+  if (!guest) return;
 
-  const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
-  if (!allowedTypes.includes(file.type)) {
-    showDashToast('⚠️ Only PDF, JPEG, or PNG files are supported.');
-    e.target.value = '';
-    _followUpFile = null;
-    nameEl.textContent = 'No file selected';
+  _followUpTargetTs = ts;
+  _followUpFiles = [];
+
+  const fullName = `${guest.fname||''} ${guest.lname||''}`.trim() || 'Guest';
+  document.getElementById('followup-modal-recipient').textContent = `To: ${fullName} · ${guest.email}`;
+  document.getElementById('followup-modal-ts').value = ts;
+  document.getElementById('followup-modal-message').value = '';
+  document.getElementById('followup-modal-file-input').value = '';
+  renderFollowUpFileList();
+
+  const sendBtn = document.getElementById('followup-modal-send-btn');
+  sendBtn.disabled = false;
+  sendBtn.textContent = '📧 Send to This Guest';
+
+  document.getElementById('followup-modal-backdrop').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeFollowUpModal() {
+  document.getElementById('followup-modal-backdrop').classList.remove('open');
+  document.body.style.overflow = '';
+  _followUpTargetTs = null;
+  _followUpFiles = [];
+}
+
+function handleFollowUpFilesSelect(e) {
+  const incoming = Array.from(e.target.files || []);
+  e.target.value = ''; // reset so picking the same file again still fires onchange
+
+  for (const file of incoming) {
+    if (!FOLLOWUP_ALLOWED_TYPES.includes(file.type)) {
+      showDashToast(`⚠️ "${file.name}" skipped — only PDF, JPEG, or PNG are supported.`);
+      continue;
+    }
+    if (file.size > FOLLOWUP_MAX_FILE_BYTES) {
+      showDashToast(`⚠️ "${file.name}" skipped — file is too large (max 20MB each).`);
+      continue;
+    }
+    _followUpFiles.push(file);
+  }
+
+  const totalBytes = _followUpFiles.reduce((sum, f) => sum + f.size, 0);
+  if (totalBytes > FOLLOWUP_MAX_TOTAL_BYTES) {
+    showDashToast('⚠️ Combined attachments are too large (max ~24MB total) — remove one and try again.');
+  }
+
+  renderFollowUpFileList();
+}
+
+function removeFollowUpFile(index) {
+  _followUpFiles.splice(index, 1);
+  renderFollowUpFileList();
+}
+
+function renderFollowUpFileList() {
+  const el = document.getElementById('followup-modal-file-list');
+  if (!_followUpFiles.length) {
+    el.innerHTML = `<div class="followup-file-empty">No files attached yet.</div>`;
     return;
   }
-  if (file.size > 20 * 1024 * 1024) {
-    showDashToast('⚠️ File is too large (max 20MB).');
-    e.target.value = '';
-    _followUpFile = null;
-    nameEl.textContent = 'No file selected';
-    return;
-  }
-
-  _followUpFile = file;
-  nameEl.textContent = `${file.name} (${(file.size/1024).toFixed(0)} KB)`;
+  el.innerHTML = `<div class="followup-file-list">` +
+    _followUpFiles.map((f, i) => `
+      <div class="followup-file-chip">
+        <span class="fname">📎 ${f.name}</span>
+        <span class="fsize">${(f.size/1024).toFixed(0)} KB</span>
+        <button type="button" onclick="removeFollowUpFile(${i})" title="Remove">✕</button>
+      </div>`).join('') +
+    `</div>`;
 }
 
 function fileToBase64(file) {
@@ -1457,38 +1573,46 @@ function fileToBase64(file) {
   });
 }
 
-async function sendFollowUpEmail() {
-  const message = document.getElementById('followup-message').value.trim();
+async function sendIndividualFollowUpEmail() {
+  const ts = _followUpTargetTs;
+  const guest = _dashGuestsCache.find(g => g.ts === ts);
+  if (!guest) { showDashToast('⚠️ Could not find this guest — try resyncing.'); return; }
+
+  const message = document.getElementById('followup-modal-message').value.trim();
   if (!message) { showDashToast('⚠️ Write a message before sending.'); return; }
 
-  const recipientCount = _dashGuestsCache.filter(g => g.email).length;
-  if (!recipientCount) { showDashToast('⚠️ No guests with an email address to send to.'); return; }
-
-  const ok = confirm(`Send this email to all ${recipientCount} RSVP'd guests now?\n\nThis can't be undone once sent.`);
+  const fullName = `${guest.fname||''} ${guest.lname||''}`.trim() || 'Guest';
+  const ok = confirm(`Send this email to ${fullName} (${guest.email}) now?\n\n${_followUpFiles.length} attachment${_followUpFiles.length===1?'':'s'} will be included. This can't be undone once sent.`);
   if (!ok) return;
 
-  const btn = document.getElementById('followup-send-btn');
+  const btn = document.getElementById('followup-modal-send-btn');
   btn.disabled = true;
   btn.textContent = 'Sending…';
 
-  const payload = { action: 'sendFollowUpEmail', message: message, admin_key: ADMIN_ACTION_KEY };
-
   try {
-    if (_followUpFile) {
-      const base64 = await fileToBase64(_followUpFile);
-      payload.file = { filename: _followUpFile.name, mimeType: _followUpFile.type, base64: base64 };
-    }
+    const files = await Promise.all(_followUpFiles.map(async f => ({
+      filename: f.name, mimeType: f.type, base64: await fileToBase64(f)
+    })));
+
+    const payload = {
+      action: 'sendFollowUpEmail',
+      ts: ts,
+      message: message,
+      files: files,
+      admin_key: ADMIN_ACTION_KEY
+    };
     await postToSheets(payload);
-    showDashToast(`✅ Follow-up email sent to ${recipientCount} guest${recipientCount===1?'':'s'}`);
-    document.getElementById('followup-message').value = '';
-    document.getElementById('followup-file-input').value = '';
-    _followUpFile = null;
-    document.getElementById('followup-file-name').textContent = 'No file selected';
+
+    guest.followup_sent = true;
+    guest.followup_sent_at = new Date().toISOString();
+
+    showDashToast(`✅ Follow-up sent to ${fullName}`);
+    closeFollowUpModal();
+    renderFollowUpTab();
   } catch (e) {
-    showDashToast('⚠️ Something went wrong reading the attachment — please try again.');
-  } finally {
+    showDashToast('⚠️ Something went wrong reading the attachments — please try again.');
     btn.disabled = false;
-    btn.textContent = `📧 Send Email to ${recipientCount} Guest${recipientCount===1?'':'s'}`;
+    btn.textContent = '📧 Send to This Guest';
   }
 }
 </script>
