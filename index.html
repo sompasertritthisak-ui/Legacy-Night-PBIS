@@ -64,6 +64,8 @@ img{max-width:100%;height:auto;}
 .legacy-section{background:var(--white);}
 .legacy-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;margin-top:56px;}
 .legacy-stat{text-align:center;padding:32px 20px;border-radius:16px;background:linear-gradient(160deg,var(--cream),var(--white));border:1px solid var(--gray);}
+.legacy-stat-icon{width:64px;height:64px;margin:0 auto 18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;line-height:1;background:linear-gradient(135deg,rgba(201,168,76,0.16),rgba(45,158,95,0.14));border:1.5px solid rgba(201,168,76,0.4);box-shadow:0 6px 18px rgba(201,168,76,0.18),inset 0 0 0 1px rgba(255,255,255,0.4);overflow:hidden;}
+.legacy-stat-icon img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;}
 .legacy-stat-num{font-family:'Cormorant Garamond',serif;font-size:48px;font-weight:600;color:var(--gold);line-height:1;margin-bottom:10px;background-image:linear-gradient(135deg,#8a6a26 0%,var(--gold) 35%,var(--gold-light) 60%,var(--gold) 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
 .legacy-stat-label{font-size:12px;letter-spacing:0.1em;text-transform:uppercase;color:var(--gray-mid);}
 
@@ -95,7 +97,8 @@ img{max-width:100%;height:auto;}
 .contact-card{background:var(--navy);border-radius:20px;padding:32px 26px;}
 .contact-card .campus-emoji{font-size:28px;margin-bottom:10px;}
 .contact-card p.label{font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(201,168,76,0.6);margin-bottom:10px;}
-.contact-card a.phone{display:block;font-size:22px;font-weight:700;color:var(--gold-light);margin-bottom:8px;text-decoration:none;}
+.contact-card a.phone{display:inline-flex;align-items:center;justify-content:center;gap:9px;font-size:22px;font-weight:700;color:var(--gold-light);margin-bottom:8px;text-decoration:none;}
+.contact-card a.phone svg{width:19px;height:19px;fill:#25D366;flex-shrink:0;}
 .contact-card a.phone:hover{text-decoration:underline;}
 .contact-card a.email{color:rgba(255,255,255,0.55);text-decoration:none;font-size:13px;}
 .contact-card a.email:hover{text-decoration:underline;}
@@ -374,9 +377,9 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,bod
     <h2 class="section-title">A Quarter Century of Growing Generations</h2>
     <p class="section-lead">Since 2001, Panyathip British International School has shaped a generation of confident, curious, and compassionate learners in Vientiane. This September, we come together to honour that legacy — and look ahead to the next 25 years.</p>
     <div class="legacy-stats">
-      <div class="legacy-stat"><div class="legacy-stat-num">25</div><div class="legacy-stat-label">Years of Excellence</div></div>
-      <div class="legacy-stat"><div class="legacy-stat-num">2001</div><div class="legacy-stat-label">Est. Founded</div></div>
-      <div class="legacy-stat"><div class="legacy-stat-num">1</div><div class="legacy-stat-label">Growing Community</div></div>
+      <div class="legacy-stat"><div class="legacy-stat-icon">🏆</div><div class="legacy-stat-num">25</div><div class="legacy-stat-label">Years of Excellence</div></div>
+      <div class="legacy-stat"><div class="legacy-stat-icon">🏛️</div><div class="legacy-stat-num">2001</div><div class="legacy-stat-label">Est. Founded</div></div>
+      <div class="legacy-stat"><div class="legacy-stat-icon">🌱</div><div class="legacy-stat-num">1</div><div class="legacy-stat-label">Growing Community</div></div>
     </div>
   </div>
 </section>
@@ -448,19 +451,19 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,bod
       <div class="contact-card">
         <div class="campus-emoji">🌱</div>
         <p class="label">Early Years — Admissions Team</p>
-        <a class="phone" href="tel:+8562057280925">+856 20 5728 0925</a>
+        <a class="phone" href="https://wa.me/8562057280925" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.148.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12.001 2C6.478 2 2 6.477 2 12c0 1.936.542 3.803 1.567 5.415L2 22l4.674-1.531A9.953 9.953 0 0 0 12.001 22C17.523 22 22 17.523 22 12S17.523 2 12.001 2zm0 18.152a8.13 8.13 0 0 1-4.144-1.13l-.297-.176-3.096.988.936-3.05-.194-.312a8.146 8.146 0 0 1-1.253-4.372c0-4.508 3.667-8.174 8.174-8.174 4.508 0 8.174 3.666 8.174 8.174 0 4.507-3.666 8.174-8.174 8.174z"/></svg>+856 20 5728 0925</a>
         <a class="email" href="mailto:admissions@pbis.edu.la">admissions@pbis.edu.la</a>
       </div>
       <div class="contact-card">
         <div class="campus-emoji">🏫</div>
         <p class="label">Primary Campus — Admissions Team</p>
-        <a class="phone" href="tel:+8562055386636">+856 20 5538 6636</a>
+        <a class="phone" href="https://wa.me/8562055386636" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.148.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12.001 2C6.478 2 2 6.477 2 12c0 1.936.542 3.803 1.567 5.415L2 22l4.674-1.531A9.953 9.953 0 0 0 12.001 22C17.523 22 22 17.523 22 12S17.523 2 12.001 2zm0 18.152a8.13 8.13 0 0 1-4.144-1.13l-.297-.176-3.096.988.936-3.05-.194-.312a8.146 8.146 0 0 1-1.253-4.372c0-4.508 3.667-8.174 8.174-8.174 4.508 0 8.174 3.666 8.174 8.174 0 4.507-3.666 8.174-8.174 8.174z"/></svg>+856 20 5538 6636</a>
         <a class="email" href="mailto:admissions@pbis.edu.la">admissions@pbis.edu.la</a>
       </div>
       <div class="contact-card">
         <div class="campus-emoji">🎓</div>
         <p class="label">Secondary Campus — Admissions Team</p>
-        <a class="phone" href="tel:+8562055386672">+856 20 5538 6672</a>
+        <a class="phone" href="https://wa.me/8562055386672" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.148.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12.001 2C6.478 2 2 6.477 2 12c0 1.936.542 3.803 1.567 5.415L2 22l4.674-1.531A9.953 9.953 0 0 0 12.001 22C17.523 22 22 17.523 22 12S17.523 2 12.001 2zm0 18.152a8.13 8.13 0 0 1-4.144-1.13l-.297-.176-3.096.988.936-3.05-.194-.312a8.146 8.146 0 0 1-1.253-4.372c0-4.508 3.667-8.174 8.174-8.174 4.508 0 8.174 3.666 8.174 8.174 0 4.507-3.666 8.174-8.174 8.174z"/></svg>+856 20 5538 6672</a>
         <a class="email" href="mailto:admissions@pbis.edu.la">admissions@pbis.edu.la</a>
       </div>
     </div>
@@ -654,16 +657,6 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,bod
       <div class="form-row">
         <label>Phone *</label>
         <input type="tel" id="edit-phone" required>
-      </div>
-      <div class="form-row">
-        <label>Guest Type *</label>
-        <select id="edit-guest-type" required>
-          <option value="Parent">Parent</option>
-          <option value="VIP">VIP Guest</option>
-          <option value="MOU Partner">MOU Partner</option>
-          <option value="Alumni">Alumni</option>
-          <option value="Other">Other</option>
-        </select>
       </div>
       <div class="form-row">
         <label>Organization</label>
@@ -1230,16 +1223,6 @@ function svgTrendChart(points, width, height) {
   </svg>`;
 }
 
-const GUEST_TYPE_COLORS = {
-  'Parent':'#3b82f6', 'VIP':'#c9a84c', 'MOU Partner':'#8b5cf6',
-  'Alumni':'#2d9e5f', 'Staff':'#e05252', 'Other':'#9a9080', 'Guest':'#9a9080'
-};
-
-function guestBadge(type) {
-  const color = GUEST_TYPE_COLORS[type] || '#9a9080';
-  return `<span class="dash-badge" style="background:${color};">${type||'Guest'}</span>`;
-}
-
 /* ── OVERVIEW TAB — key stats + RSVP analytics ── */
 function renderOverviewTab() {
   const el = document.getElementById('dash-tab-content-overview');
@@ -1261,12 +1244,6 @@ function renderOverviewTab() {
   const withEmailCount   = guests.filter(g => g.email).length;
   const followUpEligible = withEmailCount;
   const followUpSent     = guests.filter(g => g.followup_sent).length;
-
-  // Guest type breakdown → donut + legend
-  const typeBreakdown = {};
-  guests.forEach(g => { const t = g.guest_type || 'Guest'; typeBreakdown[t] = (typeBreakdown[t]||0)+1; });
-  const typeData = Object.entries(typeBreakdown).sort((a,b)=>b[1]-a[1])
-    .map(([type,count]) => ({ label: type, value: count, color: GUEST_TYPE_COLORS[type] || '#9a9080' }));
 
   // Check-in progress → donut
   const checkinData = [
@@ -1326,10 +1303,6 @@ function renderOverviewTab() {
 
     <div class="dash-charts-grid">
       <div class="dash-panel" style="margin-bottom:0;">
-        <div class="dash-panel-title">Guests by Type</div>
-        <div class="dash-chart-flex">${svgDonut(typeData)}${chartLegend(typeData)}</div>
-      </div>
-      <div class="dash-panel" style="margin-bottom:0;">
         <div class="dash-panel-title">Check-In Progress</div>
         <div class="dash-chart-flex">${svgDonut(checkinData)}${chartLegend(checkinData)}</div>
       </div>
@@ -1349,7 +1322,6 @@ function renderOverviewTab() {
 
 /* ── GUEST LIST TAB ── */
 let _guestSearchTerm = '';
-let _guestTypeFilter = '';
 
 function renderGuestListTab() {
   const el = document.getElementById('dash-tab-content-guestlist');
@@ -1360,12 +1332,9 @@ function renderGuestListTab() {
     return;
   }
 
-  const types = [...new Set(guests.map(g => g.guest_type || 'Guest'))];
   const filtered = guests.filter(g => {
-    const matchesSearch = !_guestSearchTerm ||
+    return !_guestSearchTerm ||
       (g.fname+' '+g.lname+' '+g.email).toLowerCase().includes(_guestSearchTerm.toLowerCase());
-    const matchesType = !_guestTypeFilter || g.guest_type === _guestTypeFilter;
-    return matchesSearch && matchesType;
   });
 
   const rows = filtered.slice().reverse().map(g => `
@@ -1373,7 +1342,6 @@ function renderGuestListTab() {
       <td style="font-weight:600;color:var(--navy);white-space:nowrap;">${g.fname||'—'} ${g.lname||''}</td>
       <td><a href="tel:${g.phone}" style="color:var(--navy);text-decoration:none;">${g.phone||'—'}</a></td>
       <td><a href="mailto:${g.email}" style="color:var(--gold);text-decoration:none;font-size:12px;">${g.email||'—'}</a></td>
-      <td>${guestBadge(g.guest_type)}</td>
       <td>${g.organization||'—'}</td>
       <td>${g.checked_in ? '<span class="dash-arrived-pill">✓ Arrived</span>' : '<span style="color:var(--gray-mid);font-size:12px;">Not yet</span>'}</td>
       <td style="white-space:nowrap;">
@@ -1389,14 +1357,10 @@ function renderGuestListTab() {
       </div>
       <div class="dash-search-row">
         <input type="text" placeholder="Search by name or email…" value="${_guestSearchTerm}" oninput="_guestSearchTerm=this.value;renderGuestListTab();">
-        <select onchange="_guestTypeFilter=this.value;renderGuestListTab();">
-          <option value="">All Guest Types</option>
-          ${types.map(t => `<option value="${t}" ${t===_guestTypeFilter?'selected':''}>${t}</option>`).join('')}
-        </select>
       </div>
       <div class="dash-table-wrap">
         <table class="dash-table">
-          <thead><tr><th>Guest Name</th><th>Phone</th><th>Email</th><th>Type</th><th>Organization</th><th>Status</th><th></th></tr></thead>
+          <thead><tr><th>Guest Name</th><th>Phone</th><th>Email</th><th>Organization</th><th>Status</th><th></th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
       </div>
@@ -1406,10 +1370,10 @@ function renderGuestListTab() {
 function exportGuestListCSV() {
   const guests = _dashGuestsCache;
   if(!guests.length) { alert('No guests to export yet.'); return; }
-  const headers = ['First Name','Last Name','Email','Phone','Guest Type','Organization','Checked In','RSVP Date'];
+  const headers = ['First Name','Last Name','Email','Phone','Organization','Checked In','RSVP Date'];
   const rows = guests.map(g => [
     g.fname||'', g.lname||'', g.email||'', g.phone||'',
-    g.guest_type||'', g.organization||'',
+    g.organization||'',
     g.checked_in ? 'Yes' : 'No',
     g.ts ? new Date(g.ts).toLocaleDateString('en-GB') : ''
   ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(','));
@@ -1446,7 +1410,6 @@ function renderCheckInTab() {
       : `<button class="dash-checkin-btn" onclick="markGuestCheckedIn('${g.ts}',true)">Check In</button>`;
     return `<tr id="checkin-row-${tid}">
       <td style="font-weight:600;color:var(--navy);white-space:nowrap;">${g.fname||'—'} ${g.lname||''}</td>
-      <td>${guestBadge(g.guest_type)}</td>
       <td>${action}</td>
     </tr>`;
   }).join('');
@@ -1463,7 +1426,7 @@ function renderCheckInTab() {
       </div>
       <div class="dash-table-wrap">
         <table class="dash-table">
-          <thead><tr><th>Guest Name</th><th>Type</th><th></th></tr></thead>
+          <thead><tr><th>Guest Name</th><th></th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
       </div>
@@ -1501,7 +1464,6 @@ function openEditGuestModal(ts) {
   document.getElementById('edit-lname').value = guest.lname || '';
   document.getElementById('edit-email').value = guest.email || '';
   document.getElementById('edit-phone').value = guest.phone || '';
-  document.getElementById('edit-guest-type').value = guest.guest_type || 'Other';
   document.getElementById('edit-organization').value = guest.organization || '';
   document.getElementById('edit-notes').value = guest.notes || '';
 
@@ -1532,7 +1494,6 @@ function saveEditGuest() {
 
   const updated = {
     fname, lname, email, phone,
-    guest_type:   get('edit-guest-type'),
     organization: get('edit-organization').trim(),
     notes:        get('edit-notes').trim(),
   };
@@ -1601,7 +1562,6 @@ function renderFollowUpTab() {
     return `<tr>
       <td style="font-weight:600;color:var(--navy);white-space:nowrap;">${g.fname||'—'} ${g.lname||''}</td>
       <td><a href="mailto:${g.email}" style="color:var(--gold);text-decoration:none;font-size:12px;">${g.email}</a></td>
-      <td>${guestBadge(g.guest_type)}</td>
       <td>${statusCell}</td>
       <td style="white-space:nowrap;"><button class="dash-checkin-btn followup-compose-btn" onclick="openFollowUpModal('${g.ts}')">📧 Compose &amp; Send</button></td>
     </tr>`;
@@ -1621,7 +1581,7 @@ function renderFollowUpTab() {
       </div>
       <div class="dash-table-wrap">
         <table class="dash-table">
-          <thead><tr><th>Guest Name</th><th>Email</th><th>Type</th><th>Follow-Up Status</th><th></th></tr></thead>
+          <thead><tr><th>Guest Name</th><th>Email</th><th>Follow-Up Status</th><th></th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
       </div>
