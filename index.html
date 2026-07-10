@@ -358,9 +358,16 @@ body.dashboard-active #dashboard-view{display:block !important;}
 .followup-file-chip button{background:none;border:none;color:#e05252;font-size:15px;cursor:pointer;flex-shrink:0;padding:0 2px;line-height:1;}
 .followup-file-empty{font-size:12px;color:var(--gray-mid);margin-bottom:20px;}
 .followup-modal-recipient{color:rgba(255,255,255,0.6);font-size:13px;}
+
+/* ── APPROVALS TAB ── */
+.dash-approve-btn{background:linear-gradient(135deg,var(--gold),var(--gold-light));color:var(--deep);border:none;padding:7px 16px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.dash-approve-btn:hover{filter:brightness(1.06);}
+.dash-approve-undo{background:var(--gray);color:var(--gray-mid);border:none;padding:7px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;margin-left:8px;}
+.dash-approved-pill{display:inline-flex;align-items:center;gap:5px;background:rgba(201,168,76,0.14);color:#8a6a26;border:1px solid rgba(201,168,76,0.4);padding:4px 12px;border-radius:100px;font-size:11.5px;font-weight:700;}
+#approve-modal-send-btn:disabled{opacity:0.45;cursor:not-allowed;}
 .dash-toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(200%);opacity:0;visibility:hidden;pointer-events:none;background:var(--navy);color:#fff;padding:13px 24px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 12px 32px rgba(0,0,0,0.3);z-index:99999;transition:transform 0.3s ease,opacity 0.3s ease,visibility 0.3s;border:1px solid rgba(201,168,76,0.3);}
 .dash-toast.show{transform:translateX(-50%) translateY(0);opacity:1;visibility:visible;pointer-events:auto;}
-body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,body.role-marketing .dash-row-action,body.role-marketing #followup-modal-send-btn,body.role-marketing #followup-modal-file-input,body.role-marketing .followup-compose-btn,body.role-marketing .dash-noshow-btn,body.role-marketing .dash-noshow-undo,body.role-marketing #edit-guest-save-btn{opacity:0.3;pointer-events:none;filter:grayscale(1);}
+body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,body.role-marketing .dash-row-action,body.role-marketing #followup-modal-send-btn,body.role-marketing #followup-modal-file-input,body.role-marketing .followup-compose-btn,body.role-marketing .dash-noshow-btn,body.role-marketing .dash-noshow-undo,body.role-marketing #edit-guest-save-btn,body.role-marketing .dash-approve-btn,body.role-marketing .dash-approve-undo,body.role-marketing #approve-modal-send-btn,body.role-marketing #approve-modal-file-input{opacity:0.3;pointer-events:none;filter:grayscale(1);}
 .dash-marketing-notice{background:rgba(59,130,246,0.12);border-bottom:1px solid rgba(59,130,246,0.25);padding:8px 24px;font-size:12px;color:rgba(30,30,30,0.7);text-align:center;letter-spacing:0.03em;}
 @media (max-width:768px){
   .dash-main{padding:20px 16px;}
@@ -714,6 +721,9 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,bod
     <button class="dash-tab" onclick="switchDashTab('guestlist',this)" id="dtab-guestlist">
       📋 Guest List <span class="dash-tab-count" id="guestlist-tab-count">0</span>
     </button>
+    <button class="dash-tab" onclick="switchDashTab('approvals',this)" id="dtab-approvals">
+      🎫 Approvals <span class="dash-tab-count" id="approvals-tab-count">0</span>
+    </button>
     <button class="dash-tab" onclick="switchDashTab('checkin',this)" id="dtab-checkin">
       ✅ Check-In <span class="dash-tab-count" id="checkin-tab-count">0</span>
     </button>
@@ -728,6 +738,7 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,bod
   <div class="dash-main">
     <div id="dash-tab-content-overview"><!-- populated by JS --></div>
     <div id="dash-tab-content-guestlist" style="display:none;"><!-- populated by JS --></div>
+    <div id="dash-tab-content-approvals" style="display:none;"><!-- populated by JS --></div>
     <div id="dash-tab-content-checkin" style="display:none;"><!-- populated by JS --></div>
     <div id="dash-tab-content-overdue" style="display:none;"><!-- populated by JS --></div>
     <div id="dash-tab-content-followup" style="display:none;"><!-- populated by JS --></div>
@@ -801,6 +812,36 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,bod
       <div class="edit-guest-actions">
         <button class="edit-guest-cancel" onclick="closeFollowUpModal()">Cancel</button>
         <button class="form-submit" id="followup-modal-send-btn" onclick="sendIndividualFollowUpEmail()">📧 Send to This Guest</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- APPROVE & SEND TICKET MODAL -->
+<div class="modal-backdrop" id="approve-modal-backdrop" onclick="if(event.target===this)closeApproveModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <button class="modal-close" onclick="closeApproveModal()">✕</button>
+      <h2>Approve &amp; Send Ticket</h2>
+      <p class="followup-modal-recipient" id="approve-modal-recipient">To: —</p>
+    </div>
+    <div class="edit-guest-body">
+      <input type="hidden" id="approve-modal-ts">
+
+      <div class="followup-warn">Approving sends this guest their official Legacy Night ticket by email. A message and at least one attachment (their invitation card and/or unique QR code) are both required before you can approve.</div>
+
+      <label style="display:block;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--navy);margin-bottom:8px;">Message *</label>
+      <textarea class="followup-textarea" id="approve-modal-message" placeholder="Your Legacy Night Ticket" oninput="updateApproveButtonState()"></textarea>
+
+      <label style="display:block;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--navy);margin-bottom:8px;">Attachments * <span style="text-transform:none;font-weight:400;color:var(--gray-mid);">(PDF, JPEG, or PNG — required, e.g. invitation card + this guest's unique QR code)</span></label>
+      <div class="followup-file-row">
+        <input type="file" id="approve-modal-file-input" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" multiple onchange="handleApproveFilesSelect(event)">
+      </div>
+      <div id="approve-modal-file-list"></div>
+
+      <div class="edit-guest-actions">
+        <button class="edit-guest-cancel" onclick="closeApproveModal()">Cancel</button>
+        <button class="form-submit" id="approve-modal-send-btn" onclick="submitApproveGuest()" disabled>🎫 Approve &amp; Send Ticket</button>
       </div>
     </div>
   </div>
@@ -1344,6 +1385,7 @@ async function loadDashboardData() {
   await fetchDashboardGuests();
   renderOverviewTab();
   renderGuestListTab();
+  renderApprovalsTab();
   renderCheckInTab();
   renderOverdueTab();
 
@@ -1354,12 +1396,13 @@ async function loadDashboardData() {
 function switchDashTab(tab, btn) {
   document.querySelectorAll('.dash-tab').forEach(t => t.classList.remove('active'));
   btn.classList.add('active');
-  ['overview','guestlist','checkin','overdue','followup'].forEach(t => {
+  ['overview','guestlist','approvals','checkin','overdue','followup'].forEach(t => {
     const el = document.getElementById('dash-tab-content-' + t);
     if(el) el.style.display = (t === tab) ? 'block' : 'none';
   });
   if (tab === 'followup') renderFollowUpTab();
   if (tab === 'overdue') renderOverdueTab();
+  if (tab === 'approvals') renderApprovalsTab();
 }
 
 /* ── LIGHTWEIGHT INLINE SVG CHART HELPERS (no external chart library) ── */
@@ -1820,6 +1863,7 @@ function saveEditGuest() {
   closeEditGuestModal();
   renderGuestListTab();
   renderOverviewTab();
+  renderApprovalsTab();
   renderCheckInTab();
   renderOverdueTab();
 
@@ -1837,11 +1881,244 @@ function confirmDeleteGuest(ts) {
   _dashGuestsCache = _dashGuestsCache.filter(g => g.ts !== ts); // optimistic local removal
   renderGuestListTab();
   renderOverviewTab();
+  renderApprovalsTab();
   renderCheckInTab();
   renderOverdueTab();
 
   postToSheets({ action: 'deleteLegacyGuest', ts: ts, admin_key: ADMIN_ACTION_KEY }).then(() => {
     showDashToast(`🗑️ ${guest.fname || 'Guest'}'s RSVP deleted`);
+  });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   APPROVALS TAB — Admissions and Events Team formally approve each
+   RSVP before their ticket goes out. Unlike the free-form Follow Up
+   tool, approving REQUIRES both a message and at least one file
+   attachment (the invitation card / unique QR code) — the Approve
+   button stays disabled until both are filled in. Approving sends
+   the ticket email immediately (same branded template as Follow Up)
+   and marks the guest as Approved on the sheet.
+   ══════════════════════════════════════════════════════════════ */
+let _approveFiles = [];
+let _approveTargetTs = null;
+let _approveSearchTerm = '';
+
+function renderApprovalsTab() {
+  const el = document.getElementById('dash-tab-content-approvals');
+  if (!el) return;
+  const guests = _dashGuestsCache;
+
+  const countEl = document.getElementById('approvals-tab-count');
+  if (countEl) countEl.textContent = guests.filter(g => !g.approved).length;
+
+  if (!guests.length) {
+    el.innerHTML = `<div class="dash-panel"><div class="dash-empty">No RSVPs yet.</div></div>`;
+    return;
+  }
+
+  const approvedGuests = guests.filter(g => g.approved);
+  const pendingGuests = guests.filter(g => !g.approved).filter(g =>
+    !_approveSearchTerm || (g.fname+' '+g.lname+' '+g.email).toLowerCase().includes(_approveSearchTerm.toLowerCase())
+  );
+
+  const pendingRows = pendingGuests.slice().reverse().map(g => `
+    <tr>
+      <td style="font-weight:600;color:var(--navy);white-space:nowrap;">${g.fname||'—'} ${g.lname||''}</td>
+      <td><a href="mailto:${g.email}" style="color:var(--gold);text-decoration:none;font-size:12px;">${g.email||'—'}</a></td>
+      <td>${g.organization||'—'}</td>
+      <td style="white-space:nowrap;">${g.email ? `<button class="dash-approve-btn" onclick="openApproveModal('${g.ts}')">🎫 Approve</button>` : `<span style="color:var(--gray-mid);font-size:12px;">No email on file</span>`}</td>
+    </tr>`).join('');
+
+  const approvedRows = approvedGuests.slice().reverse().map(g => `
+    <tr>
+      <td style="font-weight:600;color:var(--navy);white-space:nowrap;">${g.fname||'—'} ${g.lname||''}</td>
+      <td><a href="mailto:${g.email}" style="color:var(--gold);text-decoration:none;font-size:12px;">${g.email||'—'}</a></td>
+      <td>${g.organization||'—'}</td>
+      <td style="white-space:nowrap;">
+        <span class="dash-approved-pill">🎫 Approved${g.approved_at ? ' · ' + new Date(g.approved_at).toLocaleDateString('en-GB') : ''}</span>
+        <button class="dash-approve-undo" onclick="undoApproval('${g.ts}')">Undo</button>
+      </td>
+    </tr>`).join('');
+
+  el.innerHTML = `
+    <div class="dash-stats-row">
+      <div class="dash-stat-card"><div class="dash-stat-value">${guests.length}</div><div class="dash-stat-label">Total RSVPs</div></div>
+      <div class="dash-stat-card"><div class="dash-stat-value">${approvedGuests.length}</div><div class="dash-stat-label">Tickets Approved</div></div>
+      <div class="dash-stat-card"><div class="dash-stat-value">${pendingGuests.length}</div><div class="dash-stat-label">Awaiting Approval</div></div>
+    </div>
+
+    <div class="dash-panel">
+      <div class="followup-warn">Approving a guest sends their official Legacy Night ticket by email — attach their invitation card and/or unique QR code, write a message, then approve. Each guest's ticket is unique to them, so like Follow Up, this is done one at a time rather than in bulk.</div>
+      <div class="dash-panel-title">Awaiting Approval <span>${pendingGuests.length} guest${pendingGuests.length===1?'':'s'}</span></div>
+      <div class="dash-search-row">
+        <input type="text" placeholder="Search by name or email…" value="${_approveSearchTerm}" oninput="_approveSearchTerm=this.value;renderApprovalsTab();">
+      </div>
+      <div class="dash-table-wrap">
+        <table class="dash-table">
+          <thead><tr><th>Guest Name</th><th>Email</th><th>Organization</th><th></th></tr></thead>
+          <tbody>${pendingRows || `<tr><td colspan="4" style="text-align:center;color:var(--gray-mid);padding:24px;">Everyone's been approved.</td></tr>`}</tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="dash-panel">
+      <div class="dash-panel-title">Approved <span>${approvedGuests.length} guest${approvedGuests.length===1?'':'s'}</span></div>
+      <div class="dash-table-wrap">
+        <table class="dash-table">
+          <thead><tr><th>Guest Name</th><th>Email</th><th>Organization</th><th></th></tr></thead>
+          <tbody>${approvedRows || `<tr><td colspan="4" style="text-align:center;color:var(--gray-mid);padding:24px;">No one has been approved yet.</td></tr>`}</tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+function openApproveModal(ts) {
+  const guest = _dashGuestsCache.find(g => g.ts === ts);
+  if (!guest) return;
+  if (!guest.email) { showDashToast('⚠️ This guest has no email address on file.'); return; }
+
+  _approveTargetTs = ts;
+  _approveFiles = [];
+
+  const fullName = `${guest.fname||''} ${guest.lname||''}`.trim() || 'Guest';
+  document.getElementById('approve-modal-recipient').textContent = `To: ${fullName} · ${guest.email}`;
+  document.getElementById('approve-modal-ts').value = ts;
+  document.getElementById('approve-modal-message').value = 'Your Legacy Night Ticket';
+  document.getElementById('approve-modal-file-input').value = '';
+  renderApproveFileList();
+
+  const sendBtn = document.getElementById('approve-modal-send-btn');
+  sendBtn.textContent = '🎫 Approve & Send Ticket';
+  updateApproveButtonState();
+
+  document.getElementById('approve-modal-backdrop').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeApproveModal() {
+  document.getElementById('approve-modal-backdrop').classList.remove('open');
+  document.body.style.overflow = '';
+  _approveTargetTs = null;
+  _approveFiles = [];
+}
+
+function handleApproveFilesSelect(e) {
+  const incoming = Array.from(e.target.files || []);
+  e.target.value = ''; // reset so picking the same file again still fires onchange
+
+  for (const file of incoming) {
+    if (!FOLLOWUP_ALLOWED_TYPES.includes(file.type)) {
+      showDashToast(`⚠️ "${file.name}" skipped — only PDF, JPEG, or PNG are supported.`);
+      continue;
+    }
+    if (file.size > FOLLOWUP_MAX_FILE_BYTES) {
+      showDashToast(`⚠️ "${file.name}" skipped — file is too large (max 20MB each).`);
+      continue;
+    }
+    _approveFiles.push(file);
+  }
+
+  const totalBytes = _approveFiles.reduce((sum, f) => sum + f.size, 0);
+  if (totalBytes > FOLLOWUP_MAX_TOTAL_BYTES) {
+    showDashToast('⚠️ Combined attachments are too large (max ~24MB total) — remove one and try again.');
+  }
+
+  renderApproveFileList();
+  updateApproveButtonState();
+}
+
+function removeApproveFile(index) {
+  _approveFiles.splice(index, 1);
+  renderApproveFileList();
+  updateApproveButtonState();
+}
+
+function renderApproveFileList() {
+  const el = document.getElementById('approve-modal-file-list');
+  if (!_approveFiles.length) {
+    el.innerHTML = `<div class="followup-file-empty">No files attached yet — at least one is required before you can approve.</div>`;
+    return;
+  }
+  el.innerHTML = `<div class="followup-file-list">` +
+    _approveFiles.map((f, i) => `
+      <div class="followup-file-chip">
+        <span class="fname">📎 ${f.name}</span>
+        <span class="fsize">${(f.size/1024).toFixed(0)} KB</span>
+        <button type="button" onclick="removeApproveFile(${i})" title="Remove">✕</button>
+      </div>`).join('') +
+    `</div>`;
+}
+
+// Approve stays disabled until both the message and at least one
+// attachment are present — that's the whole point of this being a
+// gate rather than a free-form send.
+function updateApproveButtonState() {
+  const btn = document.getElementById('approve-modal-send-btn');
+  if (!btn) return;
+  const messageEl = document.getElementById('approve-modal-message');
+  const message = messageEl ? messageEl.value.trim() : '';
+  btn.disabled = !(message && _approveFiles.length > 0);
+}
+
+async function submitApproveGuest() {
+  const ts = _approveTargetTs;
+  const guest = _dashGuestsCache.find(g => g.ts === ts);
+  if (!guest) { showDashToast('⚠️ Could not find this guest — try resyncing.'); return; }
+
+  const message = document.getElementById('approve-modal-message').value.trim();
+  if (!message) { showDashToast('⚠️ Write a message before approving.'); return; }
+  if (!_approveFiles.length) { showDashToast('⚠️ Attach at least one file before approving.'); return; }
+
+  const fullName = `${guest.fname||''} ${guest.lname||''}`.trim() || 'Guest';
+  const ok = confirm(`Approve ${fullName} (${guest.email}) and send their ticket now?\n\n${_approveFiles.length} attachment${_approveFiles.length===1?'':'s'} will be included. This can't be undone once sent.`);
+  if (!ok) return;
+
+  const btn = document.getElementById('approve-modal-send-btn');
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+
+  try {
+    const files = await Promise.all(_approveFiles.map(async f => ({
+      filename: f.name, mimeType: f.type, base64: await fileToBase64(f)
+    })));
+
+    const payload = {
+      action: 'approveGuest',
+      ts: ts,
+      approve: true,
+      message: message,
+      files: files,
+      admin_key: ADMIN_ACTION_KEY
+    };
+    await postToSheets(payload);
+
+    guest.approved = true;
+    guest.approved_at = new Date().toISOString();
+
+    showDashToast(`🎫 ${fullName} approved — ticket sent`);
+    closeApproveModal();
+    renderApprovalsTab();
+    renderOverviewTab();
+  } catch (e) {
+    showDashToast('⚠️ Something went wrong reading the attachments — please try again.');
+    btn.disabled = false;
+    btn.textContent = '🎫 Approve & Send Ticket';
+  }
+}
+
+function undoApproval(ts) {
+  const guest = _dashGuestsCache.find(g => g.ts === ts);
+  if (!guest) return;
+  const ok = confirm(`Undo approval for ${guest.fname || 'this guest'} ${guest.lname || ''}?\n\nThis only clears their approved status here — it does NOT unsend the ticket email already delivered.`);
+  if (!ok) return;
+
+  guest.approved = false;
+  guest.approved_at = '';
+  renderApprovalsTab();
+  renderOverviewTab();
+
+  postToSheets({ action: 'approveGuest', ts: ts, approve: false, admin_key: ADMIN_ACTION_KEY }).then(() => {
+    showDashToast(`↩ Approval undone for ${guest.fname}`);
   });
 }
 
