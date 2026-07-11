@@ -187,6 +187,31 @@ footer a{color:var(--gold);text-decoration:none;}
 .form-submit:hover{filter:brightness(1.05);}
 .form-submit:disabled{opacity:0.7;cursor:default;}
 .form-note{text-align:center;font-size:11px;color:var(--gray-mid);margin-top:14px;}
+.form-hint{font-size:11.5px;color:var(--gray-mid);margin-top:8px;line-height:1.5;}
+
+/* Additional guests */
+.additional-guest-row{display:flex;gap:8px;margin-bottom:10px;}
+.additional-guest-input{flex:1;padding:12px 14px;border:1.5px solid var(--gray);border-radius:9px;font-size:16px;font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);}
+.additional-guest-input:focus{outline:none;border-color:var(--gold);background:var(--white);}
+.additional-guest-remove{background:var(--gray);color:var(--gray-mid);border:none;width:42px;border-radius:9px;cursor:pointer;font-size:14px;flex-shrink:0;}
+.additional-guest-remove:hover{background:#e8dfc8;color:var(--text);}
+.add-guest-btn{display:inline-flex;align-items:center;gap:6px;background:none;border:1.5px dashed var(--gold);color:var(--gold);padding:9px 16px;border-radius:9px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.add-guest-btn:hover{background:rgba(201,168,76,0.08);}
+.add-guest-btn svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2.4;stroke-linecap:round;}
+
+/* Multi-select dropdown (Dietary Preferences) */
+.multiselect{position:relative;}
+.multiselect-trigger{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border:1.5px solid var(--gray);border-radius:9px;font-size:14px;font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);cursor:pointer;text-align:left;}
+.multiselect-trigger:hover{border-color:var(--gold);}
+.multiselect.open .multiselect-trigger{border-color:var(--gold);background:var(--white);}
+.multiselect-trigger span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.multiselect-chevron{width:16px;height:16px;stroke:var(--gray-mid);fill:none;stroke-width:2;flex-shrink:0;transition:transform 0.2s;}
+.multiselect.open .multiselect-chevron{transform:rotate(180deg);}
+.multiselect-panel{display:none;position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--white);border:1.5px solid var(--gray);border-radius:10px;box-shadow:0 14px 36px rgba(10,40,24,0.16);padding:8px;z-index:60;max-height:240px;overflow-y:auto;}
+.multiselect.open .multiselect-panel{display:block;}
+.multiselect-option{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:7px;font-size:13.5px;cursor:pointer;transition:background 0.15s;}
+.multiselect-option:hover{background:var(--cream);}
+.multiselect-option input[type="checkbox"]{width:16px;height:16px;accent-color:var(--gold);cursor:pointer;flex-shrink:0;}
 .rsvp-consent-box{display:flex;align-items:flex-start;gap:12px;background:var(--cream);border:1.5px solid var(--gold);border-radius:10px;padding:16px 18px;margin-bottom:18px;cursor:pointer;}
 .rsvp-consent-box input[type="checkbox"]{width:20px;height:20px;flex-shrink:0;margin-top:2px;accent-color:var(--gold);cursor:pointer;}
 .rsvp-consent-box span{font-size:13px;line-height:1.6;color:var(--text);}
@@ -278,6 +303,9 @@ body.dashboard-active #dashboard-view{display:block !important;}
 .dash-user-name{font-size:12px;color:var(--white);font-weight:600;line-height:1.2;}
 .dash-user-role{font-size:9.5px;padding:1px 7px;border-radius:100px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;}
 .dash-btn{background:rgba(201,168,76,0.15);border:1px solid rgba(201,168,76,0.3);color:var(--gold-light);padding:8px 16px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;letter-spacing:0.03em;font-family:'DM Sans',sans-serif;}
+.dash-btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold-light));border:none;color:var(--deep);padding:8px 16px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:0.02em;font-family:'DM Sans',sans-serif;}
+.dash-btn-gold:hover{filter:brightness(1.06);}
+.dash-party-pill{display:inline-flex;align-items:center;gap:4px;background:rgba(59,130,246,0.12);color:#2563eb;border:1px solid rgba(59,130,246,0.3);padding:2px 9px;border-radius:100px;font-size:11.5px;font-weight:700;}
 .dash-btn:hover{background:rgba(201,168,76,0.25);}
 .dash-btn-logout{background:rgba(220,38,38,0.12);border:1px solid rgba(220,38,38,0.3);color:rgba(255,120,120,0.9);padding:8px 16px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;}
 .dash-btn-logout:hover{background:rgba(220,38,38,0.22);}
@@ -367,7 +395,7 @@ body.dashboard-active #dashboard-view{display:block !important;}
 #approve-modal-send-btn:disabled{opacity:0.45;cursor:not-allowed;}
 .dash-toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(200%);opacity:0;visibility:hidden;pointer-events:none;background:var(--navy);color:#fff;padding:13px 24px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 12px 32px rgba(0,0,0,0.3);z-index:99999;transition:transform 0.3s ease,opacity 0.3s ease,visibility 0.3s;border:1px solid rgba(201,168,76,0.3);}
 .dash-toast.show{transform:translateX(-50%) translateY(0);opacity:1;visibility:visible;pointer-events:auto;}
-body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,body.role-marketing .dash-row-action,body.role-marketing #followup-modal-send-btn,body.role-marketing #followup-modal-file-input,body.role-marketing .followup-compose-btn,body.role-marketing .dash-noshow-btn,body.role-marketing .dash-noshow-undo,body.role-marketing #edit-guest-save-btn,body.role-marketing .dash-approve-btn,body.role-marketing .dash-approve-undo,body.role-marketing #approve-modal-send-btn,body.role-marketing #approve-modal-file-input{opacity:0.3;pointer-events:none;filter:grayscale(1);}
+body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,body.role-marketing .dash-row-action,body.role-marketing #followup-modal-send-btn,body.role-marketing #followup-modal-file-input,body.role-marketing .followup-compose-btn,body.role-marketing .dash-noshow-btn,body.role-marketing .dash-noshow-undo,body.role-marketing #edit-guest-save-btn,body.role-marketing .dash-approve-btn,body.role-marketing .dash-approve-undo,body.role-marketing #approve-modal-send-btn,body.role-marketing #approve-modal-file-input,body.role-marketing .dash-btn-gold,body.role-marketing #add-guest-save-btn{opacity:0.3;pointer-events:none;filter:grayscale(1);}
 .dash-marketing-notice{background:rgba(59,130,246,0.12);border-bottom:1px solid rgba(59,130,246,0.25);padding:8px 24px;font-size:12px;color:rgba(30,30,30,0.7);text-align:center;letter-spacing:0.03em;}
 @media (max-width:768px){
   .dash-main{padding:20px 16px;}
@@ -615,8 +643,40 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,bod
             </div>
           </div>
           <div class="form-row">
+            <label>Bringing Additional Guests? <span style="text-transform:none;">(optional — max 2, arriving with you)</span></label>
+            <div id="additional-guests-list"></div>
+            <button type="button" class="add-guest-btn" id="add-guest-btn" onclick="addGuestRow()">
+              <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Add a Guest
+            </button>
+            <p class="form-hint">Only guests arriving with an invited RSVP will be admitted — up to 2 additional guests per invitation.</p>
+          </div>
+          <div class="form-row">
+            <label>Dietary Preferences <span style="text-transform:none;">(select all that apply)</span></label>
+            <div class="multiselect" id="dietary-multiselect">
+              <button type="button" class="multiselect-trigger" onclick="toggleDietaryDropdown(event)">
+                <span id="dietary-trigger-label">Select dietary preferences…</span>
+                <svg class="multiselect-chevron" viewBox="0 0 24 24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+              </button>
+              <div class="multiselect-panel" id="dietary-panel">
+                <label class="multiselect-option"><input type="checkbox" value="Vegetarian" onchange="updateDietarySelection()"> Vegetarian</label>
+                <label class="multiselect-option"><input type="checkbox" value="Vegan" onchange="updateDietarySelection()"> Vegan</label>
+                <label class="multiselect-option"><input type="checkbox" value="Halal" onchange="updateDietarySelection()"> Halal</label>
+                <label class="multiselect-option"><input type="checkbox" value="Kosher" onchange="updateDietarySelection()"> Kosher</label>
+                <label class="multiselect-option"><input type="checkbox" value="Gluten-Free" onchange="updateDietarySelection()"> Gluten-Free</label>
+                <label class="multiselect-option"><input type="checkbox" value="Dairy-Free" onchange="updateDietarySelection()"> Dairy-Free</label>
+                <label class="multiselect-option"><input type="checkbox" value="Nut Allergy" onchange="updateDietarySelection()"> Nut Allergy</label>
+                <label class="multiselect-option"><input type="checkbox" value="Shellfish Allergy" onchange="updateDietarySelection()"> Shellfish Allergy</label>
+                <label class="multiselect-option"><input type="checkbox" value="No Restrictions" onchange="updateDietarySelection()"> No Restrictions</label>
+              </div>
+            </div>
+          </div>
+          <div class="form-row">
+            <label>Dietary Restrictions / Allergies <span style="text-transform:none;">(optional — tell us more)</span></label>
+            <textarea id="rsvp-dietary-restrictions" placeholder="e.g. severe peanut allergy, specific ingredients to avoid…"></textarea>
+          </div>
+          <div class="form-row">
             <label>Message <span style="text-transform:none;">(optional)</span></label>
-            <textarea id="rsvp-notes" placeholder="Dietary requirements, questions, or anything else we should know"></textarea>
+            <textarea id="rsvp-notes" placeholder="Questions or anything else we should know"></textarea>
           </div>
           <button type="button" class="form-submit" id="rsvp-next-btn" onclick="goToRsvpConfirmStep()">Continue</button>
           <p class="form-note">You'll receive a confirmation email with full event details.</p>
@@ -777,6 +837,26 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,bod
         <label>Organization</label>
         <input type="text" id="edit-organization">
       </div>
+      <div class="form-row two">
+        <div>
+          <label>Party Size <span style="text-transform:none;">(incl. this guest, max 3)</span></label>
+          <input type="number" id="edit-guest-count" min="1" max="3" step="1">
+        </div>
+        <div>
+          <label>Additional Guest Names</label>
+          <input type="text" id="edit-additional-guests" placeholder="Comma-separated">
+        </div>
+      </div>
+      <div class="form-row two">
+        <div>
+          <label>Dietary Preferences</label>
+          <input type="text" id="edit-dietary-preferences" placeholder="e.g. Vegetarian, Halal">
+        </div>
+        <div>
+          <label>Dietary Restrictions</label>
+          <input type="text" id="edit-dietary-restrictions" placeholder="e.g. peanut allergy">
+        </div>
+      </div>
       <div class="form-row">
         <label>Message</label>
         <textarea id="edit-notes"></textarea>
@@ -784,6 +864,70 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,bod
       <div class="edit-guest-actions">
         <button class="edit-guest-cancel" onclick="closeEditGuestModal()">Cancel</button>
         <button class="form-submit" id="edit-guest-save-btn" onclick="saveEditGuest()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MANUAL ADD GUEST MODAL (staff-entered RSVP — phone-ins, walk-ups, VVIPs) -->
+<div class="modal-backdrop" id="add-guest-backdrop" onclick="if(event.target===this)closeAddGuestModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <button class="modal-close" onclick="closeAddGuestModal()">✕</button>
+      <h2>Add Guest Manually</h2>
+      <p>For phone-ins, walk-ups, or VVIPs entered directly by staff</p>
+    </div>
+    <div class="edit-guest-body">
+      <div class="followup-warn">This creates a real RSVP exactly as if the guest had submitted the public form — they'll receive the same confirmation email, and the team notification email will go out too.</div>
+      <div class="form-row two">
+        <div>
+          <label>First Name *</label>
+          <input type="text" id="add-fname" required>
+        </div>
+        <div>
+          <label>Last Name *</label>
+          <input type="text" id="add-lname" required>
+        </div>
+      </div>
+      <div class="form-row">
+        <label>Email *</label>
+        <input type="email" id="add-email" required>
+      </div>
+      <div class="form-row">
+        <label>Phone *</label>
+        <input type="tel" id="add-phone" required>
+      </div>
+      <div class="form-row">
+        <label>Organization</label>
+        <input type="text" id="add-organization">
+      </div>
+      <div class="form-row two">
+        <div>
+          <label>Party Size <span style="text-transform:none;">(incl. this guest, max 3)</span></label>
+          <input type="number" id="add-guest-count" min="1" max="3" step="1" value="1">
+        </div>
+        <div>
+          <label>Additional Guest Names</label>
+          <input type="text" id="add-additional-guests" placeholder="Comma-separated">
+        </div>
+      </div>
+      <div class="form-row two">
+        <div>
+          <label>Dietary Preferences</label>
+          <input type="text" id="add-dietary-preferences" placeholder="e.g. Vegetarian, Halal">
+        </div>
+        <div>
+          <label>Dietary Restrictions</label>
+          <input type="text" id="add-dietary-restrictions" placeholder="e.g. peanut allergy">
+        </div>
+      </div>
+      <div class="form-row">
+        <label>Message <span style="text-transform:none;">(optional)</span></label>
+        <textarea id="add-notes"></textarea>
+      </div>
+      <div class="edit-guest-actions">
+        <button class="edit-guest-cancel" onclick="closeAddGuestModal()">Cancel</button>
+        <button class="form-submit" id="add-guest-save-btn" onclick="submitAddGuest()">➕ Add Guest</button>
       </div>
     </div>
   </div>
@@ -1029,6 +1173,69 @@ function postToSheets(data) {
   }).then(() => ({ status: 'ok' })).catch(() => ({ status: 'ok' }));
 }
 
+/* ── Additional guests (max 2 per invitation) ── */
+let _additionalGuestCount = 0;
+const MAX_ADDITIONAL_GUESTS = 2;
+
+function addGuestRow() {
+  if (_additionalGuestCount >= MAX_ADDITIONAL_GUESTS) return;
+  _additionalGuestCount++;
+  const list = document.getElementById('additional-guests-list');
+  const row = document.createElement('div');
+  row.className = 'additional-guest-row';
+  row.innerHTML = `<input type="text" class="additional-guest-input" placeholder="Guest ${_additionalGuestCount} full name">` +
+    `<button type="button" class="additional-guest-remove" onclick="removeGuestRow(this)" title="Remove">✕</button>`;
+  list.appendChild(row);
+  updateAddGuestBtnState();
+}
+
+function removeGuestRow(btn) {
+  btn.parentElement.remove();
+  _additionalGuestCount--;
+  updateAddGuestBtnState();
+}
+
+function updateAddGuestBtnState() {
+  const addBtn = document.getElementById('add-guest-btn');
+  if (addBtn) addBtn.style.display = _additionalGuestCount >= MAX_ADDITIONAL_GUESTS ? 'none' : 'inline-flex';
+}
+
+/* ── Dietary preferences multi-select ── */
+let _selectedDietary = [];
+
+function toggleDietaryDropdown(e) {
+  e.stopPropagation();
+  document.getElementById('dietary-multiselect').classList.toggle('open');
+}
+
+document.addEventListener('click', function(e) {
+  const ms = document.getElementById('dietary-multiselect');
+  if (ms && !ms.contains(e.target)) ms.classList.remove('open');
+});
+
+function updateDietarySelection() {
+  const checked = Array.from(document.querySelectorAll('#dietary-panel input[type="checkbox"]:checked')).map(cb => cb.value);
+  _selectedDietary = checked;
+  const label = document.getElementById('dietary-trigger-label');
+  if (label) label.textContent = checked.length ? checked.join(', ') : 'Select dietary preferences…';
+}
+
+// Clears the additional-guest rows and dietary selection so the form
+// starts fresh next time it's opened (e.g. after a successful submit).
+function resetRsvpDynamicFields() {
+  const list = document.getElementById('additional-guests-list');
+  if (list) list.innerHTML = '';
+  _additionalGuestCount = 0;
+  updateAddGuestBtnState();
+
+  document.querySelectorAll('#dietary-panel input[type="checkbox"]').forEach(cb => { cb.checked = false; });
+  _selectedDietary = [];
+  const label = document.getElementById('dietary-trigger-label');
+  if (label) label.textContent = 'Select dietary preferences…';
+  const ms = document.getElementById('dietary-multiselect');
+  if (ms) ms.classList.remove('open');
+}
+
 function handleRSVPSubmit(e) {
   e.preventDefault();
 
@@ -1044,6 +1251,9 @@ function handleRSVPSubmit(e) {
 
   const get = id => { const el = document.getElementById(id); return el ? el.value : ''; };
 
+  const additionalGuestNames = Array.from(document.querySelectorAll('.additional-guest-input'))
+    .map(inp => sanitize(inp.value)).filter(Boolean);
+
   const guest = {
     action: 'newLegacyGuest',
     fname: sanitize(get('rsvp-fname')),
@@ -1051,6 +1261,10 @@ function handleRSVPSubmit(e) {
     email: sanitize(get('rsvp-email')),
     phone: sanitize(get('rsvp-phone')),
     organization: sanitize(get('rsvp-organization')),
+    guest_count: 1 + additionalGuestNames.length,
+    additional_guests: additionalGuestNames.join(', '),
+    dietary_preferences: _selectedDietary.join(', '),
+    dietary_restrictions: sanitize(get('rsvp-dietary-restrictions')),
     notes: sanitize(get('rsvp-notes')),
     ts: new Date().toISOString()
   };
@@ -1061,7 +1275,7 @@ function handleRSVPSubmit(e) {
   postToSheets(guest).then(() => {
     btn.textContent = "✅ You're Confirmed! Check your email for details.";
     btn.style.background = 'linear-gradient(135deg,#2d9e5f,#3dbf72)';
-    setTimeout(() => { closeRSVP(); }, 2200);
+    setTimeout(() => { closeRSVP(); resetRsvpDynamicFields(); }, 2200);
   });
 }
 
@@ -1075,7 +1289,7 @@ function handleRSVPSubmit(e) {
 // sha256Salted below). This is a genuine improvement over the old
 // unsalted hashes copied from Open Day: those were hashed once with
 // no salt, and I never had access to the original plaintext passwords
-// behind them, so they couldn't be safely upgraded. These 16 are
+// behind them, so they couldn't be safely upgraded. These 17 are
 // brand-new passwords generated specifically for Legacy Night, so
 // they're salted from the start. Give each person their password from
 // the list you were given — changing PASSWORD_SALT or any hash below
@@ -1103,6 +1317,8 @@ const STAFF_DIRECTORY = [
   // ── EVENTS TEAM (same full access as Admissions) ──
   { name:'Mina',    role:'admissions', team:'Events Team', hash:'5dd5f91fc3b7af02bf542cf420671864dcbc62f545054ceedc75fb3e739a0be8' },
   { name:'Richard', role:'admissions', team:'Events Team', hash:'04b6fdf85e226e12a0b2522b83411c0a35c0973529683677c4fd0be4e86bcd1e' },
+  // ── SECRETARY (same full access as Admissions — focus on VVIP guests) ──
+  { name:'Da', role:'admissions', team:'Secretary', hash:'a270ca5a8da214fba6dda75413a7a00d026919e20501d41fb92fd43f901523d4' },
 ];
 let _currentUser = null;
 const MAX_ATTEMPTS = 4;
@@ -1273,6 +1489,7 @@ function enterLegacyDashboard() {
       'Admissions':  { color:'#c9a84c', bg:'rgba(201,168,76,0.18)' },
       'Marketing':   { color:'#3b82f6', bg:'rgba(59,130,246,0.18)' },
       'Events Team': { color:'#8b5cf6', bg:'rgba(139,92,246,0.18)' },
+      'Secretary':   { color:'#c2477a', bg:'rgba(194,71,122,0.18)' },
     };
     const teamLabel = _currentUser.team || (_currentUser.role === 'marketing' ? 'Marketing' : 'Admissions');
     const teamInfo  = TEAM_COLORS[teamLabel] || TEAM_COLORS['Admissions'];
@@ -1584,31 +1801,39 @@ function renderGuestListTab() {
     return !_guestSearchTerm ||
       (g.fname+' '+g.lname+' '+g.email).toLowerCase().includes(_guestSearchTerm.toLowerCase());
   });
+  const totalHeadcount = guests.reduce((sum, g) => sum + (g.guest_count || 1), 0);
 
-  const rows = filtered.slice().reverse().map(g => `
+  const rows = filtered.slice().reverse().map(g => {
+    const count = g.guest_count || 1;
+    const partyTitle = count > 1 && g.additional_guests ? ` title="With: ${g.additional_guests.replace(/"/g,'')}"` : '';
+    const hasDietary = g.dietary_preferences || g.dietary_restrictions;
+    return `
     <tr>
       <td style="font-weight:600;color:var(--navy);white-space:nowrap;">${g.fname||'—'} ${g.lname||''}</td>
       <td><a href="tel:${g.phone}" style="color:var(--navy);text-decoration:none;">${g.phone||'—'}</a></td>
       <td><a href="mailto:${g.email}" style="color:var(--gold);text-decoration:none;font-size:12px;">${g.email||'—'}</a></td>
       <td>${g.organization||'—'}</td>
+      <td${partyTitle}>${count > 1 ? `<span class="dash-party-pill">👥 ${count}</span>` : '1'}${hasDietary ? ' <span title="Has dietary notes">🍽️</span>' : ''}</td>
       <td>${g.checked_in ? '<span class="dash-arrived-pill">✓ Arrived</span>' : '<span style="color:var(--gray-mid);font-size:12px;">Not yet</span>'}</td>
       <td style="white-space:nowrap;">
         <button class="dash-row-action" onclick="openEditGuestModal('${g.ts}')" title="Edit">✏️</button>
         <button class="dash-row-action" onclick="confirmDeleteGuest('${g.ts}')" title="Delete">🗑️</button>
       </td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 
   el.innerHTML = `
     <div class="dash-panel">
-      <div class="dash-panel-title">Guest List <span>${filtered.length} of ${guests.length} RSVPs</span>
-        <button class="dash-btn" id="export-csv-btn" onclick="exportGuestListCSV()" style="margin-left:auto;">⬇ Export CSV</button>
+      <div class="dash-panel-title">Guest List <span>${filtered.length} of ${guests.length} RSVPs · ${totalHeadcount} total attendees</span>
+        <button class="dash-btn dash-btn-gold" onclick="openAddGuestModal()" style="margin-left:auto;">➕ Add Guest</button>
+        <button class="dash-btn" id="export-csv-btn" onclick="exportGuestListCSV()">⬇ Export CSV</button>
       </div>
       <div class="dash-search-row">
         <input type="text" placeholder="Search by name or email…" value="${_guestSearchTerm}" oninput="_guestSearchTerm=this.value;renderGuestListTab();">
       </div>
       <div class="dash-table-wrap">
         <table class="dash-table">
-          <thead><tr><th>Guest Name</th><th>Phone</th><th>Email</th><th>Organization</th><th>Status</th><th></th></tr></thead>
+          <thead><tr><th>Guest Name</th><th>Phone</th><th>Email</th><th>Organization</th><th>Party</th><th>Status</th><th></th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
       </div>
@@ -1618,10 +1843,11 @@ function renderGuestListTab() {
 function exportGuestListCSV() {
   const guests = _dashGuestsCache;
   if(!guests.length) { alert('No guests to export yet.'); return; }
-  const headers = ['First Name','Last Name','Email','Phone','Organization','Checked In','RSVP Date'];
+  const headers = ['First Name','Last Name','Email','Phone','Organization','Guest Count','Additional Guests','Dietary Preferences','Dietary Restrictions','Checked In','RSVP Date'];
   const rows = guests.map(g => [
     g.fname||'', g.lname||'', g.email||'', g.phone||'',
-    g.organization||'',
+    g.organization||'', g.guest_count||1, g.additional_guests||'',
+    g.dietary_preferences||'', g.dietary_restrictions||'',
     g.checked_in ? 'Yes' : 'No',
     g.ts ? new Date(g.ts).toLocaleDateString('en-GB') : ''
   ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(','));
@@ -1826,6 +2052,10 @@ function openEditGuestModal(ts) {
   document.getElementById('edit-email').value = guest.email || '';
   document.getElementById('edit-phone').value = guest.phone || '';
   document.getElementById('edit-organization').value = guest.organization || '';
+  document.getElementById('edit-guest-count').value = guest.guest_count || 1;
+  document.getElementById('edit-additional-guests').value = guest.additional_guests || '';
+  document.getElementById('edit-dietary-preferences').value = guest.dietary_preferences || '';
+  document.getElementById('edit-dietary-restrictions').value = guest.dietary_restrictions || '';
   document.getElementById('edit-notes').value = guest.notes || '';
 
   document.getElementById('edit-guest-backdrop').classList.add('open');
@@ -1835,6 +2065,92 @@ function openEditGuestModal(ts) {
 function closeEditGuestModal() {
   document.getElementById('edit-guest-backdrop').classList.remove('open');
   document.body.style.overflow = '';
+}
+
+/* ── MANUAL ADD GUEST (staff-entered RSVP) ──
+   Reuses the exact same 'newLegacyGuest' backend action as the public
+   RSVP form, so a manually-added guest gets the same confirmation
+   email and triggers the same team notification — no special-casing,
+   it's a real RSVP that just happened to be typed in by staff instead
+   of the guest themselves. */
+function openAddGuestModal() {
+  ['add-fname','add-lname','add-email','add-phone','add-organization','add-additional-guests','add-dietary-preferences','add-dietary-restrictions','add-notes'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('add-guest-count').value = 1;
+
+  const btn = document.getElementById('add-guest-save-btn');
+  btn.disabled = false;
+  btn.textContent = '➕ Add Guest';
+
+  document.getElementById('add-guest-backdrop').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeAddGuestModal() {
+  document.getElementById('add-guest-backdrop').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function submitAddGuest() {
+  const get = id => document.getElementById(id).value;
+  const fname = get('add-fname').trim();
+  const lname = get('add-lname').trim();
+  const email = get('add-email').trim();
+  const phone = get('add-phone').trim();
+
+  if (!fname || !lname || !email || !phone) {
+    showDashToast('⚠️ First name, last name, email, and phone are required.');
+    return;
+  }
+
+  const guestCount = Math.max(1, Math.min(3, parseInt(get('add-guest-count'), 10) || 1));
+  const ts = new Date().toISOString();
+
+  const payload = {
+    action: 'newLegacyGuest',
+    fname, lname, email, phone,
+    organization: get('add-organization').trim(),
+    guest_count: guestCount,
+    additional_guests: get('add-additional-guests').trim(),
+    dietary_preferences: get('add-dietary-preferences').trim(),
+    dietary_restrictions: get('add-dietary-restrictions').trim(),
+    notes: get('add-notes').trim(),
+    ts: ts
+  };
+
+  const btn = document.getElementById('add-guest-save-btn');
+  btn.disabled = true;
+  btn.textContent = 'Adding…';
+
+  postToSheets(payload).then(() => {
+    _dashGuestsCache.push({
+      ts, fname, lname, email, phone,
+      organization: payload.organization,
+      guest_count: guestCount,
+      additional_guests: payload.additional_guests,
+      dietary_preferences: payload.dietary_preferences,
+      dietary_restrictions: payload.dietary_restrictions,
+      notes: payload.notes,
+      status: 'Confirmed',
+      checked_in: false, checked_in_at: '',
+      no_show: false, no_show_at: '',
+      approved: false, approved_at: '',
+      followup_sent: false, followup_sent_at: '',
+    });
+    showDashToast(`✅ ${fname} ${lname} added — confirmation email sent`);
+    closeAddGuestModal();
+    renderGuestListTab();
+    renderOverviewTab();
+    renderApprovalsTab();
+    renderCheckInTab();
+    renderOverdueTab();
+  }).catch(() => {
+    showDashToast('⚠️ Something went wrong — please try again.');
+    btn.disabled = false;
+    btn.textContent = '➕ Add Guest';
+  });
 }
 
 function saveEditGuest() {
@@ -1856,6 +2172,10 @@ function saveEditGuest() {
   const updated = {
     fname, lname, email, phone,
     organization: get('edit-organization').trim(),
+    guest_count: Math.max(1, Math.min(3, parseInt(get('edit-guest-count'), 10) || 1)),
+    additional_guests: get('edit-additional-guests').trim(),
+    dietary_preferences: get('edit-dietary-preferences').trim(),
+    dietary_restrictions: get('edit-dietary-restrictions').trim(),
     notes:        get('edit-notes').trim(),
   };
 
