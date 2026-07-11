@@ -1211,53 +1211,27 @@ document.addEventListener('click', function(e) {
 });
 
 function setLanguage(langCode) {
-  const labelEl = document.getElementById('langBtnLabel');
-  if (labelEl) labelEl.textContent = LANG_NAMES[langCode] || langCode.toUpperCase();
-
-  document.querySelectorAll('.lang-option').forEach(function(btn) {
-    btn.classList.toggle('active', btn.getAttribute('data-lang') === langCode);
-  });
-  const switcher = document.getElementById('langSwitcher');
-  if (switcher) switcher.classList.remove('open');
+  // Set (or clear) Google's own translation cookie, then reload — this
+  // is far more reliable than trying to trigger the widget's dynamically
+  // injected <select> after the fact, which doesn't consistently fire
+  // Google's internal translation logic across browsers. On reload,
+  // Google's script reads this cookie itself and auto-applies the
+  // translation before the page is even visible.
+  const expires = 'expires=Fri, 01 Jan 2038 00:00:00 UTC';
+  const host = location.hostname;
 
   if (langCode === 'en') {
-    // Clear Google's translate cookies and reload to restore the original text
-    document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-    document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.' + location.hostname + ';';
-    location.reload();
-    return;
+    document.cookie = 'googtrans=; ' + expires + '; path=/;';
+    document.cookie = 'googtrans=; ' + expires + '; path=/; domain=' + host + ';';
+    document.cookie = 'googtrans=; ' + expires + '; path=/; domain=.' + host + ';';
+  } else {
+    const value = '/en/' + langCode;
+    document.cookie = 'googtrans=' + value + '; ' + expires + '; path=/;';
+    document.cookie = 'googtrans=' + value + '; ' + expires + '; path=/; domain=' + host + ';';
+    document.cookie = 'googtrans=' + value + '; ' + expires + '; path=/; domain=.' + host + ';';
   }
 
-  // Google injects a <select class="goog-te-combo"> once its script has
-  // finished loading — this can take a moment on slower connections, so
-  // retry briefly rather than failing silently on a fast click.
-  const tryTrigger = function(attempt) {
-    const select = document.querySelector('#google_translate_element select.goog-te-combo');
-    if (select) {
-      select.value = langCode;
-      select.dispatchEvent(new Event('change'));
-    } else if (attempt < 20) {
-      setTimeout(function() { tryTrigger(attempt + 1); }, 250);
-    } else {
-      showDashToastPublic('⚠️ Translation is still loading — please try again in a moment.');
-    }
-  };
-  tryTrigger(0);
-}
-
-// Lightweight toast for the public landing page (the dashboard has its
-// own showDashToast, but that element only exists once logged in).
-function showDashToastPublic(msg) {
-  let el = document.getElementById('public-toast');
-  if (!el) {
-    el = document.createElement('div');
-    el.id = 'public-toast';
-    el.className = 'dash-toast';
-    document.body.appendChild(el);
-  }
-  el.textContent = msg;
-  el.classList.add('show');
-  setTimeout(function() { el.classList.remove('show'); }, 3200);
+  location.reload();
 }
 
 function openRSVP() {
