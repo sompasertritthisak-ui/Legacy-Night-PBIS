@@ -40,6 +40,9 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%;text-size-adjust:100%;
 ::-webkit-scrollbar-thumb:hover{background:var(--gold);}
 body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);overflow-x:hidden;width:100%;}
 button,a{touch-action:manipulation;}
+button{transition:transform 0.12s ease;}
+button:active{transform:scale(0.97);}
+@media (prefers-reduced-motion:reduce){button:active{transform:none;}}
 img{max-width:100%;height:auto;}
 
 /* ── STARFIELD BACKGROUND ── */
@@ -87,6 +90,7 @@ img{max-width:100%;height:auto;}
 .hero-cta{background:linear-gradient(135deg,var(--gold),var(--gold-light));color:var(--deep);border:none;padding:18px 48px;border-radius:100px;font-size:15px;font-weight:700;letter-spacing:0.04em;cursor:pointer;font-family:'DM Sans',sans-serif;box-shadow:0 8px 32px rgba(201,168,76,0.3),0 0 0 1px rgba(45,158,95,0.3);transition:transform 0.2s;animation:heroCtaGlow 3.2s ease-in-out infinite;}
 @keyframes heroCtaGlow{0%,100%{box-shadow:0 8px 32px rgba(201,168,76,0.3),0 0 0 1px rgba(45,158,95,0.3);}50%{box-shadow:0 8px 44px rgba(201,168,76,0.55),0 0 0 1px rgba(45,158,95,0.45);}}
 .hero-cta:hover{transform:translateY(-2px);}
+.hero-cta:active{transform:scale(0.97);}
 .hero-note{margin-top:18px;color:rgba(255,255,255,0.4);font-size:12px;}
 .hero-scroll{position:absolute;bottom:28px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,0.35);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;display:flex;flex-direction:column;align-items:center;gap:7px;}
 .hero-scroll svg{width:15px;height:15px;stroke:var(--gold-light);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;animation:scrollBounce 1.8s ease-in-out infinite;}
@@ -218,6 +222,15 @@ footer a{color:var(--gold);text-decoration:none;}
 .modal-header{background:linear-gradient(135deg,var(--navy),var(--navy-mid));border-radius:20px 20px 0 0;padding:32px 32px 26px;text-align:center;position:relative;}
 .modal-header h2{font-family:'Cinzel',serif;font-weight:700;font-size:26px;margin-bottom:8px;background-image:linear-gradient(135deg,#8a6a26 0%,var(--gold) 35%,var(--gold-light) 60%,var(--gold) 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:var(--gold);}
 .modal-header p{color:rgba(255,255,255,0.55);font-size:13px;}
+.rsvp-progress{display:flex;align-items:flex-start;justify-content:center;gap:0;padding:16px 32px 18px;background:var(--navy-mid);border-bottom:1px solid rgba(201,168,76,0.15);}
+.rsvp-progress-step{display:flex;flex-direction:column;align-items:center;gap:6px;}
+.rsvp-progress-dot{width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,0.1);border:1.5px solid rgba(201,168,76,0.4);color:rgba(255,255,255,0.5);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-family:'DM Sans',sans-serif;transition:all 0.3s ease;}
+.rsvp-progress-step.active .rsvp-progress-dot{background:linear-gradient(135deg,var(--gold),var(--gold-light));border-color:var(--gold);color:var(--deep);box-shadow:0 0 0 4px rgba(201,168,76,0.15);}
+.rsvp-progress-step.done .rsvp-progress-dot{background:linear-gradient(135deg,#2d9e5f,#3dbf72);border-color:#2d9e5f;color:#fff;}
+.rsvp-progress-label{font-size:10px;letter-spacing:0.04em;text-transform:uppercase;color:rgba(255,255,255,0.4);font-weight:600;white-space:nowrap;}
+.rsvp-progress-step.active .rsvp-progress-label{color:var(--gold-light);}
+.rsvp-progress-line{width:56px;height:1.5px;background:rgba(201,168,76,0.25);margin:12px 10px 0;transition:background 0.3s ease;}
+.rsvp-progress-line.done{background:#2d9e5f;}
 .modal-close{position:absolute;top:14px;right:16px;background:rgba(255,255,255,0.1);border:none;color:var(--white);width:38px;height:38px;border-radius:50%;cursor:pointer;font-size:16px;line-height:1;}
 .modal-body{padding:28px 32px 32px;}
 .form-row{margin-bottom:18px;}
@@ -230,6 +243,33 @@ footer a{color:var(--gold);text-decoration:none;}
 .form-input-wrap svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:17px;height:17px;stroke:var(--gray-mid);fill:none;stroke-width:1.8;pointer-events:none;transition:stroke 0.2s;}
 .form-input-wrap input{padding-left:40px;}
 .form-input-wrap:focus-within svg{stroke:var(--gold);}
+
+/* ── Custom form validation (replaces native browser popups) ── */
+.form-input-wrap.field-invalid input{border-color:#c0504d !important;box-shadow:0 0 0 3px rgba(192,80,77,0.12);}
+.form-input-wrap.field-valid input{border-color:#2d9e5f !important;padding-right:34px;}
+.form-input-wrap.field-valid::after{content:'✓';position:absolute;right:14px;top:50%;transform:translateY(-50%);color:#2d9e5f;font-weight:700;font-size:14px;pointer-events:none;}
+.field-error-msg{color:#c0504d;font-size:11.5px;margin-top:6px;font-weight:500;display:flex;align-items:center;gap:5px;}
+.field-error-msg::before{content:'⚠';font-size:11px;}
+@keyframes fieldShake{0%,100%{transform:translateX(0);}20%{transform:translateX(-6px);}40%{transform:translateX(6px);}60%{transform:translateX(-4px);}80%{transform:translateX(4px);}}
+.field-shake{animation:fieldShake 0.4s ease;}
+
+/* ── RSVP success celebration ── */
+.rsvp-success-burst{position:relative;height:0;}
+.rsvp-success-burst span{position:absolute;top:0;left:50%;width:6px;height:6px;border-radius:50%;opacity:0;}
+@keyframes burstFly{0%{transform:translate(-50%,-50%) rotate(var(--angle)) translateX(0) scale(1);opacity:1;}100%{transform:translate(-50%,-50%) rotate(var(--angle)) translateX(var(--dist)) scale(0.3);opacity:0;}}
+.rsvp-success-burst span{animation:burstFly 0.9s cubic-bezier(0.2,0.8,0.3,1) forwards;}
+.rsvp-success-check{width:88px;height:88px;margin:6px auto 20px;}
+.rsvp-success-check svg{width:100%;height:100%;}
+.rsvp-success-check-circle{stroke:#2d9e5f;stroke-width:2.5;stroke-dasharray:151;stroke-dashoffset:151;animation:successCircleDraw 0.6s ease forwards;}
+.rsvp-success-check-mark{stroke:#2d9e5f;stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:36;stroke-dashoffset:36;animation:successCheckDraw 0.4s ease 0.55s forwards;}
+@keyframes successCircleDraw{to{stroke-dashoffset:0;}}
+@keyframes successCheckDraw{to{stroke-dashoffset:0;}}
+.rsvp-success-title{text-align:center;font-family:'Cinzel',serif;font-weight:700;font-size:24px;color:var(--navy);margin-bottom:10px;opacity:0;animation:successFadeUp 0.6s ease 0.5s forwards;}
+.rsvp-success-sub{text-align:center;color:var(--gray-mid);font-size:14px;margin-bottom:20px;opacity:0;animation:successFadeUp 0.6s ease 0.6s forwards;}
+.rsvp-success-recap{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-bottom:18px;opacity:0;animation:successFadeUp 0.6s ease 0.7s forwards;}
+.rsvp-success-recap span{background:var(--cream);border:1px solid var(--gray);border-radius:100px;padding:8px 16px;font-size:12.5px;font-weight:600;color:var(--navy);}
+.rsvp-success-note{text-align:center;font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--gray-mid);font-size:15px;opacity:0;animation:successFadeUp 0.6s ease 0.8s forwards;}
+@keyframes successFadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
 .form-submit{width:100%;background:linear-gradient(135deg,var(--gold),var(--gold-light));color:var(--deep);border:none;padding:16px;border-radius:10px;font-size:14px;font-weight:700;letter-spacing:0.03em;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:8px;}
 .form-submit:hover{filter:brightness(1.05);}
 .form-submit:disabled{opacity:0.7;cursor:default;}
@@ -243,6 +283,8 @@ footer a{color:var(--gold);text-decoration:none;}
 .additional-guest-remove{background:var(--gray);color:var(--gray-mid);border:none;width:42px;border-radius:9px;cursor:pointer;font-size:14px;flex-shrink:0;}
 .additional-guest-remove:hover{background:#e8dfc8;color:var(--text);}
 .add-guest-btn{display:inline-flex;align-items:center;gap:6px;background:none;border:1.5px dashed var(--gold);color:var(--gold);padding:9px 16px;border-radius:9px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.party-size-chip{display:inline-flex;align-items:center;gap:5px;background:rgba(45,158,95,0.1);color:#1a7a45;border:1px solid rgba(45,158,95,0.3);padding:4px 12px;border-radius:100px;font-size:11.5px;font-weight:700;margin:8px 0 12px;transition:transform 0.2s ease;}
+.party-size-chip.bump{transform:scale(1.12);}
 .add-guest-btn:hover{background:rgba(201,168,76,0.08);}
 .add-guest-btn svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2.4;stroke-linecap:round;}
 
@@ -311,6 +353,28 @@ footer a{color:var(--gold);text-decoration:none;}
 .lang-option{display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;padding:10px 12px;border-radius:8px;font-size:13.5px;font-family:'DM Sans',sans-serif;color:var(--text);cursor:pointer;text-align:left;transition:background 0.15s;}
 .lang-option:hover{background:var(--cream);}
 .lang-option.active{background:rgba(201,168,76,0.14);color:#8a6a26;font-weight:700;}
+
+/* Consolidated "more" menu — hidden by default (desktop shows the
+   language switcher and admin icon separately); only appears at the
+   narrow-phone breakpoint below, where it replaces both. */
+.nav-more{display:none;position:relative;}
+.nav-more-btn{background:rgba(255,255,255,0.08);border:1.5px solid rgba(201,168,76,0.55);border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;flex-shrink:0;color:var(--gold-light);}
+.nav-more-btn svg{width:17px;height:17px;}
+.nav-more-btn:hover{background:rgba(201,168,76,0.18);border-color:var(--gold);}
+.nav-more-dropdown{display:none;position:absolute;top:calc(100% + 10px);right:0;background:var(--white);border:1px solid var(--gray);border-radius:12px;box-shadow:0 16px 40px rgba(10,40,24,0.22);padding:12px;min-width:210px;z-index:500;}
+.nav-more.open .nav-more-dropdown{display:block;animation:fadeIn 0.15s ease;}
+.nav-more-label{font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--gray-mid);font-weight:700;margin-bottom:8px;}
+.nav-more-langs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px;}
+.nav-more-lang-option{background:var(--cream);border:1px solid var(--gray);border-radius:8px;padding:8px 4px;font-size:11.5px;font-weight:600;color:var(--text);cursor:pointer;text-align:center;font-family:'DM Sans',sans-serif;}
+.nav-more-lang-option:hover{background:rgba(201,168,76,0.12);}
+.nav-more-lang-option.active{background:rgba(201,168,76,0.18);border-color:var(--gold);color:#8a6a26;}
+.nav-more-divider{height:1px;background:var(--gray);margin-bottom:10px;}
+.nav-more-admin-btn{width:100%;background:var(--navy);color:var(--gold-light);border:none;padding:10px 12px;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.nav-more-admin-btn:hover{background:var(--navy-mid);}
+@media (max-width:480px){
+  .lang-switcher,#nav-admin-btn{display:none;}
+  .nav-more{display:block;}
+}
 @media (max-width:640px){
   .lang-btn{padding:8px 10px;font-size:10.5px;}
   .lang-btn span{display:none;}
@@ -352,6 +416,7 @@ body{top:0px !important;position:static !important;}
 .login-attempts{font-size:11px;color:var(--gray-mid);margin:0 0 20px;text-align:right;}
 .login-submit-btn{width:100%;background:linear-gradient(135deg,var(--gold),var(--gold-light));color:var(--navy);border:none;border-radius:8px;padding:14px;font-size:14px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;font-family:'DM Sans',sans-serif;box-shadow:0 4px 20px rgba(201,168,76,0.35);transition:all 0.2s;}
 .login-submit-btn:hover{transform:translateY(-1px);box-shadow:0 8px 28px rgba(201,168,76,0.5);}
+.login-submit-btn:active{transform:scale(0.97);}
 .login-submit-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
 .login-cancel{display:block;text-align:center;margin-top:14px;font-size:12px;color:var(--gray-mid);cursor:pointer;background:none;border:none;width:100%;font-family:'DM Sans',sans-serif;transition:color 0.2s;}
 .login-cancel:hover{color:var(--navy);}
@@ -418,6 +483,16 @@ body.dashboard-active #dashboard-view{display:block !important;}
 .dash-arrived-pill{display:inline-flex;align-items:center;gap:5px;color:#1a7a45;font-weight:700;font-size:12.5px;}
 .dash-empty{text-align:center;padding:48px 24px;color:var(--gray-mid);font-size:13.5px;}
 .dash-empty::before{content:'';display:block;width:56px;height:56px;margin:0 auto 16px;background:radial-gradient(circle,rgba(201,168,76,0.18),rgba(201,168,76,0) 70%);border-radius:50%;}
+
+/* ── Skeleton loading states (shown briefly while dashboard data fetches) ── */
+@keyframes skeletonShimmer{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
+.skeleton-line,.skeleton-block{background:linear-gradient(90deg,var(--gray) 25%,#eee7d4 50%,var(--gray) 75%);background-size:200% 100%;animation:skeletonShimmer 1.6s ease-in-out infinite;border-radius:6px;}
+.skeleton-line-lg{height:30px;width:55%;margin:0 auto 10px;}
+.skeleton-line-sm{height:11px;width:38%;margin:0 auto;}
+.skeleton-line-md{height:17px;width:190px;border-radius:5px;}
+.skeleton-block{height:170px;border-radius:10px;}
+.skeleton-card{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;min-height:96px;}
+.skeleton-row{height:44px;border-radius:8px;margin-bottom:10px;}
 
 /* ── OVERDUE TAB ── */
 .dash-overdue-warn{background:#fdf3f1;border:1.5px solid #dba39c;border-radius:10px;padding:14px 18px;margin-bottom:20px;font-size:12.5px;color:#7a3530;line-height:1.6;}
@@ -542,6 +617,25 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,bod
     <button class="nav-admin-btn" onclick="openLoginModal()" title="Legacy Night Admin Dashboard" type="button" id="nav-admin-btn">
       <img id="nav-admin-logo" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="PBIS" class="js-logo" style="height:18px;width:18px;object-fit:contain;border-radius:50%;flex-shrink:0;">
     </button>
+    <div class="nav-more" id="navMore">
+      <button class="nav-more-btn" onclick="toggleNavMore(event)" type="button" id="navMoreBtn" title="More options">
+        <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="5" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="12" cy="19" r="1.4"/></svg>
+      </button>
+      <div class="nav-more-dropdown" id="navMoreDropdown">
+        <p class="nav-more-label">Language</p>
+        <div class="nav-more-langs">
+          <button type="button" class="nav-more-lang-option" data-lang="en" onclick="setLanguage('en')">🇬🇧 EN</button>
+          <button type="button" class="nav-more-lang-option" data-lang="lo" onclick="setLanguage('lo')">🇱🇦 LO</button>
+          <button type="button" class="nav-more-lang-option" data-lang="th" onclick="setLanguage('th')">🇹🇭 TH</button>
+          <button type="button" class="nav-more-lang-option" data-lang="fr" onclick="setLanguage('fr')">🇫🇷 FR</button>
+          <button type="button" class="nav-more-lang-option" data-lang="zh-CN" onclick="setLanguage('zh-CN')">🇨🇳 ZH</button>
+          <button type="button" class="nav-more-lang-option" data-lang="ko" onclick="setLanguage('ko')">🇰🇷 KO</button>
+          <button type="button" class="nav-more-lang-option" data-lang="ja" onclick="setLanguage('ja')">🇯🇵 JA</button>
+        </div>
+        <div class="nav-more-divider"></div>
+        <button type="button" class="nav-more-admin-btn" onclick="openLoginModal()">🔐 Admin Dashboard</button>
+      </div>
+    </div>
     <button class="nav-cta" onclick="openRSVP()">RSVP Now</button>
   </div>
 </nav>
@@ -741,6 +835,17 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,bod
       <h2>Confirm Your Attendance</h2>
       <p>PBIS Legacy Night · 25 September 2026 · 5:00 PM</p>
     </div>
+    <div class="rsvp-progress" id="rsvp-progress">
+      <div class="rsvp-progress-step active" id="rsvp-progress-step-1">
+        <span class="rsvp-progress-dot">1</span>
+        <span class="rsvp-progress-label">Your Details</span>
+      </div>
+      <div class="rsvp-progress-line" id="rsvp-progress-line"></div>
+      <div class="rsvp-progress-step" id="rsvp-progress-step-2">
+        <span class="rsvp-progress-dot">2</span>
+        <span class="rsvp-progress-label">Confirm &amp; Send</span>
+      </div>
+    </div>
     <div class="modal-body">
       <form id="rsvp-form" onsubmit="return false;">
         <div id="rsvp-step-1">
@@ -783,6 +888,7 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,bod
           </div>
           <div class="form-row">
             <label>Bringing Additional Guests? <span style="text-transform:none;">(optional — max 2, arriving with you)</span></label>
+            <span class="party-size-chip" id="party-size-chip">👥 Party of 1</span>
             <div id="additional-guests-list"></div>
             <button type="button" class="add-guest-btn" id="add-guest-btn" onclick="addGuestRow()">
               <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Add a Guest
@@ -828,6 +934,19 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,bod
           </label>
           <button type="button" class="form-submit" id="rsvp-submit-btn" onclick="handleRSVPSubmit(event)" disabled>Confirm My Attendance</button>
           <button type="button" class="form-back-link" onclick="backToRsvpFormStep()">← Back to edit my details</button>
+        </div>
+        <div id="rsvp-step-success" style="display:none;">
+          <div class="rsvp-success-burst" id="rsvp-success-burst"></div>
+          <div class="rsvp-success-check">
+            <svg viewBox="0 0 52 52"><circle class="rsvp-success-check-circle" cx="26" cy="26" r="24" fill="none"/><path class="rsvp-success-check-mark" fill="none" d="M14 27l7 7 17-17"/></svg>
+          </div>
+          <h3 class="rsvp-success-title">You're Confirmed<span id="rsvp-success-name"></span>!</h3>
+          <p class="rsvp-success-sub">Check your email for your confirmation and full event details.</p>
+          <div class="rsvp-success-recap">
+            <span>📅 Friday, 25 September 2026</span>
+            <span>📍 Holiday Inn &amp; Suites Vientiane</span>
+          </div>
+          <p class="rsvp-success-note">We look forward to celebrating this milestone with you.</p>
         </div>
       </form>
     </div>
@@ -1156,7 +1275,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const code = langMatch[1];
     const labelEl = document.getElementById('langBtnLabel');
     if (labelEl) labelEl.textContent = LANG_NAMES[code] || code.toUpperCase();
-    document.querySelectorAll('.lang-option').forEach(function(btn) {
+    document.querySelectorAll('.lang-option, .nav-more-lang-option').forEach(function(btn) {
       btn.classList.toggle('active', btn.getAttribute('data-lang') === code);
     });
   }
@@ -1313,6 +1432,16 @@ document.addEventListener('click', function(e) {
   if (ls && !ls.contains(e.target)) ls.classList.remove('open');
 });
 
+function toggleNavMore(e) {
+  e.stopPropagation();
+  document.getElementById('navMore').classList.toggle('open');
+}
+
+document.addEventListener('click', function(e) {
+  const nm = document.getElementById('navMore');
+  if (nm && !nm.contains(e.target)) nm.classList.remove('open');
+});
+
 function setLanguage(langCode) {
   // Set (or clear) Google's own translation cookie, then reload — this
   // is far more reliable than trying to trigger the widget's dynamically
@@ -1350,11 +1479,155 @@ function closeRSVP() {
 function showRsvpStep(step) {
   document.getElementById('rsvp-step-1').style.display = step === 1 ? 'block' : 'none';
   document.getElementById('rsvp-step-2').style.display = step === 2 ? 'block' : 'none';
+  const successEl = document.getElementById('rsvp-step-success');
+  if (successEl) successEl.style.display = step === 'success' ? 'block' : 'none';
+
+  const step1El = document.getElementById('rsvp-progress-step-1');
+  const step2El = document.getElementById('rsvp-progress-step-2');
+  const lineEl  = document.getElementById('rsvp-progress-line');
+  if (step1El && step2El && lineEl) {
+    if (step === 'success') {
+      step1El.classList.add('done'); step1El.classList.remove('active');
+      step2El.classList.add('done'); step2El.classList.remove('active');
+      lineEl.classList.add('done');
+    } else {
+      step1El.classList.toggle('active', step === 1);
+      step1El.classList.toggle('done', step === 2);
+      step2El.classList.toggle('active', step === 2);
+      step2El.classList.remove('done');
+      lineEl.classList.toggle('done', step === 2);
+    }
+  }
 }
 
+// Plays the celebratory confirmation moment — animated checkmark plus
+// a small gold/green particle burst — replacing what used to be just
+// a button text/color change. This is the payoff moment of the whole
+// form, so it earns a bit more visual weight.
+function celebrateRsvpSuccess(firstName) {
+  const nameEl = document.getElementById('rsvp-success-name');
+  if (nameEl) nameEl.textContent = firstName ? `, ${firstName}` : '';
+
+  showRsvpStep('success');
+
+  const burst = document.getElementById('rsvp-success-burst');
+  if (burst) {
+    burst.innerHTML = '';
+    const colors = ['#c9a84c', '#e8c96e', '#2d9e5f'];
+    const count = 18;
+    for (let i = 0; i < count; i++) {
+      const p = document.createElement('span');
+      const angle = (360 / count) * i + (Math.random() * 20 - 10);
+      const dist = 70 + Math.random() * 50;
+      p.style.setProperty('--angle', angle + 'deg');
+      p.style.setProperty('--dist', dist + 'px');
+      p.style.animationDelay = (Math.random() * 0.15) + 's';
+      p.style.background = colors[i % colors.length];
+      burst.appendChild(p);
+    }
+  }
+}
+
+/* ── Custom RSVP validation (replaces native browser popups) ── */
+const RSVP_VALIDATORS = {
+  'rsvp-fname': { test: v => v.trim().length >= 1, msg: 'Please enter your first name.' },
+  'rsvp-lname': { test: v => v.trim().length >= 1, msg: 'Please enter your last name.' },
+  'rsvp-email': { test: v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()), msg: 'Please enter a valid email address.' },
+  'rsvp-phone': { test: v => v.trim().replace(/[^0-9]/g, '').length >= 6, msg: 'Please enter a valid phone number.' },
+};
+
+function validateRsvpField(id) {
+  const el = document.getElementById(id);
+  const rule = RSVP_VALIDATORS[id];
+  if (!el || !rule) return true;
+
+  const wrap = el.closest('.form-input-wrap');
+  const isEmpty = el.value.trim() === '';
+  const isValid = rule.test(el.value);
+
+  let errorEl = wrap.parentElement.querySelector('.field-error-msg');
+  if (isEmpty) {
+    // Don't show an error on an untouched/empty field — only once
+    // they've interacted with it or tried to submit.
+    wrap.classList.remove('field-invalid', 'field-valid');
+    if (errorEl) errorEl.remove();
+    return false;
+  }
+  if (isValid) {
+    wrap.classList.remove('field-invalid');
+    wrap.classList.add('field-valid');
+    if (errorEl) errorEl.remove();
+  } else {
+    wrap.classList.add('field-invalid');
+    wrap.classList.remove('field-valid');
+    if (!errorEl) {
+      errorEl = document.createElement('p');
+      errorEl.className = 'field-error-msg';
+      wrap.insertAdjacentElement('afterend', errorEl);
+    }
+    errorEl.textContent = rule.msg;
+  }
+  return isValid;
+}
+
+function shakeInvalidField(wrap) {
+  wrap.classList.remove('field-shake');
+  void wrap.offsetWidth; // restart animation even if re-triggered quickly
+  wrap.classList.add('field-shake');
+}
+
+function resetRsvpValidationState() {
+  Object.keys(RSVP_VALIDATORS).forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const wrap = el.closest('.form-input-wrap');
+    wrap.classList.remove('field-invalid', 'field-valid', 'field-shake');
+    const errorEl = wrap.parentElement.querySelector('.field-error-msg');
+    if (errorEl) errorEl.remove();
+  });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  Object.keys(RSVP_VALIDATORS).forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('blur', () => validateRsvpField(id));
+  });
+});
+
 function goToRsvpConfirmStep() {
-  const form = document.getElementById('rsvp-form');
-  if (!form.reportValidity()) return; // shows native browser validation on required fields
+  const ids = Object.keys(RSVP_VALIDATORS);
+  let allValid = true;
+  let firstInvalidWrap = null;
+
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    const isValid = validateRsvpField(id);
+    // An untouched-but-empty required field also blocks progress —
+    // force its error to show now that a submit was attempted.
+    if (el.value.trim() === '') {
+      const wrap = el.closest('.form-input-wrap');
+      wrap.classList.add('field-invalid');
+      let errorEl = wrap.parentElement.querySelector('.field-error-msg');
+      if (!errorEl) {
+        errorEl = document.createElement('p');
+        errorEl.className = 'field-error-msg';
+        wrap.insertAdjacentElement('afterend', errorEl);
+      }
+      errorEl.textContent = RSVP_VALIDATORS[id].msg;
+    }
+    if (!isValid || el.value.trim() === '') {
+      allValid = false;
+      if (!firstInvalidWrap) firstInvalidWrap = el.closest('.form-input-wrap');
+    }
+  });
+
+  if (!allValid) {
+    if (firstInvalidWrap) {
+      shakeInvalidField(firstInvalidWrap);
+      firstInvalidWrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    return;
+  }
   showRsvpStep(2);
 }
 
@@ -1404,17 +1677,32 @@ function addGuestRow() {
     `<button type="button" class="additional-guest-remove" onclick="removeGuestRow(this)" title="Remove">✕</button>`;
   list.appendChild(row);
   updateAddGuestBtnState();
+  updatePartySizeChip();
 }
 
 function removeGuestRow(btn) {
   btn.parentElement.remove();
   _additionalGuestCount--;
   updateAddGuestBtnState();
+  updatePartySizeChip();
 }
 
 function updateAddGuestBtnState() {
   const addBtn = document.getElementById('add-guest-btn');
   if (addBtn) addBtn.style.display = _additionalGuestCount >= MAX_ADDITIONAL_GUESTS ? 'none' : 'inline-flex';
+}
+
+// Live "Party of X" chip — updates instantly as guests are added or
+// removed, with a small bump animation so the change feels responsive.
+function updatePartySizeChip() {
+  const chip = document.getElementById('party-size-chip');
+  if (!chip) return;
+  const total = 1 + _additionalGuestCount;
+  chip.textContent = `👥 Party of ${total}`;
+  chip.classList.remove('bump');
+  void chip.offsetWidth; // restart the animation even if triggered rapidly
+  chip.classList.add('bump');
+  setTimeout(() => chip.classList.remove('bump'), 220);
 }
 
 /* ── Dietary preferences multi-select ── */
@@ -1444,6 +1732,7 @@ function resetRsvpDynamicFields() {
   if (list) list.innerHTML = '';
   _additionalGuestCount = 0;
   updateAddGuestBtnState();
+  updatePartySizeChip();
 
   document.querySelectorAll('#dietary-panel input[type="checkbox"]').forEach(cb => { cb.checked = false; });
   _selectedDietary = [];
@@ -1451,6 +1740,8 @@ function resetRsvpDynamicFields() {
   if (label) label.textContent = 'Select dietary preferences…';
   const ms = document.getElementById('dietary-multiselect');
   if (ms) ms.classList.remove('open');
+
+  resetRsvpValidationState();
 }
 
 function handleRSVPSubmit(e) {
@@ -1490,9 +1781,14 @@ function handleRSVPSubmit(e) {
   btn.textContent = 'Confirming…';
 
   postToSheets(guest).then(() => {
-    btn.textContent = "✅ You're Confirmed! Check your email for details.";
-    btn.style.background = 'linear-gradient(135deg,#2d9e5f,#3dbf72)';
-    setTimeout(() => { closeRSVP(); resetRsvpDynamicFields(); }, 2200);
+    celebrateRsvpSuccess(guest.fname);
+    setTimeout(() => {
+      closeRSVP();
+      resetRsvpDynamicFields();
+      btn.disabled = false;
+      btn.textContent = 'Confirm My Attendance';
+      btn.style.background = '';
+    }, 3600);
   });
 }
 
@@ -1739,6 +2035,7 @@ function enterLegacyDashboard() {
     document.body.classList.remove('role-marketing');
   }
 
+  showDashSkeletons();
   loadDashboardData();
   startAutoSync();
 
@@ -1792,6 +2089,29 @@ function showDashToast(msg) {
 
 /* ── DATA FETCH ── */
 let _dashGuestsCache = [];
+
+// Shows a brief shimmering placeholder in each tab while the first
+// fetch is in flight, instead of a blank flash before real content
+// appears. render*Tab() calls overwrite these with real content the
+// moment data arrives, so this only matters for that first second.
+function showDashSkeletons() {
+  const statCards = Array(6).fill('<div class="dash-stat-card skeleton-card"><div class="skeleton-line skeleton-line-lg"></div><div class="skeleton-line skeleton-line-sm"></div></div>').join('');
+  const tableRows = Array(5).fill('<div class="skeleton-row"></div>').join('');
+
+  const overviewEl = document.getElementById('dash-tab-content-overview');
+  if (overviewEl) {
+    overviewEl.innerHTML = `
+      <div class="dash-stats-row">${statCards}</div>
+      <div class="dash-panel"><div class="skeleton-line skeleton-line-md" style="margin-bottom:18px;"></div><div class="skeleton-block"></div></div>`;
+  }
+
+  ['guestlist','approvals','checkin','overdue'].forEach(function(tab) {
+    const el = document.getElementById('dash-tab-content-' + tab);
+    if (el) {
+      el.innerHTML = `<div class="dash-panel"><div class="skeleton-line skeleton-line-md" style="margin-bottom:18px;"></div>${tableRows}</div>`;
+    }
+  });
+}
 
 async function fetchDashboardGuests() {
   try {
