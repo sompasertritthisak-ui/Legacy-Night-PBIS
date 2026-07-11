@@ -252,6 +252,34 @@ footer a{color:var(--gold);text-decoration:none;}
 .nav-admin-btn{background:rgba(255,255,255,0.08);border:1.5px solid rgba(201,168,76,0.55);border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;flex-shrink:0;box-shadow:0 0 0 1px rgba(201,168,76,0.12),0 2px 10px rgba(201,168,76,0.2);transition:border-color 0.25s ease,box-shadow 0.25s ease,background 0.25s ease;}
 .nav-admin-btn:hover{background:rgba(201,168,76,0.18);border-color:var(--gold);box-shadow:0 0 0 1px rgba(201,168,76,0.25),0 4px 16px rgba(201,168,76,0.35);}
 
+/* ── LANGUAGE SWITCHER (translate the public landing page) ── */
+.lang-switcher{position:relative;}
+.lang-btn{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.08);border:1.5px solid rgba(201,168,76,0.55);border-radius:100px;padding:9px 13px;cursor:pointer;color:var(--white);font-size:11.5px;font-weight:700;letter-spacing:0.02em;font-family:'DM Sans',sans-serif;box-shadow:0 0 0 1px rgba(201,168,76,0.12),0 2px 10px rgba(201,168,76,0.2);transition:border-color 0.25s ease,box-shadow 0.25s ease,background 0.25s ease;}
+.lang-btn:hover{background:rgba(201,168,76,0.18);border-color:var(--gold);box-shadow:0 0 0 1px rgba(201,168,76,0.25),0 4px 16px rgba(201,168,76,0.35);}
+.lang-globe-icon{width:15px;height:15px;stroke:var(--gold-light);stroke-width:1.8;flex-shrink:0;}
+.lang-chevron{width:11px;height:11px;stroke:rgba(255,255,255,0.6);stroke-width:2.6;flex-shrink:0;transition:transform 0.2s;}
+.lang-switcher.open .lang-chevron{transform:rotate(180deg);}
+.lang-dropdown{display:none;position:absolute;top:calc(100% + 10px);right:0;background:var(--white);border:1px solid var(--gray);border-radius:12px;box-shadow:0 16px 40px rgba(10,40,24,0.22);padding:8px;min-width:172px;z-index:500;}
+.lang-switcher.open .lang-dropdown{display:block;animation:fadeIn 0.15s ease;}
+.lang-option{display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;padding:10px 12px;border-radius:8px;font-size:13.5px;font-family:'DM Sans',sans-serif;color:var(--text);cursor:pointer;text-align:left;transition:background 0.15s;}
+.lang-option:hover{background:var(--cream);}
+.lang-option.active{background:rgba(201,168,76,0.14);color:#8a6a26;font-weight:700;}
+@media (max-width:640px){
+  .lang-btn{padding:8px 10px;font-size:10.5px;}
+  .lang-btn span{display:none;}
+  .lang-dropdown{right:-40px;}
+}
+
+/* Google Translate injects its own toolbar/highlighting by default —
+   these overrides hide all of that so only our custom button shows,
+   and the page never jumps when translation activates. */
+.goog-te-banner-frame.skiptranslate{display:none !important;}
+body{top:0px !important;position:static !important;}
+.goog-te-gadget{height:0;overflow:hidden;font-size:0;}
+.goog-tooltip,.goog-tooltip:hover{display:none !important;}
+.goog-text-highlight{background:none !important;box-shadow:none !important;}
+#google_translate_element{display:none !important;}
+
 /* ── LOGIN MODAL (matches Open Day exactly) ── */
 .login-modal-backdrop{position:fixed;inset:0;z-index:999999;background:rgba(0,0,0,0.75);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:20px;}
 .login-modal-backdrop.open{display:flex;animation:fadeIn 0.2s ease;}
@@ -442,12 +470,31 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,bod
     <div class="nav-brand-text">Panyathip British International School<span>Legacy Night · 25th Anniversary</span></div>
   </a>
   <div style="display:flex;align-items:center;gap:10px;">
+    <div class="lang-switcher" id="langSwitcher">
+      <button class="lang-btn" onclick="toggleLangDropdown(event)" type="button" id="langBtn" title="Translate this page">
+        <svg class="lang-globe-icon" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 3.8 6 3.8 9s-1.3 6.3-3.8 9c-2.5-2.7-3.8-6-3.8-9s1.3-6.3 3.8-9z"/></svg>
+        <span id="langBtnLabel">EN</span>
+        <svg class="lang-chevron" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div class="lang-dropdown" id="langDropdown">
+        <button type="button" class="lang-option active" data-lang="en" onclick="setLanguage('en')">🇬🇧 English</button>
+        <button type="button" class="lang-option" data-lang="lo" onclick="setLanguage('lo')">🇱🇦 ພາສາລາວ</button>
+        <button type="button" class="lang-option" data-lang="th" onclick="setLanguage('th')">🇹🇭 ภาษาไทย</button>
+        <button type="button" class="lang-option" data-lang="fr" onclick="setLanguage('fr')">🇫🇷 Français</button>
+        <button type="button" class="lang-option" data-lang="zh-CN" onclick="setLanguage('zh-CN')">🇨🇳 中文</button>
+        <button type="button" class="lang-option" data-lang="ko" onclick="setLanguage('ko')">🇰🇷 한국어</button>
+        <button type="button" class="lang-option" data-lang="ja" onclick="setLanguage('ja')">🇯🇵 日本語</button>
+      </div>
+    </div>
     <button class="nav-admin-btn" onclick="openLoginModal()" title="Legacy Night Admin Dashboard" type="button" id="nav-admin-btn">
       <img id="nav-admin-logo" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="PBIS" class="js-logo" style="height:18px;width:18px;object-fit:contain;border-radius:50%;flex-shrink:0;">
     </button>
     <button class="nav-cta" onclick="openRSVP()">RSVP Now</button>
   </div>
 </nav>
+
+<!-- Google Translate mounts its (hidden) control here -->
+<div id="google_translate_element" style="display:none;"></div>
 
 <!-- HERO -->
 <section class="hero">
@@ -725,7 +772,7 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,bod
 </div> <!-- /#landing-view -->
 
 <!-- ── LOGIN MODAL (reused from Open Day: same staff, same passwords) ── -->
-<div class="login-modal-backdrop" id="login-modal-backdrop" onclick="handleLoginBackdrop(event)">
+<div class="login-modal-backdrop notranslate" translate="no" id="login-modal-backdrop" onclick="handleLoginBackdrop(event)">
   <div class="login-modal" id="login-modal">
     <div class="login-modal-header">
       <div class="login-modal-logo">
@@ -758,7 +805,7 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,bod
 </div>
 
 <!-- ── DASHBOARD VIEW ── -->
-<div id="dashboard-view">
+<div id="dashboard-view" class="notranslate" translate="no">
   <div class="dash-topbar">
     <div class="dash-topbar-left">
       <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="PBIS" class="js-logo">
@@ -806,7 +853,7 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,bod
 </div>
 
 <!-- EDIT GUEST MODAL -->
-<div class="modal-backdrop" id="edit-guest-backdrop" onclick="if(event.target===this)closeEditGuestModal()">
+<div class="modal-backdrop notranslate" translate="no" id="edit-guest-backdrop" onclick="if(event.target===this)closeEditGuestModal()">
   <div class="modal">
     <div class="modal-header">
       <button class="modal-close" onclick="closeEditGuestModal()">✕</button>
@@ -870,7 +917,7 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,bod
 </div>
 
 <!-- MANUAL ADD GUEST MODAL (staff-entered RSVP — phone-ins, walk-ups, VVIPs) -->
-<div class="modal-backdrop" id="add-guest-backdrop" onclick="if(event.target===this)closeAddGuestModal()">
+<div class="modal-backdrop notranslate" translate="no" id="add-guest-backdrop" onclick="if(event.target===this)closeAddGuestModal()">
   <div class="modal">
     <div class="modal-header">
       <button class="modal-close" onclick="closeAddGuestModal()">✕</button>
@@ -934,7 +981,7 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,bod
 </div>
 
 <!-- FOLLOW-UP SEND MODAL (per-guest) -->
-<div class="modal-backdrop" id="followup-modal-backdrop" onclick="if(event.target===this)closeFollowUpModal()">
+<div class="modal-backdrop notranslate" translate="no" id="followup-modal-backdrop" onclick="if(event.target===this)closeFollowUpModal()">
   <div class="modal">
     <div class="modal-header">
       <button class="modal-close" onclick="closeFollowUpModal()">✕</button>
@@ -962,7 +1009,7 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,bod
 </div>
 
 <!-- APPROVE & SEND TICKET MODAL -->
-<div class="modal-backdrop" id="approve-modal-backdrop" onclick="if(event.target===this)closeApproveModal()">
+<div class="modal-backdrop notranslate" translate="no" id="approve-modal-backdrop" onclick="if(event.target===this)closeApproveModal()">
   <div class="modal">
     <div class="modal-header">
       <button class="modal-close" onclick="closeApproveModal()">✕</button>
@@ -1009,6 +1056,18 @@ const LOGO = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAZAAAAGQCAYAAACAvzbM
 
 document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('img.js-logo').forEach(function(img) { img.src = LOGO; });
+
+  // Reflect any already-selected translation language in the switcher
+  // button, so a returning visitor sees their language, not always "EN"
+  const langMatch = document.cookie.match(/googtrans=\/en\/([a-zA-Z-]+)/);
+  if (langMatch && langMatch[1] && langMatch[1] !== 'en') {
+    const code = langMatch[1];
+    const labelEl = document.getElementById('langBtnLabel');
+    if (labelEl) labelEl.textContent = LANG_NAMES[code] || code.toUpperCase();
+    document.querySelectorAll('.lang-option').forEach(function(btn) {
+      btn.classList.toggle('active', btn.getAttribute('data-lang') === code);
+    });
+  }
 
   // Build a light starfield
   const field = document.getElementById('starfield');
@@ -1118,6 +1177,87 @@ document.addEventListener('DOMContentLoaded', function() {
 function sanitize(str) {
   if (!str) return '';
   return String(str).replace(/[<>]/g, '').trim();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   LANGUAGE SWITCHER — translates the public landing page using
+   Google Translate's free translation engine, running entirely in
+   the visitor's browser (works on any device, no server needed).
+   Google's own toolbar UI is hidden via CSS; this custom dropdown
+   drives the same underlying <select> Google injects, so the visual
+   experience matches the rest of the site instead of Google's
+   default styling. The admin dashboard and its modals are marked
+   notranslate so staff tools always stay in English regardless of
+   what a visitor has selected on the public page.
+   ══════════════════════════════════════════════════════════════ */
+const LANG_NAMES = { en:'EN', lo:'LO', th:'TH', fr:'FR', 'zh-CN':'ZH', ko:'KO', ja:'JA' };
+
+function googleTranslateElementInit() {
+  new google.translate.TranslateElement({
+    pageLanguage: 'en',
+    includedLanguages: 'en,lo,th,fr,zh-CN,ko,ja',
+    autoDisplay: false
+  }, 'google_translate_element');
+}
+
+function toggleLangDropdown(e) {
+  e.stopPropagation();
+  document.getElementById('langSwitcher').classList.toggle('open');
+}
+
+document.addEventListener('click', function(e) {
+  const ls = document.getElementById('langSwitcher');
+  if (ls && !ls.contains(e.target)) ls.classList.remove('open');
+});
+
+function setLanguage(langCode) {
+  const labelEl = document.getElementById('langBtnLabel');
+  if (labelEl) labelEl.textContent = LANG_NAMES[langCode] || langCode.toUpperCase();
+
+  document.querySelectorAll('.lang-option').forEach(function(btn) {
+    btn.classList.toggle('active', btn.getAttribute('data-lang') === langCode);
+  });
+  const switcher = document.getElementById('langSwitcher');
+  if (switcher) switcher.classList.remove('open');
+
+  if (langCode === 'en') {
+    // Clear Google's translate cookies and reload to restore the original text
+    document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.' + location.hostname + ';';
+    location.reload();
+    return;
+  }
+
+  // Google injects a <select class="goog-te-combo"> once its script has
+  // finished loading — this can take a moment on slower connections, so
+  // retry briefly rather than failing silently on a fast click.
+  const tryTrigger = function(attempt) {
+    const select = document.querySelector('#google_translate_element select.goog-te-combo');
+    if (select) {
+      select.value = langCode;
+      select.dispatchEvent(new Event('change'));
+    } else if (attempt < 20) {
+      setTimeout(function() { tryTrigger(attempt + 1); }, 250);
+    } else {
+      showDashToastPublic('⚠️ Translation is still loading — please try again in a moment.');
+    }
+  };
+  tryTrigger(0);
+}
+
+// Lightweight toast for the public landing page (the dashboard has its
+// own showDashToast, but that element only exists once logged in).
+function showDashToastPublic(msg) {
+  let el = document.getElementById('public-toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'public-toast';
+    el.className = 'dash-toast';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(function() { el.classList.remove('show'); }, 3200);
 }
 
 function openRSVP() {
@@ -2631,6 +2771,11 @@ async function sendIndividualFollowUpEmail() {
   }
 }
 </script>
+
+<!-- Loads Google's translation engine; calls googleTranslateElementInit()
+     (defined above) once ready. Runs entirely client-side in the
+     visitor's browser, so it works the same on desktop and mobile. -->
+<script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit" async></script>
 
 </body>
 </html>
