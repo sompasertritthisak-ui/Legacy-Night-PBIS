@@ -78,6 +78,10 @@ img{max-width:100%;height:auto;}
 }
 .hero-scroll{z-index:2;}
 .hero-crest{width:110px;height:110px;object-fit:contain;margin-bottom:20px;filter:drop-shadow(0 4px 20px rgba(201,168,76,0.35));}
+.hero-crest.hero-crest-hidden{display:none;}
+.hero-crest-3d{width:110px;height:110px;margin:0 auto 20px;display:none;}
+.hero-crest-3d.ready{display:block;}
+.hero-crest-3d canvas{display:block;width:100%!important;height:100%!important;filter:drop-shadow(0 4px 20px rgba(201,168,76,0.35));}
 @keyframes goldShimmer{0%{background-position:0% center;}100%{background-position:200% center;}}
 .hero-eyebrow{font-size:12px;letter-spacing:0.28em;text-transform:uppercase;color:var(--gold);margin-bottom:6px;}
 .hero-school{font-size:13px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.55);margin-bottom:28px;}
@@ -129,6 +133,14 @@ img{max-width:100%;height:auto;}
 .countdown-label{margin-top:10px;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.55);}
 .countdown-sep{font-family:'Cinzel',serif;font-weight:700;font-size:clamp(28px,5vw,44px);color:rgba(201,168,76,0.4);}
 .countdown-status{margin-top:20px;font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold-light);min-height:16px;}
+.calendar-add{position:relative;display:inline-block;margin-top:16px;}
+.calendar-add-btn{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,0.06);border:1.5px solid rgba(201,168,76,0.5);color:var(--gold-light);padding:12px 26px;border-radius:100px;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:background 0.25s ease,border-color 0.25s ease;}
+.calendar-add-btn:hover{background:rgba(201,168,76,0.15);border-color:var(--gold);}
+.calendar-add-btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.calendar-add-dropdown{display:none;position:absolute;top:calc(100% + 10px);left:50%;transform:translateX(-50%);background:var(--white);border:1px solid var(--gray);border-radius:12px;box-shadow:0 16px 40px rgba(10,40,24,0.25);padding:8px;min-width:220px;z-index:50;text-align:left;}
+.calendar-add.open .calendar-add-dropdown{display:block;animation:fadeIn 0.15s ease;}
+.calendar-add-option{display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;padding:11px 13px;border-radius:8px;font-size:13.5px;font-family:'DM Sans',sans-serif;color:var(--text);cursor:pointer;text-align:left;text-decoration:none;}
+.calendar-add-option:hover{background:var(--cream);}
 @media (max-width:600px){.countdown-sep{display:none;}.countdown-grid{gap:14px;}.countdown-box{min-width:80px;padding:20px 16px;}}
 
 /* ── LEGACY / ABOUT ── */
@@ -269,6 +281,15 @@ footer a{color:var(--gold);text-decoration:none;}
 .rsvp-success-recap{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-bottom:18px;opacity:0;animation:successFadeUp 0.6s ease 0.7s forwards;}
 .rsvp-success-recap span{background:var(--cream);border:1px solid var(--gray);border-radius:100px;padding:8px 16px;font-size:12.5px;font-weight:600;color:var(--navy);}
 .rsvp-success-note{text-align:center;font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--gray-mid);font-size:15px;opacity:0;animation:successFadeUp 0.6s ease 0.8s forwards;}
+.rsvp-share{margin-top:22px;padding-top:20px;border-top:1px solid var(--gray);text-align:center;opacity:0;animation:successFadeUp 0.6s ease 0.95s forwards;}
+.rsvp-share-label{font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--gray-mid);font-weight:700;margin-bottom:12px;}
+.rsvp-share-buttons{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;}
+.rsvp-share-btn{display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border-radius:100px;font-size:12.5px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;text-decoration:none;border:1.5px solid var(--gray);background:var(--white);color:var(--text);transition:background 0.2s ease,border-color 0.2s ease;}
+.rsvp-share-btn svg{width:15px;height:15px;flex-shrink:0;}
+.rsvp-share-whatsapp{border-color:#25D366;color:#1a7a45;}
+.rsvp-share-whatsapp:hover{background:rgba(37,211,102,0.08);}
+.rsvp-share-copy:hover{background:var(--cream);border-color:var(--gold);}
+.rsvp-share-copy.copied{background:rgba(45,158,95,0.1);border-color:#2d9e5f;color:#1a7a45;}
 @keyframes successFadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
 .form-submit{width:100%;background:linear-gradient(135deg,var(--gold),var(--gold-light));color:var(--deep);border:none;padding:16px;border-radius:10px;font-size:14px;font-weight:700;letter-spacing:0.03em;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:8px;}
 .form-submit:hover{filter:brightness(1.05);}
@@ -314,6 +335,7 @@ footer a{color:var(--gold);text-decoration:none;}
   .nav{padding:12px 16px;}
   .hero{padding:120px 18px 64px;}
   .hero-crest{width:88px;height:88px;}
+  .hero-crest-3d{width:88px;height:88px;}
   .hero-meta{gap:10px;}
   .hero-meta-item{padding:9px 16px;font-size:12px;}
   .hero-cta{width:100%;max-width:340px;padding:16px 32px;}
@@ -561,6 +583,11 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,bod
 
 /* ── FLOATING WHATSAPP BUTTON ── */
 .wa-float{position:fixed;right:max(24px,env(safe-area-inset-right));bottom:max(28px,calc(env(safe-area-inset-bottom) + 16px));z-index:400;display:flex;flex-direction:column;align-items:flex-end;gap:14px;}
+.audio-float{position:fixed;left:max(24px,env(safe-area-inset-left));bottom:max(28px,calc(env(safe-area-inset-bottom) + 16px));z-index:400;width:52px;height:52px;border-radius:50%;background:rgba(10,40,24,0.85);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1.5px solid rgba(201,168,76,0.4);color:var(--gold-light);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,0.25);transition:border-color 0.25s ease,box-shadow 0.25s ease,background 0.25s ease;}
+.audio-float:hover{border-color:var(--gold);background:rgba(10,40,24,0.95);}
+.audio-float.playing{border-color:var(--gold);box-shadow:0 6px 20px rgba(201,168,76,0.3),0 0 0 4px rgba(201,168,76,0.1);}
+.audio-float svg{width:21px;height:21px;}
+@media (max-width:640px){.audio-float{left:max(16px,env(safe-area-inset-left));bottom:max(20px,calc(env(safe-area-inset-bottom) + 10px));width:46px;height:46px;}.audio-float svg{width:18px;height:18px;}}
 .wa-float-btn{width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#25D366,#128C7E);display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;box-shadow:0 6px 24px rgba(37,211,102,0.5);animation:waPulse 2.2s ease-in-out infinite;position:relative;}
 .wa-float-btn::before{content:'';position:absolute;inset:0;border-radius:50%;background:rgba(37,211,102,0.55);animation:waRipple 2.2s ease-out infinite;z-index:-1;}
 .wa-float-btn svg{width:30px;height:30px;fill:#fff;}
@@ -645,8 +672,8 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,bod
 
 <!-- HERO -->
 <section class="hero">
-  <div class="starfield" id="starfield"></div>
-  <div class="hero-glare"></div>
+  <div class="starfield" id="starfield" data-parallax="0.18"></div>
+  <div class="hero-glare" data-parallax="0.08"></div>
   <div class="hero-spotlight" id="heroSpotlight"></div>
   <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="PBIS 25th Anniversary Crest" class="hero-crest js-logo">
   <p class="hero-eyebrow">You Are Invited</p>
@@ -681,6 +708,15 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,bod
     </div>
     <p class="countdown-status" id="countdown-status"></p>
     <button class="hero-cta" onclick="openRSVP()">Reserve Your Seat</button>
+    <div class="calendar-add" id="calendarAdd">
+      <button class="calendar-add-btn" onclick="toggleCalendarDropdown(event)" type="button">
+        <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg> Add to Calendar
+      </button>
+      <div class="calendar-add-dropdown" id="calendarAddDropdown">
+        <a href="#" onclick="addToGoogleCalendar(event)" class="calendar-add-option">📅 Google Calendar</a>
+        <button type="button" onclick="downloadICS()" class="calendar-add-option">🍎 Apple / Outlook (.ics)</button>
+      </div>
+    </div>
   </div>
   <div class="section-wave section-wave-white"><svg viewBox="0 0 1440 60" preserveAspectRatio="none"><path d="M0,32 C360,60 1080,0 1440,28 L1440,60 L0,60 Z"/></svg></div>
 </section>
@@ -947,6 +983,19 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,bod
             <span>📍 Holiday Inn &amp; Suites Vientiane</span>
           </div>
           <p class="rsvp-success-note">We look forward to celebrating this milestone with you.</p>
+          <div class="rsvp-share">
+            <p class="rsvp-share-label">Share that you're going</p>
+            <div class="rsvp-share-buttons">
+              <a class="rsvp-share-btn rsvp-share-whatsapp" href="#" onclick="shareViaWhatsApp(event)">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.148.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12.001 2C6.478 2 2 6.477 2 12c0 1.936.542 3.803 1.567 5.415L2 22l4.674-1.531A9.953 9.953 0 0 0 12.001 22C17.523 22 22 17.523 22 12S17.523 2 12.001 2zm0 18.152a8.13 8.13 0 0 1-4.144-1.13l-.297-.176-3.096.988.936-3.05-.194-.312a8.146 8.146 0 0 1-1.253-4.372c0-4.508 3.667-8.174 8.174-8.174 4.508 0 8.174 3.666 8.174 8.174 0 4.507-3.666 8.174-8.174 8.174z"/></svg>
+                WhatsApp
+              </a>
+              <button type="button" class="rsvp-share-btn rsvp-share-copy" id="rsvp-share-copy-btn" onclick="copyShareLink(this)">
+                <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.07 0l2.83-2.83a5 5 0 0 0-7.07-7.07l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7.07 0L4.1 13.83a5 5 0 0 0 7.07 7.07l1.5-1.5"/></svg>
+                <span>Copy Link</span>
+              </button>
+            </div>
+          </div>
         </div>
       </form>
     </div>
@@ -954,6 +1003,12 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,bod
 </div>
 
 <!-- FLOATING WHATSAPP BUTTON -->
+<!-- AMBIENT AUDIO TOGGLE (synthesized in-browser, no audio file needed) -->
+<button class="audio-float" onclick="toggleAmbientAudio()" type="button" id="navAudioBtn" title="Toggle ambient sound">
+  <svg class="audio-icon-off" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 5V4L8 9H4z"/><path d="M17 9l4 6M21 9l-4 6"/></svg>
+  <svg class="audio-icon-on" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M4 9v6h4l5 5V4L8 9H4z"/><path d="M16 8.5a5 5 0 0 1 0 7M19 6a9 9 0 0 1 0 12"/></svg>
+</button>
+
 <div class="wa-float">
   <div class="wa-panel" id="wa-panel">
     <div class="wa-panel-header">
@@ -1291,6 +1346,33 @@ document.addEventListener('DOMContentLoaded', function() {
     field.appendChild(s);
   }
 
+  // Scroll-triggered parallax: the starfield and sun-glare drift
+  // slower than the rest of the page as you scroll, so the hero
+  // reads with real depth instead of everything moving as one flat
+  // layer. Cheap (transform-only, rAF-throttled) and stops updating
+  // once scrolled well past the hero, since it's clipped out of view
+  // by then anyway.
+  const parallaxEls = Array.from(document.querySelectorAll('[data-parallax]'));
+  if (parallaxEls.length && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    let parallaxTicking = false;
+    function updateParallax() {
+      const scrollY = window.scrollY || window.pageYOffset;
+      if (scrollY < window.innerHeight * 1.6) {
+        parallaxEls.forEach(function(el) {
+          const speed = parseFloat(el.getAttribute('data-parallax')) || 0.2;
+          el.style.transform = 'translate3d(0,' + (scrollY * speed).toFixed(1) + 'px,0)';
+        });
+      }
+      parallaxTicking = false;
+    }
+    window.addEventListener('scroll', function() {
+      if (!parallaxTicking) {
+        requestAnimationFrame(updateParallax);
+        parallaxTicking = true;
+      }
+    }, { passive: true });
+  }
+
   // Reveal the hero content with a soft fade-up once everything above
   // (logo, starfield, glare) is in place, rather than everything
   // popping in abruptly as the page finishes initializing.
@@ -1442,6 +1524,174 @@ document.addEventListener('click', function(e) {
   if (nm && !nm.contains(e.target)) nm.classList.remove('open');
 });
 
+/* ── Save the Date / Add to Calendar ── */
+function toggleCalendarDropdown(e) {
+  e.stopPropagation();
+  document.getElementById('calendarAdd').classList.toggle('open');
+}
+
+document.addEventListener('click', function(e) {
+  const ca = document.getElementById('calendarAdd');
+  if (ca && !ca.contains(e.target)) ca.classList.remove('open');
+});
+
+function addToGoogleCalendar(e) {
+  e.preventDefault();
+  const text = encodeURIComponent('PBIS Legacy Night — 25th Anniversary Gala');
+  const dates = '20260925T170000/20260925T210000';
+  const details = encodeURIComponent('Join us as we celebrate 25 years of Panyathip British International School. RSVP: https://legacynight.pbis.edu.la/');
+  const location = encodeURIComponent('Holiday Inn & Suites Vientiane');
+  const url = 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + text +
+    '&dates=' + dates + '&details=' + details + '&location=' + location + '&ctz=Asia/Vientiane';
+  window.open(url, '_blank');
+  document.getElementById('calendarAdd').classList.remove('open');
+}
+
+/* ── Ambient audio — a soft synthesized pad, no audio file needed.
+   Muted by default, only starts on an explicit tap (required by
+   browser autoplay policies anyway), and fades in/out smoothly
+   rather than clicking on/off. ── */
+let audioCtx = null;
+let audioNodes = null;
+let audioPlaying = false;
+
+function toggleAmbientAudio() {
+  try {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    if (!audioPlaying) startAmbientAudio(); else stopAmbientAudio();
+  } catch (e) {
+    // Web Audio unsupported or blocked — silently do nothing, button just won't do anything
+  }
+}
+
+function startAmbientAudio() {
+  const masterGain = audioCtx.createGain();
+  masterGain.gain.setValueAtTime(0, audioCtx.currentTime);
+  masterGain.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime + 1.5);
+  masterGain.connect(audioCtx.destination);
+
+  // A soft open chord (C3, G3, C4, E4), each voice given its own slow
+  // LFO so the pad gently shimmers rather than sitting static.
+  const freqs = [130.81, 196.00, 261.63, 329.63];
+  const allNodes = [];
+  freqs.forEach(function(freq, i) {
+    const osc = audioCtx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+
+    const oscGain = audioCtx.createGain();
+    oscGain.gain.value = 0.6 / freqs.length;
+
+    const lfo = audioCtx.createOscillator();
+    lfo.frequency.value = 0.05 + i * 0.02;
+    const lfoGain = audioCtx.createGain();
+    lfoGain.gain.value = 0.15;
+    lfo.connect(lfoGain);
+    lfoGain.connect(oscGain.gain);
+
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 1200;
+
+    osc.connect(filter);
+    filter.connect(oscGain);
+    oscGain.connect(masterGain);
+    osc.start();
+    lfo.start();
+
+    allNodes.push(osc, lfo);
+  });
+
+  audioNodes = { masterGain: masterGain, oscillators: allNodes };
+  audioPlaying = true;
+  updateAudioButtonUI(true);
+}
+
+function stopAmbientAudio() {
+  if (!audioNodes) return;
+  const masterGain = audioNodes.masterGain;
+  const oscillators = audioNodes.oscillators;
+  masterGain.gain.cancelScheduledValues(audioCtx.currentTime);
+  masterGain.gain.setValueAtTime(masterGain.gain.value, audioCtx.currentTime);
+  masterGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.8);
+  setTimeout(function() {
+    oscillators.forEach(function(o) { try { o.stop(); } catch (e) {} });
+  }, 900);
+  audioNodes = null;
+  audioPlaying = false;
+  updateAudioButtonUI(false);
+}
+
+function updateAudioButtonUI(playing) {
+  const btn = document.getElementById('navAudioBtn');
+  if (!btn) return;
+  btn.classList.toggle('playing', playing);
+  const offIcon = btn.querySelector('.audio-icon-off');
+  const onIcon = btn.querySelector('.audio-icon-on');
+  if (offIcon) offIcon.style.display = playing ? 'none' : 'block';
+  if (onIcon) onIcon.style.display = playing ? 'block' : 'none';
+}
+/* ── Post-RSVP share moment ── */
+function shareViaWhatsApp(e) {
+  e.preventDefault();
+  const fnameEl = document.getElementById('rsvp-fname');
+  const fname = fnameEl ? fnameEl.value.trim() : '';
+  const msg = (fname ? fname + ' here — ' : '') +
+    "I just confirmed my spot at PBIS Legacy Night, the 25th Anniversary Gala on 25 September 2026! 🎉 Join us: https://legacynight.pbis.edu.la/";
+  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+}
+
+function copyShareLink(btn) {
+  const url = 'https://legacynight.pbis.edu.la/';
+  const restore = function() {
+    setTimeout(function() {
+      btn.classList.remove('copied');
+      btn.querySelector('span').textContent = 'Copy Link';
+    }, 2000);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(function() {
+      btn.classList.add('copied');
+      btn.querySelector('span').textContent = '✓ Copied!';
+      restore();
+    }).catch(function() { prompt('Copy this link:', url); });
+  } else {
+    prompt('Copy this link:', url);
+  }
+}
+
+function downloadICS() {
+  const stamp = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+  const icsLines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//PBIS//Legacy Night//EN',
+    'BEGIN:VEVENT',
+    'UID:pbis-legacy-night-2026@legacynight.pbis.edu.la',
+    'DTSTAMP:' + stamp,
+    'DTSTART:20260925T100000Z',
+    'DTEND:20260925T140000Z',
+    'SUMMARY:PBIS Legacy Night — 25th Anniversary Gala',
+    'DESCRIPTION:Join us as we celebrate 25 years of Panyathip British International School. RSVP: https://legacynight.pbis.edu.la/',
+    'LOCATION:Holiday Inn & Suites Vientiane',
+    'END:VEVENT',
+    'END:VCALENDAR'
+  ];
+  const blob = new Blob([icsLines.join('\r\n')], { type: 'text/calendar;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'PBIS-Legacy-Night.ics';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  document.getElementById('calendarAdd').classList.remove('open');
+}
+
 function setLanguage(langCode) {
   // Set (or clear) Google's own translation cookie, then reload — this
   // is far more reliable than trying to trigger the widget's dynamically
@@ -1592,6 +1842,126 @@ document.addEventListener('DOMContentLoaded', function() {
     const el = document.getElementById(id);
     if (el) el.addEventListener('blur', () => validateRsvpField(id));
   });
+});
+
+/* ══════════════════════════════════════════════════════════════
+   3D ROTATING HERO CREST (optional, progressively-enhanced)
+   ══════════════════════════════════════════════════════════════
+   A slowly-spinning 3D medallion version of the crest, built with
+   Three.js. This is entirely optional decoration layered on top of
+   the always-present static <img class="hero-crest">, which is the
+   real fallback and stays untouched unless every step below
+   succeeds:
+     1. Skipped entirely if the visitor has requested reduced motion.
+     2. Skipped entirely if the browser has no WebGL support.
+     3. Three.js itself is only fetched once the browser is idle
+        (or after a short timeout on browsers without
+        requestIdleCallback), specifically so it can never compete
+        with or delay the page's own critical rendering.
+     4. The static image is only hidden at the very last moment —
+        right after the first successful frame renders — so any
+        failure at any point (script blocked, texture error, WebGL
+        runtime error) simply leaves the ordinary static crest
+        exactly as it already looks today. Nothing about this can
+        make the hero look worse than it currently does; it can only
+        add a small extra flourish on capable devices.
+   ══════════════════════════════════════════════════════════════ */
+function initHeroCrest3D() {
+  try {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const testCanvas = document.createElement('canvas');
+    const testGl = testCanvas.getContext('webgl') || testCanvas.getContext('experimental-webgl');
+    if (!testGl) return;
+
+    const crestImg = document.querySelector('.hero-crest');
+    if (!crestImg) return;
+
+    const container = document.createElement('div');
+    container.className = 'hero-crest-3d';
+    container.id = 'heroCrest3D';
+    crestImg.insertAdjacentElement('afterend', container);
+
+    const start = function() {
+      if (window.THREE) { buildCrestScene(container, crestImg); return; }
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r158/three.min.js';
+      script.onload = function() { buildCrestScene(container, crestImg); };
+      script.onerror = function() { container.remove(); }; // CDN unreachable → keep static logo
+      document.body.appendChild(script);
+    };
+
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(start, { timeout: 2500 });
+    } else {
+      setTimeout(start, 1200);
+    }
+  } catch (e) {
+    // Any unexpected error here → the static logo was never touched, nothing to undo.
+  }
+}
+
+function buildCrestScene(container, crestImg) {
+  try {
+    const size = crestImg.clientWidth || 110;
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setSize(size, size);
+    container.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100);
+    camera.position.z = 4.4;
+
+    scene.add(new THREE.AmbientLight(0xfff3d6, 0.9));
+    const keyLight = new THREE.DirectionalLight(0xffe9b0, 1.1);
+    keyLight.position.set(2, 3, 4);
+    scene.add(keyLight);
+    const rimLight = new THREE.DirectionalLight(0x8adfa6, 0.5);
+    rimLight.position.set(-3, -1, -2);
+    scene.add(rimLight);
+
+    const loader = new THREE.TextureLoader();
+    loader.load(crestImg.src, function(texture) {
+      try {
+        // A thin coin-shaped cylinder, reoriented so its flat circular
+        // faces point at the camera (Three.js's default cylinder axis
+        // is vertical — without this rotation it would present its
+        // edge to the camera, not its face).
+        const geo = new THREE.CylinderGeometry(1.7, 1.7, 0.16, 64);
+        geo.rotateX(Math.PI / 2);
+        const faceMat = new THREE.MeshStandardMaterial({ map: texture, transparent: true, metalness: 0.35, roughness: 0.4 });
+        const edgeMat = new THREE.MeshStandardMaterial({ color: 0xc9a84c, metalness: 0.6, roughness: 0.35 });
+        const medallion = new THREE.Mesh(geo, [edgeMat, faceMat, faceMat]);
+        scene.add(medallion);
+
+        let floatT = 0;
+        function animate() {
+          requestAnimationFrame(animate);
+          medallion.rotation.y += 0.006;
+          floatT += 0.012;
+          medallion.position.y = Math.sin(floatT) * 0.05;
+          renderer.render(scene, camera);
+        }
+        animate();
+
+        // Only now, after a real successful frame is guaranteed to
+        // render, do we swap away from the static image.
+        container.classList.add('ready');
+        crestImg.classList.add('hero-crest-hidden');
+      } catch (innerErr) {
+        container.remove(); // scene build failed → static logo remains exactly as it was
+      }
+    }, undefined, function() {
+      container.remove(); // texture failed to load → static logo remains exactly as it was
+    });
+  } catch (e) {
+    container.remove(); // any renderer/runtime error → static logo remains exactly as it was
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  initHeroCrest3D();
 });
 
 function goToRsvpConfirmStep() {
