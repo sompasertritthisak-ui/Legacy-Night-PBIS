@@ -121,7 +121,7 @@ img{max-width:100%;height:auto;}
 .countdown-grid > *:nth-child(7){transition-delay:0.6s;}
 
 /* ── COUNTDOWN ── */
-.countdown-section{background:linear-gradient(160deg,var(--navy) 0%, var(--deep) 100%);position:relative;overflow:hidden;text-align:center;}
+.countdown-section{background:linear-gradient(160deg,var(--navy) 0%, var(--deep) 100%);position:relative;text-align:center;}
 .countdown-section::before{content:'';position:absolute;inset:0;pointer-events:none;opacity:0.05;mix-blend-mode:overlay;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");background-size:120px 120px;z-index:0;}
 .countdown-section .section-title,.countdown-section .section-eyebrow{color:var(--white);}
 .countdown-section .section-eyebrow{color:var(--gold);}
@@ -175,7 +175,7 @@ img{max-width:100%;height:auto;}
 .detail-card a:hover{text-decoration:underline;}
 
 /* ── SECTION WAVE DIVIDERS ── */
-.section-wave{position:absolute;left:0;right:0;bottom:-1px;height:56px;line-height:0;pointer-events:none;z-index:1;}
+.section-wave{position:absolute;left:0;right:0;bottom:-1px;height:56px;line-height:0;pointer-events:none;z-index:0;}
 .section-wave svg{width:100%;height:100%;display:block;}
 .section-wave-white path{fill:var(--white);}
 .section-wave-cream path{fill:var(--cream);}
