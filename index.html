@@ -1542,6 +1542,16 @@ const LOGO = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAZAAAAGQCAYAAACAvzbM
 document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('img.js-logo').forEach(function(img) { img.src = LOGO; });
 
+  // Arriving via the "Open Legacy Night Dashboard" link in the team
+  // notification email (?admin=1) jumps straight to the login prompt,
+  // instead of making staff hunt for the small admin icon in the nav.
+  try {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('admin') === '1') {
+      setTimeout(function() { openLoginModal(); }, 300);
+    }
+  } catch (e) {}
+
   // Reflect any already-selected translation language in the switcher
   // button, so a returning visitor sees their language, not always "EN"
   const langMatch = document.cookie.match(/googtrans=\/en\/([a-zA-Z-]+)/);
