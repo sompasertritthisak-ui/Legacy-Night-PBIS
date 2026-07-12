@@ -542,6 +542,14 @@ body.dashboard-active #dashboard-view{display:block !important;}
 .dash-org-bar-track{background:var(--gray);border-radius:6px;height:8px;overflow:hidden;}
 .dash-org-bar-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--gold),var(--gold-light));}
 .dash-row-action{background:none;border:none;font-size:15px;cursor:pointer;padding:4px 6px;border-radius:6px;}
+.dash-row-action-view{background:none;border:none;font-size:15px;cursor:pointer;padding:4px 6px;border-radius:6px;}
+.dash-row-action-view:hover,.dash-row-action:hover{background:var(--cream);}
+.detail-section{margin-bottom:20px;}
+.detail-section-title{font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;border-bottom:1px solid var(--gray);padding-bottom:6px;}
+.detail-row{display:flex;justify-content:space-between;gap:16px;padding:6px 0;font-size:13.5px;}
+.detail-row span:first-child{color:var(--gray-mid);flex-shrink:0;}
+.detail-row span:last-child{color:var(--navy);font-weight:600;text-align:right;}
+.detail-status-badges{display:flex;flex-wrap:wrap;gap:8px;}
 .dash-row-action:hover{background:var(--gray);}
 
 /* Edit Guest modal — reuses the same modal-backdrop/modal shell as RSVP */
@@ -571,6 +579,38 @@ body.dashboard-active #dashboard-view{display:block !important;}
 .dash-approve-undo{background:var(--gray);color:var(--gray-mid);border:none;padding:7px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;margin-left:8px;}
 .dash-approved-pill{display:inline-flex;align-items:center;gap:5px;background:rgba(201,168,76,0.14);color:#8a6a26;border:1px solid rgba(201,168,76,0.4);padding:4px 12px;border-radius:100px;font-size:11.5px;font-weight:700;}
 #approve-modal-send-btn:disabled{opacity:0.45;cursor:not-allowed;}
+.approve-qr-preview{display:flex;align-items:center;gap:16px;padding:16px;border:1.5px dashed var(--gray);border-radius:10px;margin-bottom:20px;background:var(--cream);}
+.approve-qr-preview canvas{width:90px;height:90px;background:#fff;border-radius:6px;flex-shrink:0;border:1px solid var(--gray);}
+.approve-qr-hint{font-size:12px;color:var(--gray-mid);line-height:1.5;}
+.qr-scanner-modal{max-width:420px;}
+.qr-scanner-viewport{position:relative;width:100%;aspect-ratio:1;background:#000;border-radius:12px;overflow:hidden;margin-bottom:16px;}
+.qr-scanner-viewport video{width:100%;height:100%;object-fit:cover;display:block;}
+.qr-scanner-frame{position:absolute;inset:14%;border:3px solid rgba(232,201,110,0.85);border-radius:16px;box-shadow:0 0 0 9999px rgba(0,0,0,0.4);pointer-events:none;}
+.qr-scanner-result{min-height:64px;display:flex;align-items:center;justify-content:center;text-align:center;}
+.qr-scanner-status{font-size:13px;color:var(--gray-mid);}
+.qr-scanner-success{background:rgba(45,158,95,0.1);border:1.5px solid #2d9e5f;border-radius:10px;padding:14px;width:100%;color:#1a7a45;font-weight:700;font-size:14px;}
+.qr-scanner-error{background:rgba(192,80,77,0.1);border:1.5px solid #c0504d;border-radius:10px;padding:14px;width:100%;color:#a03c3a;font-weight:600;font-size:13.5px;}
+.qr-scanner-warn{background:rgba(232,201,110,0.15);border:1.5px solid var(--gold);border-radius:10px;padding:14px;width:100%;color:#8a6a26;font-weight:600;font-size:13.5px;}
+.activity-list{display:flex;flex-direction:column;gap:2px;}
+.activity-row{display:flex;align-items:flex-start;gap:12px;padding:12px 8px;border-bottom:1px solid var(--gray);}
+.activity-row:last-child{border-bottom:none;}
+.activity-icon{font-size:17px;flex-shrink:0;width:26px;text-align:center;}
+.activity-body{flex:1;min-width:0;}
+.activity-line{font-size:13.5px;color:var(--text);margin:0;}
+.activity-line strong{color:var(--navy);}
+.activity-meta{font-size:11.5px;color:var(--gray-mid);margin:3px 0 0;}
+.tables-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;}
+.table-card{border:1.5px solid var(--gray);border-radius:12px;padding:14px 16px;background:var(--white);}
+.table-card.full{border-color:#2d9e5f;background:rgba(45,158,95,0.04);}
+.table-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.table-card-num{font-family:'Cinzel',serif;font-weight:700;font-size:13px;color:var(--navy);}
+.table-card-fill{font-size:11.5px;color:var(--gray-mid);font-weight:600;}
+.table-card-bar{height:5px;background:var(--gray);border-radius:100px;overflow:hidden;margin-bottom:10px;}
+.table-card-bar-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-light));border-radius:100px;}
+.table-card-names{line-height:1.8;}
+.table-guest-chip{display:inline-flex;align-items:center;gap:5px;background:var(--cream);border:1px solid var(--gray);border-radius:100px;padding:3px 8px 3px 10px;font-size:11px;margin:2px 3px 2px 0;}
+.table-guest-chip button{background:none;border:none;color:#c0504d;cursor:pointer;font-size:11px;padding:0;line-height:1;}
+.table-assign-select{padding:7px 10px;border:1.5px solid var(--gray);border-radius:6px;font-size:12.5px;font-family:'DM Sans',sans-serif;background:var(--cream);}
 .dash-toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(200%);opacity:0;visibility:hidden;pointer-events:none;background:var(--navy);color:#fff;padding:13px 24px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 12px 32px rgba(0,0,0,0.3);z-index:99999;transition:transform 0.3s ease,opacity 0.3s ease,visibility 0.3s;border:1px solid rgba(201,168,76,0.3);}
 .dash-toast.show{transform:translateX(-50%) translateY(0);opacity:1;visibility:visible;pointer-events:auto;}
 body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,body.role-marketing .dash-row-action,body.role-marketing #followup-modal-send-btn,body.role-marketing #followup-modal-file-input,body.role-marketing .followup-compose-btn,body.role-marketing .dash-noshow-btn,body.role-marketing .dash-noshow-undo,body.role-marketing #edit-guest-save-btn,body.role-marketing .dash-approve-btn,body.role-marketing .dash-approve-undo,body.role-marketing #approve-modal-send-btn,body.role-marketing #approve-modal-file-input,body.role-marketing .dash-btn-gold,body.role-marketing #add-guest-save-btn{opacity:0.3;pointer-events:none;filter:grayscale(1);}
@@ -1106,6 +1146,12 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,bod
     <button class="dash-tab" onclick="switchDashTab('followup',this)" id="dtab-followup">
       <svg class="dash-tab-icon" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg> Follow Up
     </button>
+    <button class="dash-tab" onclick="switchDashTab('tables',this)" id="dtab-tables">
+      <svg class="dash-tab-icon" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><circle cx="4" cy="5" r="1.6"/><circle cx="20" cy="5" r="1.6"/><circle cx="4" cy="19" r="1.6"/><circle cx="20" cy="19" r="1.6"/></svg> Tables <span class="dash-tab-count" id="tables-tab-count">0</span>
+    </button>
+    <button class="dash-tab" onclick="switchDashTab('activitylog',this)" id="dtab-activitylog">
+      <svg class="dash-tab-icon" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2"/></svg> Activity Log
+    </button>
   </div>
 
   <div class="dash-main">
@@ -1115,10 +1161,24 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,bod
     <div id="dash-tab-content-checkin" style="display:none;"><!-- populated by JS --></div>
     <div id="dash-tab-content-overdue" style="display:none;"><!-- populated by JS --></div>
     <div id="dash-tab-content-followup" style="display:none;"><!-- populated by JS --></div>
+    <div id="dash-tab-content-tables" style="display:none;"><!-- populated by JS --></div>
+    <div id="dash-tab-content-activitylog" style="display:none;"><!-- populated by JS --></div>
   </div>
 </div>
 
 <!-- EDIT GUEST MODAL -->
+<!-- GUEST DETAIL MODAL (read-only view) -->
+<div class="modal-backdrop notranslate" translate="no" id="guest-detail-backdrop" onclick="if(event.target===this)closeGuestDetailModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <button class="modal-close" onclick="closeGuestDetailModal()">✕</button>
+      <h2 id="guest-detail-name">Guest Details</h2>
+      <p id="guest-detail-subhead">—</p>
+    </div>
+    <div class="edit-guest-body" id="guest-detail-body"></div>
+  </div>
+</div>
+
 <div class="modal-backdrop notranslate" translate="no" id="edit-guest-backdrop" onclick="if(event.target===this)closeEditGuestModal()">
   <div class="modal">
     <div class="modal-header">
@@ -1285,12 +1345,18 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,bod
     <div class="edit-guest-body">
       <input type="hidden" id="approve-modal-ts">
 
-      <div class="followup-warn">Approving sends this guest their official Legacy Night ticket by email. A message and at least one attachment (their invitation card and/or unique QR code) are both required before you can approve.</div>
+      <div class="followup-warn">Approving sends this guest their official Legacy Night ticket by email. A unique QR code is generated automatically below for check-in — write a message, optionally attach an invitation card, then approve.</div>
+
+      <label style="display:block;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--navy);margin-bottom:8px;">Guest's Unique QR Code <span style="text-transform:none;font-weight:400;color:var(--gray-mid);">(auto-generated, included automatically)</span></label>
+      <div class="approve-qr-preview" id="approve-qr-preview">
+        <canvas id="approve-qr-canvas" width="180" height="180"></canvas>
+        <p class="approve-qr-hint">This code is scanned at check-in on the night — attached to the email automatically, no action needed.</p>
+      </div>
 
       <label style="display:block;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--navy);margin-bottom:8px;">Message *</label>
       <textarea class="followup-textarea" id="approve-modal-message" placeholder="Your Legacy Night Ticket" oninput="updateApproveButtonState()"></textarea>
 
-      <label style="display:block;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--navy);margin-bottom:8px;">Attachments * <span style="text-transform:none;font-weight:400;color:var(--gray-mid);">(PDF, JPEG, or PNG — required, e.g. invitation card + this guest's unique QR code)</span></label>
+      <label style="display:block;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--navy);margin-bottom:8px;">Additional Attachments <span style="text-transform:none;font-weight:400;color:var(--gray-mid);">(optional — e.g. invitation card design, PDF/JPEG/PNG)</span></label>
       <div class="followup-file-row">
         <input type="file" id="approve-modal-file-input" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" multiple onchange="handleApproveFilesSelect(event)">
       </div>
@@ -1300,6 +1366,24 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,bod
         <button class="edit-guest-cancel" onclick="closeApproveModal()">Cancel</button>
         <button class="form-submit" id="approve-modal-send-btn" onclick="submitApproveGuest()" disabled>🎫 Approve &amp; Send Ticket</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- QR SCANNER MODAL (Check-In) -->
+<div class="modal-backdrop notranslate" translate="no" id="qr-scanner-backdrop" onclick="if(event.target===this)closeQRScanner()">
+  <div class="modal qr-scanner-modal">
+    <div class="modal-header">
+      <button class="modal-close" onclick="closeQRScanner()">✕</button>
+      <h2>Scan Guest QR Code</h2>
+      <p>Point the camera at a guest's ticket to check them in</p>
+    </div>
+    <div class="edit-guest-body">
+      <div class="qr-scanner-viewport">
+        <video id="qr-scanner-video" playsinline autoplay muted></video>
+        <div class="qr-scanner-frame"></div>
+      </div>
+      <div class="qr-scanner-result" id="qr-scanner-result"><p class="qr-scanner-status">Loading scanner…</p></div>
     </div>
   </div>
 </div>
@@ -2502,16 +2586,35 @@ async function fetchDashboardGuests() {
   return _dashGuestsCache;
 }
 
+let _knownGuestTsSet = null; // null until the first successful load completes
+
 async function loadDashboardData() {
   const btn = document.getElementById('dash-resync-btn');
   if (btn) { btn.disabled = true; btn.textContent = '↻ Syncing…'; }
 
+  const previousTsSet = _knownGuestTsSet;
   await fetchDashboardGuests();
+
+  // Let staff know when new RSVPs have arrived since they last looked,
+  // rather than a stat card silently changing. Skipped on the very
+  // first load after logging in, since "N new RSVPs" would be a
+  // meaningless message the moment the dashboard opens.
+  const currentTsSet = new Set(_dashGuestsCache.map(g => g.ts));
+  if (previousTsSet) {
+    let newCount = 0;
+    currentTsSet.forEach(function(ts) { if (!previousTsSet.has(ts)) newCount++; });
+    if (newCount > 0) {
+      showDashToast(`🎉 ${newCount} new RSVP${newCount === 1 ? '' : 's'} since you last checked!`);
+    }
+  }
+  _knownGuestTsSet = currentTsSet;
+
   renderOverviewTab();
   renderGuestListTab();
   renderApprovalsTab();
   renderCheckInTab();
   renderOverdueTab();
+  renderTablesTab();
 
   if (btn) { btn.disabled = false; btn.textContent = '↻ Resync'; }
 }
@@ -2520,13 +2623,15 @@ async function loadDashboardData() {
 function switchDashTab(tab, btn) {
   document.querySelectorAll('.dash-tab').forEach(t => t.classList.remove('active'));
   btn.classList.add('active');
-  ['overview','guestlist','approvals','checkin','overdue','followup'].forEach(t => {
+  ['overview','guestlist','approvals','checkin','overdue','followup','tables','activitylog'].forEach(t => {
     const el = document.getElementById('dash-tab-content-' + t);
     if(el) el.style.display = (t === tab) ? 'block' : 'none';
   });
   if (tab === 'followup') renderFollowUpTab();
   if (tab === 'overdue') renderOverdueTab();
   if (tab === 'approvals') renderApprovalsTab();
+  if (tab === 'tables') renderTablesTab();
+  if (tab === 'activitylog') loadActivityLog();
 }
 
 /* ── LIGHTWEIGHT INLINE SVG CHART HELPERS (no external chart library) ── */
@@ -2594,6 +2699,71 @@ function svgTrendChart(points, width, height) {
 }
 
 /* ── OVERVIEW TAB — key stats + RSVP analytics ── */
+/* ── Catering / Kitchen Sheet — a clean, print-ready report for
+   caterers, separate from the full guest database. Opens in a new
+   tab styled for printing (browser's own "Print to PDF" covers the
+   PDF-export need without adding a PDF-generation library). ── */
+function openCateringSheet() {
+  const guests = _dashGuestsCache;
+  const totalHeadcount = guests.reduce((sum, g) => sum + (g.guest_count || 1), 0);
+
+  const dietaryCounts = {};
+  guests.forEach(g => {
+    if (!g.dietary_preferences) return;
+    g.dietary_preferences.split(',').map(s => s.trim()).filter(Boolean).forEach(pref => {
+      dietaryCounts[pref] = (dietaryCounts[pref] || 0) + (g.guest_count || 1);
+    });
+  });
+  const dietaryRows = Object.entries(dietaryCounts).sort((a,b) => b[1]-a[1])
+    .map(([pref, count]) => `<tr><td>${pref}</td><td style="text-align:right;">${count}</td></tr>`).join('');
+
+  const restrictionGuests = guests.filter(g => g.dietary_restrictions && g.dietary_restrictions.trim());
+  const restrictionRows = restrictionGuests.map(g => {
+    const fullName = `${g.fname||''} ${g.lname||''}`.trim() || 'Guest';
+    return `<tr><td>${fullName}${g.table_number ? ' (Table ' + g.table_number + ')' : ''}</td><td>${g.dietary_restrictions}</td></tr>`;
+  }).join('');
+
+  const generatedAt = new Date().toLocaleString('en-GB', { day:'2-digit', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' });
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>PBIS Legacy Night — Catering Sheet</title>
+    <style>
+      body{font-family:Arial,Helvetica,sans-serif;color:#222;max-width:720px;margin:40px auto;padding:0 24px;}
+      h1{font-size:22px;margin-bottom:2px;}
+      .subtitle{color:#666;font-size:13px;margin-bottom:28px;}
+      .stat-row{display:flex;gap:24px;margin-bottom:32px;}
+      .stat-box{border:1.5px solid #ccc;border-radius:8px;padding:14px 20px;text-align:center;flex:1;}
+      .stat-box .num{font-size:28px;font-weight:700;}
+      .stat-box .label{font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:#666;margin-top:4px;}
+      table{width:100%;border-collapse:collapse;margin-bottom:32px;}
+      th,td{text-align:left;padding:8px 10px;border-bottom:1px solid #ddd;font-size:13.5px;}
+      th{background:#f4f1ea;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:#666;}
+      h2{font-size:15px;border-bottom:2px solid #222;padding-bottom:6px;margin-top:0;}
+      .empty{color:#888;font-style:italic;font-size:13px;}
+      .print-btn{background:#0a2818;color:#e8c96e;border:none;padding:10px 22px;border-radius:6px;font-size:13px;cursor:pointer;margin-bottom:24px;}
+      @media print{.print-btn{display:none;}}
+      .footer{color:#999;font-size:11px;margin-top:40px;}
+    </style></head><body>
+    <h1>PBIS Legacy Night — Catering &amp; Kitchen Sheet</h1>
+    <p class="subtitle">Generated ${generatedAt}</p>
+    <button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+    <div class="stat-row">
+      <div class="stat-box"><div class="num">${guests.length}</div><div class="label">RSVPs</div></div>
+      <div class="stat-box"><div class="num">${totalHeadcount}</div><div class="label">Total Guests</div></div>
+      <div class="stat-box"><div class="num">${restrictionGuests.length}</div><div class="label">With Restrictions</div></div>
+    </div>
+    <h2>Dietary Preferences Breakdown</h2>
+    ${dietaryRows ? `<table><thead><tr><th>Preference</th><th style="text-align:right;">Guests</th></tr></thead><tbody>${dietaryRows}</tbody></table>` : `<p class="empty">No dietary preferences recorded yet.</p>`}
+    <h2>Individual Dietary Restrictions &amp; Allergies</h2>
+    ${restrictionRows ? `<table><thead><tr><th>Guest</th><th>Restriction / Allergy</th></tr></thead><tbody>${restrictionRows}</tbody></table>` : `<p class="empty">No specific restrictions or allergies recorded yet.</p>`}
+    <p class="footer">PBIS Legacy Night · 25th Anniversary Gala · 25 September 2026</p>
+    </body></html>`;
+
+  const win = window.open('', '_blank');
+  if (!win) { showDashToast('⚠️ Pop-up blocked — please allow pop-ups for this site and try again.'); return; }
+  win.document.write(html);
+  win.document.close();
+}
+
 function renderOverviewTab() {
   const el = document.getElementById('dash-tab-content-overview');
   const guests = _dashGuestsCache;
@@ -2688,7 +2858,77 @@ function renderOverviewTab() {
         <div class="dash-panel-title">Top Organizations <span>${topOrgs.length} of ${Object.keys(orgBreakdown).length}</span></div>
         ${topOrgs.length ? orgRows : `<div class="dash-chart-empty">No organizations recorded yet.</div>`}
       </div>
+    </div>
+
+    <div class="dash-panel">
+      <div class="dash-panel-title">Reports</div>
+      <div class="followup-warn" style="margin-bottom:16px;">A clean, print-ready summary for caterers — total headcount and a dietary breakdown, without the rest of the guest database.</div>
+      <button class="dash-btn-gold" onclick="openCateringSheet()">🍽️ Open Catering / Kitchen Sheet</button>
     </div>`;
+}
+
+/* ── Catering / Kitchen Sheet — a clean, print-ready report for
+   caterers: total headcount and a dietary breakdown, without
+   exposing the rest of the guest database. Opens in a new tab
+   styled purely for reading/printing (no dashboard chrome). ── */
+function openCateringSheet() {
+  const guests = _dashGuestsCache;
+  if (!guests.length) { showDashToast('⚠️ No RSVPs yet to report on.'); return; }
+
+  const totalHeadcount = guests.reduce((sum, g) => sum + (g.guest_count || 1), 0);
+
+  const prefCounts = {};
+  guests.forEach(function(g) {
+    if (!g.dietary_preferences) return;
+    g.dietary_preferences.split(',').map(s => s.trim()).filter(Boolean).forEach(function(pref) {
+      prefCounts[pref] = (prefCounts[pref] || 0) + (g.guest_count || 1);
+    });
+  });
+  const prefRows = Object.entries(prefCounts).sort((a,b) => b[1]-a[1])
+    .map(([pref, count]) => `<tr><td>${pref}</td><td>${count}</td></tr>`).join('');
+
+  const restrictionGuests = guests.filter(g => g.dietary_restrictions && g.dietary_restrictions.trim());
+  const restrictionRows = restrictionGuests.map(function(g) {
+    const fullName = `${g.fname||''} ${g.lname||''}`.trim() || 'Guest';
+    return `<tr><td>${fullName}${g.guest_count > 1 ? ' (party of ' + g.guest_count + ')' : ''}</td><td>${g.dietary_restrictions}</td></tr>`;
+  }).join('');
+
+  const generatedAt = new Date().toLocaleString('en-GB', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>PBIS Legacy Night — Catering Sheet</title>
+    <style>
+      body{font-family:Georgia,'Times New Roman',serif;max-width:720px;margin:40px auto;padding:0 24px;color:#1a1a1a;}
+      h1{font-size:22px;border-bottom:3px solid #c9a84c;padding-bottom:10px;margin-bottom:4px;}
+      .meta{color:#666;font-size:13px;margin-bottom:28px;}
+      .headline{background:#f8f5ee;border:1px solid #ddd;border-radius:8px;padding:18px 22px;margin-bottom:28px;display:flex;gap:40px;}
+      .headline div b{display:block;font-size:28px;color:#0a2818;}
+      .headline div span{font-size:12px;text-transform:uppercase;letter-spacing:0.05em;color:#666;}
+      h2{font-size:15px;text-transform:uppercase;letter-spacing:0.05em;color:#0a2818;border-bottom:1px solid #ccc;padding-bottom:6px;margin-top:32px;}
+      table{width:100%;border-collapse:collapse;margin-top:10px;}
+      td{padding:8px 6px;border-bottom:1px solid #eee;font-size:14px;}
+      td:last-child{text-align:right;font-weight:bold;}
+      .restrictions td:last-child{text-align:left;font-weight:normal;color:#a03c3a;}
+      .empty{color:#999;font-style:italic;padding:10px 0;}
+      @media print{body{margin:0;padding:20px;}}
+    </style></head>
+    <body>
+      <h1>PBIS Legacy Night — Catering &amp; Kitchen Sheet</h1>
+      <p class="meta">Generated ${generatedAt} · Friday, 25 September 2026 · Holiday Inn &amp; Suites Vientiane</p>
+      <div class="headline">
+        <div><b>${guests.length}</b><span>RSVPs</span></div>
+        <div><b>${totalHeadcount}</b><span>Total Attendees</span></div>
+        <div><b>${restrictionGuests.length}</b><span>Guests w/ Restrictions</span></div>
+      </div>
+      <h2>Dietary Preferences</h2>
+      ${prefRows ? `<table>${prefRows}</table>` : '<p class="empty">No dietary preferences recorded yet.</p>'}
+      <h2>Specific Restrictions &amp; Allergies</h2>
+      ${restrictionRows ? `<table class="restrictions">${restrictionRows}</table>` : '<p class="empty">No specific restrictions recorded yet.</p>'}
+    </body></html>`;
+
+  const win = window.open('', '_blank');
+  if (!win) { showDashToast('⚠️ Pop-up blocked — please allow pop-ups for this site and try again.'); return; }
+  win.document.write(html);
+  win.document.close();
 }
 
 
@@ -2714,42 +2954,64 @@ function renderGuestListTab() {
     const count = g.guest_count || 1;
     const partyTitle = count > 1 && g.additional_guests ? ` title="With: ${g.additional_guests.replace(/"/g,'')}"` : '';
     const hasDietary = g.dietary_preferences || g.dietary_restrictions;
+    const isChecked = _selectedGuestTs.has(g.ts) ? 'checked' : '';
     return `
     <tr>
-      <td style="font-weight:600;color:var(--navy);white-space:nowrap;">${g.fname||'—'} ${g.lname||''}</td>
+      <td><input type="checkbox" class="guest-select-checkbox" data-ts="${g.ts}" ${isChecked} onchange="toggleGuestSelect('${g.ts}',this.checked)"></td>
+      <td style="font-weight:600;color:var(--navy);white-space:nowrap;cursor:pointer;" onclick="openGuestDetailModal('${g.ts}')">${g.fname||'—'} ${g.lname||''}</td>
       <td><a href="tel:${g.phone}" style="color:var(--navy);text-decoration:none;">${g.phone||'—'}</a></td>
       <td><a href="mailto:${g.email}" style="color:var(--gold);text-decoration:none;font-size:12px;">${g.email||'—'}</a></td>
       <td>${g.organization||'—'}</td>
       <td${partyTitle}>${count > 1 ? `<span class="dash-party-pill">👥 ${count}</span>` : '1'}${hasDietary ? ' <span title="Has dietary notes">🍽️</span>' : ''}</td>
       <td>${g.checked_in ? '<span class="dash-arrived-pill">✓ Arrived</span>' : '<span style="color:var(--gray-mid);font-size:12px;">Not yet</span>'}</td>
       <td style="white-space:nowrap;">
+        <button class="dash-row-action-view" onclick="openGuestDetailModal('${g.ts}')" title="View Details">👁️</button>
         <button class="dash-row-action" onclick="openEditGuestModal('${g.ts}')" title="Edit">✏️</button>
         <button class="dash-row-action" onclick="confirmDeleteGuest('${g.ts}')" title="Delete">🗑️</button>
       </td>
     </tr>`;
   }).join('');
 
+  const selectedCount = _selectedGuestTs.size;
+
   el.innerHTML = `
     <div class="dash-panel">
       <div class="dash-panel-title">Guest List <span>${filtered.length} of ${guests.length} RSVPs · ${totalHeadcount} total attendees</span>
-        <button class="dash-btn dash-btn-gold" onclick="openAddGuestModal()" style="margin-left:auto;">➕ Add Guest</button>
-        <button class="dash-btn" id="export-csv-btn" onclick="exportGuestListCSV()">⬇ Export CSV</button>
+        ${selectedCount ? `<button class="dash-btn" onclick="exportGuestListCSV(true)" style="margin-left:auto;">⬇ Export Selected (${selectedCount})</button>` : ''}
+        <button class="dash-btn dash-btn-gold" onclick="openAddGuestModal()" ${selectedCount ? '' : 'style="margin-left:auto;"'}>➕ Add Guest</button>
+        <button class="dash-btn" id="export-csv-btn" onclick="exportGuestListCSV(false)">⬇ Export CSV</button>
       </div>
       <div class="dash-search-row">
         <input type="text" placeholder="Search by name or email…" value="${_guestSearchTerm}" oninput="_guestSearchTerm=this.value;renderGuestListTab();">
       </div>
       <div class="dash-table-wrap">
         <table class="dash-table">
-          <thead><tr><th>Guest Name</th><th>Phone</th><th>Email</th><th>Organization</th><th>Party</th><th>Status</th><th></th></tr></thead>
+          <thead><tr><th><input type="checkbox" id="guest-select-all" onchange="toggleSelectAllGuests(this.checked)"></th><th>Guest Name</th><th>Phone</th><th>Email</th><th>Organization</th><th>Party</th><th>Status</th><th></th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
       </div>
     </div>`;
 }
 
-function exportGuestListCSV() {
-  const guests = _dashGuestsCache;
-  if(!guests.length) { alert('No guests to export yet.'); return; }
+let _selectedGuestTs = new Set();
+
+function toggleGuestSelect(ts, checked) {
+  if (checked) _selectedGuestTs.add(ts); else _selectedGuestTs.delete(ts);
+  renderGuestListTab();
+}
+
+function toggleSelectAllGuests(checked) {
+  document.querySelectorAll('.guest-select-checkbox').forEach(function(cb) {
+    const ts = cb.getAttribute('data-ts');
+    if (checked) _selectedGuestTs.add(ts); else _selectedGuestTs.delete(ts);
+  });
+  renderGuestListTab();
+}
+
+function exportGuestListCSV(selectedOnly) {
+  const allGuests = _dashGuestsCache;
+  const guests = selectedOnly ? allGuests.filter(g => _selectedGuestTs.has(g.ts)) : allGuests;
+  if(!guests.length) { alert(selectedOnly ? 'No guests selected.' : 'No guests to export yet.'); return; }
   const headers = ['First Name','Last Name','Email','Phone','Organization','Guest Count','Additional Guests','Dietary Preferences','Dietary Restrictions','Checked In','RSVP Date'];
   const rows = guests.map(g => [
     g.fname||'', g.lname||'', g.email||'', g.phone||'',
@@ -2762,7 +3024,7 @@ function exportGuestListCSV() {
   const blob = new Blob([csv], {type:'text/csv'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = `PBIS_LegacyNight_Guests_${new Date().toISOString().slice(0,10)}.csv`;
+  a.href = url; a.download = `PBIS_LegacyNight_Guests${selectedOnly ? '_Selected' : ''}_${new Date().toISOString().slice(0,10)}.csv`;
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
@@ -2801,7 +3063,9 @@ function renderCheckInTab() {
       <div class="dash-stat-card"><div class="dash-stat-value">${guests.length - arrivedCount}</div><div class="dash-stat-label">Not Yet Arrived</div></div>
     </div>
     <div class="dash-panel">
-      <div class="dash-panel-title">Day-Of Check-In</div>
+      <div class="dash-panel-title">Day-Of Check-In
+        <button class="dash-btn-gold" onclick="openQRScanner()" style="margin-left:auto;">📷 Scan QR Code</button>
+      </div>
       <div class="dash-search-row">
         <input type="text" placeholder="Search guest name to check in…" value="${_checkinSearchTerm}" oninput="_checkinSearchTerm=this.value;renderCheckInTab();">
       </div>
@@ -2828,7 +3092,7 @@ function markGuestCheckedIn(ts, checkedIn) {
   renderGuestListTab();
   renderOverdueTab();
 
-  const payload = { action: 'markCheckedIn', ts: ts, checked_in: checkedIn, admin_key: ADMIN_ACTION_KEY };
+  const payload = { action: 'markCheckedIn', ts: ts, checked_in: checkedIn, admin_key: ADMIN_ACTION_KEY, staff_name: _currentUser ? _currentUser.name : '' };
   if (clearingNoShow) payload.clear_no_show = true;
 
   postToSheets(payload).then(() => {
@@ -2936,7 +3200,7 @@ function markGuestNoShow(ts, noShow) {
   renderOverdueTab();
   renderOverviewTab();
 
-  postToSheets({ action: 'markNoShow', ts: ts, no_show: noShow, admin_key: ADMIN_ACTION_KEY }).then(() => {
+  postToSheets({ action: 'markNoShow', ts: ts, no_show: noShow, admin_key: ADMIN_ACTION_KEY, staff_name: _currentUser ? _currentUser.name : '' }).then(() => {
     showDashToast(noShow ? `⏰ ${guest.fname} marked as no-show` : `↩ No-show undone for ${guest.fname}`);
   });
 }
@@ -2949,6 +3213,65 @@ function markGuestNoShow(ts, noShow) {
    sheet fresh every time is what makes that direction "just work"
    with no extra code needed.
    ══════════════════════════════════════════════════════════════ */
+/* ── Guest Detail (read-only) — a quick, safe way to see a guest's
+   full picture without opening the Edit form. Available to Marketing
+   too, since it can't change anything. ── */
+function openGuestDetailModal(ts) {
+  const guest = _dashGuestsCache.find(g => g.ts === ts);
+  if (!guest) return;
+
+  const fullName = `${guest.fname||''} ${guest.lname||''}`.trim() || 'Guest';
+  document.getElementById('guest-detail-name').textContent = fullName;
+  document.getElementById('guest-detail-subhead').textContent = guest.email || 'No email on file';
+
+  const fmtDate = iso => iso ? new Date(iso).toLocaleString('en-GB', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
+
+  const badges = [];
+  badges.push(guest.approved ? '<span class="dash-approved-pill">🎫 Approved</span>' : '<span style="color:var(--gray-mid);font-size:12px;">Not yet approved</span>');
+  badges.push(guest.checked_in ? '<span class="dash-arrived-pill">✓ Checked In</span>' : '<span style="color:var(--gray-mid);font-size:12px;">Not checked in</span>');
+  if (guest.no_show) badges.push('<span class="dash-noshow-pill">⏰ No-Show</span>');
+  if (guest.followup_sent) badges.push('<span style="color:#1a7a45;font-size:12px;font-weight:700;">📧 Follow-Up Sent</span>');
+
+  document.getElementById('guest-detail-body').innerHTML = `
+    <div class="detail-section">
+      <div class="detail-section-title">Status</div>
+      <div class="detail-status-badges">${badges.join('')}</div>
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-title">Contact</div>
+      <div class="detail-row"><span>Phone</span><span>${guest.phone || '—'}</span></div>
+      <div class="detail-row"><span>Organization</span><span>${guest.organization || '—'}</span></div>
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-title">Party</div>
+      <div class="detail-row"><span>Party Size</span><span>${guest.guest_count || 1}</span></div>
+      ${guest.additional_guests ? `<div class="detail-row"><span>Additional Guests</span><span>${guest.additional_guests}</span></div>` : ''}
+      <div class="detail-row"><span>Table</span><span>${guest.table_number ? 'Table ' + guest.table_number : 'Not assigned'}</span></div>
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-title">Dietary</div>
+      <div class="detail-row"><span>Preferences</span><span>${guest.dietary_preferences || '—'}</span></div>
+      <div class="detail-row"><span>Restrictions</span><span>${guest.dietary_restrictions || '—'}</span></div>
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-title">Timeline</div>
+      <div class="detail-row"><span>RSVP Date</span><span>${fmtDate(guest.ts)}</span></div>
+      <div class="detail-row"><span>Approved</span><span>${fmtDate(guest.approved_at)}</span></div>
+      <div class="detail-row"><span>Checked In</span><span>${fmtDate(guest.checked_in_at)}</span></div>
+      <div class="detail-row"><span>Follow-Up Sent</span><span>${fmtDate(guest.followup_sent_at)}</span></div>
+    </div>
+    ${guest.notes ? `<div class="detail-section"><div class="detail-section-title">Message</div><p style="font-size:13px;color:var(--text);margin:0;">${guest.notes}</p></div>` : ''}
+  `;
+
+  document.getElementById('guest-detail-backdrop').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeGuestDetailModal() {
+  document.getElementById('guest-detail-backdrop').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
 function openEditGuestModal(ts) {
   const guest = _dashGuestsCache.find(g => g.ts === ts);
   if (!guest) return;
@@ -3024,7 +3347,8 @@ function submitAddGuest() {
     dietary_preferences: get('add-dietary-preferences').trim(),
     dietary_restrictions: get('add-dietary-restrictions').trim(),
     notes: get('add-notes').trim(),
-    ts: ts
+    ts: ts,
+    staff_name: _currentUser ? _currentUser.name : ''
   };
 
   const btn = document.getElementById('add-guest-save-btn');
@@ -3093,8 +3417,9 @@ function saveEditGuest() {
   renderApprovalsTab();
   renderCheckInTab();
   renderOverdueTab();
+  renderTablesTab();
 
-  postToSheets(Object.assign({ action: 'updateLegacyGuest', ts: ts, admin_key: ADMIN_ACTION_KEY }, updated)).then(() => {
+  postToSheets(Object.assign({ action: 'updateLegacyGuest', ts: ts, admin_key: ADMIN_ACTION_KEY, staff_name: _currentUser ? _currentUser.name : '' }, updated)).then(() => {
     showDashToast(`✓ ${fname} ${lname} updated`);
   });
 }
@@ -3111,8 +3436,9 @@ function confirmDeleteGuest(ts) {
   renderApprovalsTab();
   renderCheckInTab();
   renderOverdueTab();
+  renderTablesTab();
 
-  postToSheets({ action: 'deleteLegacyGuest', ts: ts, admin_key: ADMIN_ACTION_KEY }).then(() => {
+  postToSheets({ action: 'deleteLegacyGuest', ts: ts, admin_key: ADMIN_ACTION_KEY, staff_name: _currentUser ? _currentUser.name : '' }).then(() => {
     showDashToast(`🗑️ ${guest.fname || 'Guest'}'s RSVP deleted`);
   });
 }
@@ -3199,6 +3525,194 @@ function renderApprovalsTab() {
     </div>`;
 }
 
+/* ── QR code generation (Approvals) & scanning (Check-In) —
+   both features share these two lazy-loaded libraries. Neither
+   blocks page load; both fail silently with a clear toast if the
+   CDN is unreachable, leaving the rest of the dashboard unaffected. ── */
+let _qrGenLibLoading = false;
+let _qrScanLibLoading = false;
+
+function ensureQRGenLibLoaded(callback) {
+  if (typeof qrcode !== 'undefined') { callback(); return; }
+  if (_qrGenLibLoading) {
+    const check = setInterval(function() {
+      if (typeof qrcode !== 'undefined') { clearInterval(check); callback(); }
+    }, 150);
+    return;
+  }
+  _qrGenLibLoading = true;
+  const script = document.createElement('script');
+  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js';
+  script.onload = callback;
+  script.onerror = function() { showDashToast('⚠️ Could not load the QR code generator — check your connection.'); };
+  document.body.appendChild(script);
+}
+
+function ensureQRScanLibLoaded(callback) {
+  if (typeof jsQR !== 'undefined') { callback(); return; }
+  if (_qrScanLibLoading) {
+    const check = setInterval(function() {
+      if (typeof jsQR !== 'undefined') { clearInterval(check); callback(); }
+    }, 150);
+    return;
+  }
+  _qrScanLibLoading = true;
+  const script = document.createElement('script');
+  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.js';
+  script.onload = callback;
+  script.onerror = function() { showDashToast('⚠️ Could not load the QR scanner — check your connection.'); };
+  document.body.appendChild(script);
+}
+
+let _approveQrBlob = null;
+
+function generateApproveQR(ts) {
+  const canvas = document.getElementById('approve-qr-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  ensureQRGenLibLoaded(function() {
+    try {
+      const payload = 'PBIS-LEGACY|ts=' + ts;
+      const qr = qrcode(0, 'M');
+      qr.addData(payload);
+      qr.make();
+      const moduleCount = qr.getModuleCount();
+      const size = canvas.width;
+      const cellSize = size / moduleCount;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, size, size);
+      ctx.fillStyle = '#0a2818';
+      for (let row = 0; row < moduleCount; row++) {
+        for (let col = 0; col < moduleCount; col++) {
+          if (qr.isDark(row, col)) {
+            ctx.fillRect(col * cellSize, row * cellSize, Math.ceil(cellSize), Math.ceil(cellSize));
+          }
+        }
+      }
+      canvas.toBlob(function(blob) {
+        _approveQrBlob = blob;
+        updateApproveButtonState();
+      }, 'image/png');
+    } catch (e) {
+      showDashToast('⚠️ Could not generate a QR code for this guest.');
+    }
+  });
+}
+
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+/* ── QR scanner (Check-In) ── */
+let _qrScannerStream = null;
+let _qrScannerRAF = null;
+let _qrScannerCooldown = false;
+let _qrScannerCanvas = null;
+
+function openQRScanner() {
+  document.getElementById('qr-scanner-backdrop').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  document.getElementById('qr-scanner-result').innerHTML = '<p class="qr-scanner-status">Loading scanner…</p>';
+  ensureQRScanLibLoaded(startQRScannerCamera);
+}
+
+function startQRScannerCamera() {
+  const video = document.getElementById('qr-scanner-video');
+  const resultEl = document.getElementById('qr-scanner-result');
+  resultEl.innerHTML = '<p class="qr-scanner-status">Requesting camera access…</p>';
+
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    resultEl.innerHTML = '<div class="qr-scanner-error">⚠️ Camera access isn\'t supported in this browser. Try Chrome or Safari, or check guests in manually below.</div>';
+    return;
+  }
+
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+    .then(function(stream) {
+      _qrScannerStream = stream;
+      video.srcObject = stream;
+      video.play();
+      resultEl.innerHTML = '<p class="qr-scanner-status">Point the camera at a guest\'s QR code…</p>';
+      _qrScannerCanvas = document.createElement('canvas');
+      scanQRFrame();
+    })
+    .catch(function() {
+      resultEl.innerHTML = '<div class="qr-scanner-error">⚠️ Could not access the camera — check browser permissions and try again, or check guests in manually below.</div>';
+    });
+}
+
+function scanQRFrame() {
+  const video = document.getElementById('qr-scanner-video');
+  if (!video || !video.srcObject) return; // scanner was closed
+
+  if (video.readyState === video.HAVE_ENOUGH_DATA && !_qrScannerCooldown) {
+    const canvas = _qrScannerCanvas;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const code = jsQR(imageData.data, imageData.width, imageData.height);
+    if (code && code.data) {
+      handleQRScanResult(code.data);
+    }
+  }
+  _qrScannerRAF = requestAnimationFrame(scanQRFrame);
+}
+
+function handleQRScanResult(data) {
+  const match = /^PBIS-LEGACY\|ts=(.+)$/.exec(data);
+  const resultEl = document.getElementById('qr-scanner-result');
+  if (!resultEl) return;
+
+  if (!match) {
+    resultEl.innerHTML = '<div class="qr-scanner-error">⚠️ This QR code isn\'t a recognized Legacy Night ticket.</div>';
+  } else {
+    const ts = match[1];
+    const guest = _dashGuestsCache.find(g => g.ts === ts);
+    if (!guest) {
+      resultEl.innerHTML = '<div class="qr-scanner-error">⚠️ Guest not found — try resyncing the dashboard first.</div>';
+    } else {
+      const fullName = `${guest.fname||''} ${guest.lname||''}`.trim() || 'Guest';
+      if (guest.checked_in) {
+        const atTime = guest.checked_in_at ? new Date(guest.checked_in_at).toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'}) : '';
+        resultEl.innerHTML = `<div class="qr-scanner-warn">ℹ️ ${fullName} is already checked in${atTime ? ' (' + atTime + ')' : ''}.</div>`;
+      } else {
+        resultEl.innerHTML = `<div class="qr-scanner-success">✓ ${fullName} checked in!</div>`;
+        markGuestCheckedIn(ts, true);
+      }
+    }
+  }
+
+  _qrScannerCooldown = true;
+  setTimeout(function() {
+    _qrScannerCooldown = false;
+    const stillOpen = document.getElementById('qr-scanner-backdrop').classList.contains('open');
+    if (stillOpen && resultEl) {
+      resultEl.innerHTML = '<p class="qr-scanner-status">Point the camera at the next guest\'s QR code…</p>';
+    }
+  }, 2200);
+}
+
+function closeQRScanner() {
+  document.getElementById('qr-scanner-backdrop').classList.remove('open');
+  document.body.style.overflow = '';
+  if (_qrScannerRAF) { cancelAnimationFrame(_qrScannerRAF); _qrScannerRAF = null; }
+  if (_qrScannerStream) {
+    _qrScannerStream.getTracks().forEach(function(t) { t.stop(); });
+    _qrScannerStream = null;
+  }
+  const video = document.getElementById('qr-scanner-video');
+  if (video) video.srcObject = null;
+  _qrScannerCooldown = false;
+}
+
 function openApproveModal(ts) {
   const guest = _dashGuestsCache.find(g => g.ts === ts);
   if (!guest) return;
@@ -3206,6 +3720,7 @@ function openApproveModal(ts) {
 
   _approveTargetTs = ts;
   _approveFiles = [];
+  _approveQrBlob = null;
 
   const fullName = `${guest.fname||''} ${guest.lname||''}`.trim() || 'Guest';
   document.getElementById('approve-modal-recipient').textContent = `To: ${fullName} · ${guest.email}`;
@@ -3213,6 +3728,7 @@ function openApproveModal(ts) {
   document.getElementById('approve-modal-message').value = 'Your Legacy Night Ticket';
   document.getElementById('approve-modal-file-input').value = '';
   renderApproveFileList();
+  generateApproveQR(ts);
 
   const sendBtn = document.getElementById('approve-modal-send-btn');
   sendBtn.textContent = '🎫 Approve & Send Ticket';
@@ -3284,7 +3800,7 @@ function updateApproveButtonState() {
   if (!btn) return;
   const messageEl = document.getElementById('approve-modal-message');
   const message = messageEl ? messageEl.value.trim() : '';
-  btn.disabled = !(message && _approveFiles.length > 0);
+  btn.disabled = !(message && _approveQrBlob);
 }
 
 async function submitApproveGuest() {
@@ -3294,10 +3810,13 @@ async function submitApproveGuest() {
 
   const message = document.getElementById('approve-modal-message').value.trim();
   if (!message) { showDashToast('⚠️ Write a message before approving.'); return; }
-  if (!_approveFiles.length) { showDashToast('⚠️ Attach at least one file before approving.'); return; }
+  if (!_approveQrBlob) { showDashToast('⚠️ QR code is still generating — please wait a moment.'); return; }
 
   const fullName = `${guest.fname||''} ${guest.lname||''}`.trim() || 'Guest';
-  const ok = confirm(`Approve ${fullName} (${guest.email}) and send their ticket now?\n\n${_approveFiles.length} attachment${_approveFiles.length===1?'':'s'} will be included. This can't be undone once sent.`);
+  const extraCount = _approveFiles.length;
+  const confirmMsg = `Approve ${fullName} (${guest.email}) and send their ticket now?\n\n` +
+    `Includes their unique QR code${extraCount ? ' plus ' + extraCount + ' additional file' + (extraCount === 1 ? '' : 's') : ''}. This can't be undone once sent.`;
+  const ok = confirm(confirmMsg);
   if (!ok) return;
 
   const btn = document.getElementById('approve-modal-send-btn');
@@ -3305,9 +3824,13 @@ async function submitApproveGuest() {
   btn.textContent = 'Sending…';
 
   try {
-    const files = await Promise.all(_approveFiles.map(async f => ({
+    const qrBase64 = await blobToBase64(_approveQrBlob);
+    const safeName = fullName.replace(/[^a-z0-9]/gi, '_');
+    const files = [{ filename: safeName + '-QR-Code.png', mimeType: 'image/png', base64: qrBase64 }];
+    const extraFiles = await Promise.all(_approveFiles.map(async f => ({
       filename: f.name, mimeType: f.type, base64: await fileToBase64(f)
     })));
+    files.push(...extraFiles);
 
     const payload = {
       action: 'approveGuest',
@@ -3315,7 +3838,8 @@ async function submitApproveGuest() {
       approve: true,
       message: message,
       files: files,
-      admin_key: ADMIN_ACTION_KEY
+      admin_key: ADMIN_ACTION_KEY,
+      staff_name: _currentUser ? _currentUser.name : ''
     };
     await postToSheets(payload);
 
@@ -3327,7 +3851,7 @@ async function submitApproveGuest() {
     renderApprovalsTab();
     renderOverviewTab();
   } catch (e) {
-    showDashToast('⚠️ Something went wrong reading the attachments — please try again.');
+    showDashToast('⚠️ Something went wrong preparing the attachments — please try again.');
     btn.disabled = false;
     btn.textContent = '🎫 Approve & Send Ticket';
   }
@@ -3344,7 +3868,7 @@ function undoApproval(ts) {
   renderApprovalsTab();
   renderOverviewTab();
 
-  postToSheets({ action: 'approveGuest', ts: ts, approve: false, admin_key: ADMIN_ACTION_KEY }).then(() => {
+  postToSheets({ action: 'approveGuest', ts: ts, approve: false, admin_key: ADMIN_ACTION_KEY, staff_name: _currentUser ? _currentUser.name : '' }).then(() => {
     showDashToast(`↩ Approval undone for ${guest.fname}`);
   });
 }
@@ -3364,6 +3888,186 @@ let _followUpSearchTerm = '';
 const FOLLOWUP_MAX_FILE_BYTES = 20 * 1024 * 1024;   // 20MB per file
 const FOLLOWUP_MAX_TOTAL_BYTES = 24 * 1024 * 1024;  // ~24MB combined (Gmail's own cap is ~25MB per message)
 const FOLLOWUP_ALLOWED_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
+
+/* ══════════════════════════════════════════════════════════════
+   TABLES — seating chart for the gala. Each guest (and their
+   additional guests, counted together as one party) can be assigned
+   to a numbered table. Capacity is tracked per table so it's obvious
+   at a glance which tables still have room.
+   ══════════════════════════════════════════════════════════════ */
+const TABLE_COUNT = 20;
+const TABLE_CAPACITY = 10;
+
+function renderTablesTab() {
+  const el = document.getElementById('dash-tab-content-tables');
+  if (!el) return;
+  const guests = _dashGuestsCache;
+
+  if (!guests.length) {
+    el.innerHTML = `<div class="dash-panel"><div class="dash-empty">No RSVPs yet.</div></div>`;
+    return;
+  }
+
+  const tables = {};
+  for (let i = 1; i <= TABLE_COUNT; i++) tables[i] = [];
+  const unassigned = [];
+  guests.forEach(function(g) {
+    if (g.table_number && tables[g.table_number]) tables[g.table_number].push(g);
+    else unassigned.push(g);
+  });
+
+  const countEl = document.getElementById('tables-tab-count');
+  if (countEl) countEl.textContent = unassigned.length;
+
+  const tableCards = Object.keys(tables).map(function(num) {
+    const guestsAtTable = tables[num];
+    const seated = guestsAtTable.reduce((sum, g) => sum + (g.guest_count || 1), 0);
+    const isFull = seated >= TABLE_CAPACITY;
+    const pct = Math.min(100, Math.round((seated / TABLE_CAPACITY) * 100));
+    const chips = guestsAtTable.map(function(g) {
+      const fullName = `${g.fname||''} ${g.lname||''}`.trim() || 'Guest';
+      const partyTag = g.guest_count > 1 ? ` (+${g.guest_count - 1})` : '';
+      return `<span class="table-guest-chip">${fullName}${partyTag}<button onclick="unassignGuestTable('${g.ts}')" title="Remove from table">✕</button></span>`;
+    }).join('');
+    return `<div class="table-card ${isFull ? 'full' : ''}">
+      <div class="table-card-header"><span class="table-card-num">Table ${num}</span><span class="table-card-fill">${seated}/${TABLE_CAPACITY}</span></div>
+      <div class="table-card-bar"><div class="table-card-bar-fill" style="width:${pct}%;"></div></div>
+      <div class="table-card-names">${chips || '<span style="color:var(--gray-mid);font-size:12px;">Empty</span>'}</div>
+    </div>`;
+  }).join('');
+
+  const tableOptions = Array.from({length: TABLE_COUNT}, (_, i) => i + 1)
+    .map(n => `<option value="${n}">Table ${n} (${tables[n].reduce((s,g)=>s+(g.guest_count||1),0)}/${TABLE_CAPACITY})</option>`).join('');
+
+  const unassignedRows = unassigned.slice().reverse().map(function(g) {
+    const fullName = `${g.fname||''} ${g.lname||''}`.trim() || 'Guest';
+    return `<tr>
+      <td style="font-weight:600;color:var(--navy);white-space:nowrap;">${fullName}</td>
+      <td>${g.guest_count > 1 ? `<span class="dash-party-pill">👥 ${g.guest_count}</span>` : '1'}</td>
+      <td>
+        <select onchange="assignGuestTable('${g.ts}', this.value)" class="table-assign-select">
+          <option value="">Assign to table…</option>
+          ${tableOptions}
+        </select>
+      </td>
+    </tr>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="dash-stats-row">
+      <div class="dash-stat-card"><div class="dash-stat-value">${TABLE_COUNT}</div><div class="dash-stat-label">Tables Available</div></div>
+      <div class="dash-stat-card"><div class="dash-stat-value">${guests.length - unassigned.length}</div><div class="dash-stat-label">Guests Seated</div></div>
+      <div class="dash-stat-card"><div class="dash-stat-value">${unassigned.length}</div><div class="dash-stat-label">Not Yet Assigned</div></div>
+    </div>
+
+    <div class="dash-panel">
+      <div class="dash-panel-title">Unassigned Guests <span>${unassigned.length} guest${unassigned.length===1?'':'s'}</span></div>
+      ${unassigned.length ? `
+      <div class="dash-table-wrap">
+        <table class="dash-table">
+          <thead><tr><th>Guest Name</th><th>Party</th><th>Assign</th></tr></thead>
+          <tbody>${unassignedRows}</tbody>
+        </table>
+      </div>` : `<div class="dash-empty">Everyone has a table assigned. 🎉</div>`}
+    </div>
+
+    <div class="dash-panel">
+      <div class="dash-panel-title">Seating Chart</div>
+      <div class="tables-grid">${tableCards}</div>
+    </div>`;
+}
+
+function assignGuestTable(ts, tableNumber) {
+  if (!tableNumber) return;
+  const guest = _dashGuestsCache.find(g => g.ts === ts);
+  if (!guest) return;
+
+  guest.table_number = parseInt(tableNumber, 10);
+  renderTablesTab();
+  renderOverviewTab();
+
+  postToSheets({ action: 'assignTable', ts: ts, table_number: guest.table_number, admin_key: ADMIN_ACTION_KEY, staff_name: _currentUser ? _currentUser.name : '' }).then(() => {
+    showDashToast(`✓ ${guest.fname} assigned to Table ${guest.table_number}`);
+  });
+}
+
+function unassignGuestTable(ts) {
+  const guest = _dashGuestsCache.find(g => g.ts === ts);
+  if (!guest) return;
+  guest.table_number = '';
+  renderTablesTab();
+
+  postToSheets({ action: 'assignTable', ts: ts, table_number: '', admin_key: ADMIN_ACTION_KEY, staff_name: _currentUser ? _currentUser.name : '' }).then(() => {
+    showDashToast(`↩ Table assignment removed for ${guest.fname}`);
+  });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ACTIVITY LOG — a read-only chronological feed of every mutating
+   action taken across the dashboard (check-in, no-show, approval,
+   edits, deletes, follow-ups), showing who did it and when. Fetched
+   via GET (like getLegacyGuests) since postToSheets() runs in
+   no-cors mode and can never read a response back — that's a hard
+   browser constraint for cross-origin POSTs to Apps Script, not a
+   choice, so any feature that needs to read data back must use this
+   GET pathway instead.
+   ══════════════════════════════════════════════════════════════ */
+const ACTIVITY_ICONS = {
+  'Checked In': '✅', 'Undid Check-In': '↩️',
+  'Marked No-Show': '⏰', 'Undid No-Show': '↩️',
+  'Approved & Sent Ticket': '🎫', 'Undid Approval': '↩️',
+  'Edited Guest': '✏️', 'Deleted Guest': '🗑️',
+  'Sent Follow-Up': '📧', 'Manually Added Guest': '➕',
+};
+
+async function loadActivityLog() {
+  const el = document.getElementById('dash-tab-content-activitylog');
+  if (!el) return;
+  el.innerHTML = `<div class="dash-panel"><div class="skeleton-line skeleton-line-md" style="margin-bottom:18px;"></div>${Array(6).fill('<div class="skeleton-row"></div>').join('')}</div>`;
+
+  try {
+    const url = SHEETS_URL + '?action=getActivityLog&key=' + encodeURIComponent(ADMIN_ACTION_KEY) + '&_=' + Date.now();
+    const res = await fetch(url, { method: 'GET' });
+    const j = await res.json();
+    if (j.status === 'ok' && Array.isArray(j.entries)) {
+      renderActivityLog(j.entries);
+    } else {
+      el.innerHTML = `<div class="dash-panel"><div class="dash-empty">Could not load the activity log.</div></div>`;
+    }
+  } catch (e) {
+    el.innerHTML = `<div class="dash-panel"><div class="dash-empty">Could not load the activity log — check your connection and try again.</div></div>`;
+  }
+}
+
+function renderActivityLog(entries) {
+  const el = document.getElementById('dash-tab-content-activitylog');
+  if (!el) return;
+
+  if (!entries.length) {
+    el.innerHTML = `<div class="dash-panel"><div class="dash-empty">No activity recorded yet — actions taken across the dashboard will appear here.</div></div>`;
+    return;
+  }
+
+  const rows = entries.map(function(e) {
+    const icon = ACTIVITY_ICONS[e.action] || '•';
+    const when = e.ts ? new Date(e.ts).toLocaleString('en-GB', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : '—';
+    return `<div class="activity-row">
+      <span class="activity-icon">${icon}</span>
+      <div class="activity-body">
+        <p class="activity-line"><strong>${e.staff || 'Unknown'}</strong> ${e.action || ''}${e.guest ? ' — <strong>' + e.guest + '</strong>' : ''}</p>
+        <p class="activity-meta">${when}${e.details ? ' · ' + e.details : ''}</p>
+      </div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="dash-panel">
+      <div class="dash-panel-title">Activity Log <span>${entries.length} most recent action${entries.length===1?'':'s'}</span>
+        <button class="dash-btn" onclick="loadActivityLog()" style="margin-left:auto;">↻ Refresh</button>
+      </div>
+      <div class="activity-list">${rows}</div>
+    </div>`;
+}
 
 function renderFollowUpTab() {
   const el = document.getElementById('dash-tab-content-followup');
@@ -3521,7 +4225,8 @@ async function sendIndividualFollowUpEmail() {
       ts: ts,
       message: message,
       files: files,
-      admin_key: ADMIN_ACTION_KEY
+      admin_key: ADMIN_ACTION_KEY,
+      staff_name: _currentUser ? _currentUser.name : ''
     };
     await postToSheets(payload);
 
