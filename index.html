@@ -29,7 +29,7 @@
 :root{
   --navy:#0a2818; --navy-mid:#0f3320; --gold:#c9a84c; --gold-light:#e8c96e;
   --gold-pale:#f5e9c8; --cream:#faf7f0; --white:#fff; --gray:#f0ede6;
-  --gray-mid:#9a9080; --text:#3a3428;
+  --gray-mid:#7a7268; --text:#3a3428;
   --deep:#050f0a;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
@@ -41,6 +41,8 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%;text-size-adjust:100%;
 body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);overflow-x:hidden;width:100%;}
 button,a{touch-action:manipulation;}
 button{transition:transform 0.12s ease;}
+:focus-visible{outline:2.5px solid var(--gold);outline-offset:2px;}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2.5px solid var(--gold);outline-offset:2px;border-radius:4px;}
 button:active{transform:scale(0.97);}
 @media (prefers-reduced-motion:reduce){button:active{transform:none;}}
 img{max-width:100%;height:auto;}
@@ -611,6 +613,58 @@ body.dashboard-active #dashboard-view{display:block !important;}
 .table-guest-chip{display:inline-flex;align-items:center;gap:5px;background:var(--cream);border:1px solid var(--gray);border-radius:100px;padding:3px 8px 3px 10px;font-size:11px;margin:2px 3px 2px 0;}
 .table-guest-chip button{background:none;border:none;color:#c0504d;cursor:pointer;font-size:11px;padding:0;line-height:1;}
 .table-assign-select{padding:7px 10px;border:1.5px solid var(--gray);border-radius:6px;font-size:12.5px;font-family:'DM Sans',sans-serif;background:var(--cream);}
+
+/* ── DOORS MODE ── */
+.dash-btn-doors{background:rgba(201,168,76,0.18);border-color:rgba(201,168,76,0.45);}
+#doors-mode-view{display:none;position:fixed;inset:0;background:linear-gradient(160deg,var(--navy),var(--deep));z-index:450;flex-direction:column;overflow-y:auto;}
+#doors-mode-view.active{display:flex;}
+.doors-header{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid rgba(201,168,76,0.25);flex-wrap:wrap;gap:12px;}
+.doors-header-left{display:flex;flex-direction:column;gap:4px;}
+.doors-title{font-family:'Cinzel',serif;font-weight:700;color:var(--gold-light);font-size:18px;}
+.doors-counter{color:rgba(255,255,255,0.7);font-size:14px;font-weight:600;}
+.doors-exit-btn{background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.3);color:#fff;padding:12px 22px;border-radius:100px;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.doors-exit-btn:hover{background:rgba(255,255,255,0.15);}
+.doors-body{flex:1;display:flex;flex-direction:column;align-items:center;padding:40px 24px 60px;max-width:520px;margin:0 auto;width:100%;}
+.doors-scan-btn{width:100%;display:flex;flex-direction:column;align-items:center;gap:14px;background:linear-gradient(135deg,var(--gold),var(--gold-light));color:var(--deep);border:none;border-radius:20px;padding:44px 24px;cursor:pointer;box-shadow:0 12px 32px rgba(201,168,76,0.3);}
+.doors-scan-btn:active{transform:scale(0.98);}
+.doors-scan-btn svg{width:56px;height:56px;}
+.doors-scan-btn span{font-size:21px;font-weight:700;font-family:'DM Sans',sans-serif;}
+.doors-divider{color:rgba(255,255,255,0.4);font-size:12.5px;margin:30px 0 16px;text-transform:uppercase;letter-spacing:0.1em;}
+.doors-search{width:100%;padding:20px 22px;font-size:19px;border-radius:14px;border:2px solid rgba(201,168,76,0.4);background:rgba(255,255,255,0.06);color:#fff;font-family:'DM Sans',sans-serif;}
+.doors-search::placeholder{color:rgba(255,255,255,0.35);}
+.doors-search:focus{outline:none;border-color:var(--gold);}
+.doors-results{width:100%;margin-top:16px;display:flex;flex-direction:column;gap:10px;}
+.doors-result-row{display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.06);border:1.5px solid rgba(255,255,255,0.15);border-radius:14px;padding:18px 20px;gap:12px;}
+.doors-result-name{color:#fff;font-size:16.5px;font-weight:600;}
+.doors-result-btn{background:linear-gradient(135deg,#2d9e5f,#3dbf72);color:#fff;border:none;padding:13px 24px;border-radius:100px;font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;flex-shrink:0;}
+.doors-result-btn:active{transform:scale(0.96);}
+.doors-result-arrived{color:#8adfa6;font-size:13.5px;font-weight:700;flex-shrink:0;}
+.doors-empty{color:rgba(255,255,255,0.5);text-align:center;padding:24px;font-size:14px;}
+#cmdk-backdrop{align-items:flex-start;padding-top:min(120px,12vh);}
+.cmdk-panel{background:var(--white);border-radius:14px;width:100%;max-width:560px;box-shadow:0 24px 60px rgba(0,0,0,0.35);overflow:hidden;}
+.cmdk-panel input{width:100%;border:none;padding:20px 22px;font-size:17px;font-family:'DM Sans',sans-serif;background:var(--cream);border-bottom:1px solid var(--gray);}
+.cmdk-panel input:focus{outline:none;}
+.cmdk-results{max-height:360px;overflow-y:auto;}
+.cmdk-result-row{display:flex;align-items:center;gap:12px;padding:13px 22px;cursor:pointer;border-bottom:1px solid var(--gray);}
+.cmdk-result-row:last-child{border-bottom:none;}
+.cmdk-result-row:hover,.cmdk-result-row.active{background:var(--cream);}
+.cmdk-result-icon{font-size:16px;flex-shrink:0;width:22px;text-align:center;}
+.cmdk-result-label{font-size:14px;color:var(--navy);font-weight:600;flex:1;}
+.cmdk-result-sub{font-size:11.5px;color:var(--gray-mid);}
+.cmdk-hint{padding:10px 22px;font-size:11px;color:var(--gray-mid);background:var(--cream);border-top:1px solid var(--gray);}
+.cmdk-empty{padding:24px;text-align:center;color:var(--gray-mid);font-size:13px;}
+.help-list{display:flex;flex-direction:column;gap:4px;margin-bottom:20px;}
+.help-row{display:flex;align-items:flex-start;gap:14px;padding:11px 4px;border-bottom:1px solid var(--gray);}
+.help-row:last-child{border-bottom:none;}
+.help-icon{font-size:18px;flex-shrink:0;width:26px;text-align:center;margin-top:1px;}
+.help-row b{display:block;font-size:13.5px;color:var(--navy);margin-bottom:2px;}
+.help-row p{font-size:12.5px;color:var(--gray-mid);line-height:1.5;margin:0;}
+.help-row kbd{background:var(--cream);border:1px solid var(--gray);border-radius:4px;padding:1px 5px;font-size:11px;font-family:monospace;}
+@media (max-width:480px){
+  .doors-scan-btn{padding:34px 20px;}
+  .doors-scan-btn svg{width:46px;height:46px;}
+  .doors-scan-btn span{font-size:18px;}
+}
 .dash-toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(200%);opacity:0;visibility:hidden;pointer-events:none;background:var(--navy);color:#fff;padding:13px 24px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 12px 32px rgba(0,0,0,0.3);z-index:99999;transition:transform 0.3s ease,opacity 0.3s ease,visibility 0.3s;border:1px solid rgba(201,168,76,0.3);}
 .dash-toast.show{transform:translateX(-50%) translateY(0);opacity:1;visibility:visible;pointer-events:auto;}
 body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,body.role-marketing .dash-row-action,body.role-marketing #followup-modal-send-btn,body.role-marketing #followup-modal-file-input,body.role-marketing .followup-compose-btn,body.role-marketing .dash-noshow-btn,body.role-marketing .dash-noshow-undo,body.role-marketing #edit-guest-save-btn,body.role-marketing .dash-approve-btn,body.role-marketing .dash-approve-undo,body.role-marketing #approve-modal-send-btn,body.role-marketing #approve-modal-file-input,body.role-marketing .dash-btn-gold,body.role-marketing #add-guest-save-btn{opacity:0.3;pointer-events:none;filter:grayscale(1);}
@@ -681,11 +735,11 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,bod
         <button type="button" class="lang-option" data-lang="ja" onclick="setLanguage('ja')">🇯🇵 日本語</button>
       </div>
     </div>
-    <button class="nav-admin-btn" onclick="openLoginModal()" title="Legacy Night Admin Dashboard" type="button" id="nav-admin-btn">
+    <button class="nav-admin-btn" onclick="openLoginModal()" title="Legacy Night Admin Dashboard" aria-label="Open admin dashboard login" type="button" id="nav-admin-btn">
       <img id="nav-admin-logo" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="PBIS" class="js-logo" style="height:18px;width:18px;object-fit:contain;border-radius:50%;flex-shrink:0;">
     </button>
     <div class="nav-more" id="navMore">
-      <button class="nav-more-btn" onclick="toggleNavMore(event)" type="button" id="navMoreBtn" title="More options">
+      <button class="nav-more-btn" onclick="toggleNavMore(event)" type="button" id="navMoreBtn" title="More options" aria-label="More options">
         <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="5" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="12" cy="19" r="1.4"/></svg>
       </button>
       <div class="nav-more-dropdown" id="navMoreDropdown">
@@ -907,7 +961,7 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,bod
 <div class="modal-backdrop" id="rsvp-backdrop" onclick="if(event.target===this)closeRSVP()">
   <div class="modal">
     <div class="modal-header">
-      <button class="modal-close" onclick="closeRSVP()">✕</button>
+      <button class="modal-close" aria-label="Close" onclick="closeRSVP()">✕</button>
       <h2>Confirm Your Attendance</h2>
       <p>PBIS Legacy Night · 25 September 2026 · 5:00 PM</p>
     </div>
@@ -1044,7 +1098,7 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,bod
 
 <!-- FLOATING WHATSAPP BUTTON -->
 <!-- AMBIENT AUDIO TOGGLE (synthesized in-browser, no audio file needed) -->
-<button class="audio-float" onclick="toggleAmbientAudio()" type="button" id="navAudioBtn" title="Toggle ambient sound">
+<button class="audio-float" onclick="toggleAmbientAudio()" type="button" id="navAudioBtn" title="Toggle ambient sound" aria-label="Toggle ambient sound">
   <svg class="audio-icon-off" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 5V4L8 9H4z"/><path d="M17 9l4 6M21 9l-4 6"/></svg>
   <svg class="audio-icon-on" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M4 9v6h4l5 5V4L8 9H4z"/><path d="M16 8.5a5 5 0 0 1 0 7M19 6a9 9 0 0 1 0 12"/></svg>
 </button>
@@ -1123,6 +1177,9 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,bod
     <div class="dash-topbar-right" id="dash-topbar-right">
       <span id="dash-sync-status" style="font-size:11px;color:rgba(255,255,255,0.5);"></span>
       <button class="dash-btn" id="dash-resync-btn" onclick="loadDashboardData()">↻ Resync</button>
+      <button class="dash-btn" onclick="openHelpOverlay()" title="What does each tab do?">❓ Help</button>
+      <button class="dash-btn" onclick="openCommandPalette()" title="Search guests or jump to a tab (Ctrl/Cmd+K)">🔍 Search</button>
+      <button class="dash-btn dash-btn-doors" onclick="enterDoorsMode()">🚪 Doors Mode</button>
       <button class="dash-btn-logout" onclick="dashLogout()">Log Out</button>
     </div>
   </div>
@@ -1168,10 +1225,30 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,bod
 
 <!-- EDIT GUEST MODAL -->
 <!-- GUEST DETAIL MODAL (read-only view) -->
+<!-- DANGER CONFIRM MODAL (type-to-confirm, for destructive actions) -->
+<div class="modal-backdrop notranslate" translate="no" id="danger-confirm-backdrop" onclick="if(event.target===this)closeDangerConfirm()">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-header" style="background:linear-gradient(135deg,#7a2e2b,#a4453e);">
+      <button class="modal-close" aria-label="Close" onclick="closeDangerConfirm()">✕</button>
+      <h2 id="danger-confirm-title" style="color:#fff;background:none;-webkit-text-fill-color:#fff;">Are you sure?</h2>
+      <p id="danger-confirm-sub">This can't be undone.</p>
+    </div>
+    <div class="edit-guest-body">
+      <p id="danger-confirm-message" style="font-size:13.5px;color:var(--text);margin-bottom:18px;line-height:1.6;"></p>
+      <label style="display:block;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--navy);margin-bottom:8px;">Type "<span id="danger-confirm-keyword"></span>" to confirm</label>
+      <input type="text" id="danger-confirm-input" oninput="checkDangerConfirmInput()" autocomplete="off" autocapitalize="off">
+      <div class="edit-guest-actions">
+        <button class="edit-guest-cancel" onclick="closeDangerConfirm()">Cancel</button>
+        <button class="form-submit" id="danger-confirm-btn" disabled style="background:linear-gradient(135deg,#7a2e2b,#a4453e);">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="modal-backdrop notranslate" translate="no" id="guest-detail-backdrop" onclick="if(event.target===this)closeGuestDetailModal()">
   <div class="modal">
     <div class="modal-header">
-      <button class="modal-close" onclick="closeGuestDetailModal()">✕</button>
+      <button class="modal-close" aria-label="Close" onclick="closeGuestDetailModal()">✕</button>
       <h2 id="guest-detail-name">Guest Details</h2>
       <p id="guest-detail-subhead">—</p>
     </div>
@@ -1182,7 +1259,7 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,bod
 <div class="modal-backdrop notranslate" translate="no" id="edit-guest-backdrop" onclick="if(event.target===this)closeEditGuestModal()">
   <div class="modal">
     <div class="modal-header">
-      <button class="modal-close" onclick="closeEditGuestModal()">✕</button>
+      <button class="modal-close" aria-label="Close" onclick="closeEditGuestModal()">✕</button>
       <h2>Edit Guest</h2>
       <p>Changes save straight back to the sheet</p>
     </div>
@@ -1246,7 +1323,7 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,bod
 <div class="modal-backdrop notranslate" translate="no" id="add-guest-backdrop" onclick="if(event.target===this)closeAddGuestModal()">
   <div class="modal">
     <div class="modal-header">
-      <button class="modal-close" onclick="closeAddGuestModal()">✕</button>
+      <button class="modal-close" aria-label="Close" onclick="closeAddGuestModal()">✕</button>
       <h2>Add Guest Manually</h2>
       <p>For phone-ins, walk-ups, or VVIPs entered directly by staff</p>
     </div>
@@ -1310,7 +1387,7 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,bod
 <div class="modal-backdrop notranslate" translate="no" id="followup-modal-backdrop" onclick="if(event.target===this)closeFollowUpModal()">
   <div class="modal">
     <div class="modal-header">
-      <button class="modal-close" onclick="closeFollowUpModal()">✕</button>
+      <button class="modal-close" aria-label="Close" onclick="closeFollowUpModal()">✕</button>
       <h2>Send Follow-Up</h2>
       <p class="followup-modal-recipient" id="followup-modal-recipient">To: —</p>
     </div>
@@ -1338,7 +1415,7 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,bod
 <div class="modal-backdrop notranslate" translate="no" id="approve-modal-backdrop" onclick="if(event.target===this)closeApproveModal()">
   <div class="modal">
     <div class="modal-header">
-      <button class="modal-close" onclick="closeApproveModal()">✕</button>
+      <button class="modal-close" aria-label="Close" onclick="closeApproveModal()">✕</button>
       <h2>Approve &amp; Send Ticket</h2>
       <p class="followup-modal-recipient" id="approve-modal-recipient">To: —</p>
     </div>
@@ -1374,7 +1451,7 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,bod
 <div class="modal-backdrop notranslate" translate="no" id="qr-scanner-backdrop" onclick="if(event.target===this)closeQRScanner()">
   <div class="modal qr-scanner-modal">
     <div class="modal-header">
-      <button class="modal-close" onclick="closeQRScanner()">✕</button>
+      <button class="modal-close" aria-label="Close" onclick="closeQRScanner()">✕</button>
       <h2>Scan Guest QR Code</h2>
       <p>Point the camera at a guest's ticket to check them in</p>
     </div>
@@ -1384,6 +1461,64 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,bod
         <div class="qr-scanner-frame"></div>
       </div>
       <div class="qr-scanner-result" id="qr-scanner-result"><p class="qr-scanner-status">Loading scanner…</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- DOORS MODE — stripped-down, high-contrast, large-touch-target
+     view for whoever is stationed at the actual door on the night.
+     Just scanning + a name-search fallback, nothing else. -->
+<div id="doors-mode-view">
+  <div class="doors-header">
+    <div class="doors-header-left">
+      <span class="doors-title">🚪 Doors Mode</span>
+      <span class="doors-counter" id="doors-counter">0 / 0 checked in</span>
+    </div>
+    <button class="doors-exit-btn" onclick="exitDoorsMode()">✕ Exit</button>
+  </div>
+  <div class="doors-body">
+    <button class="doors-scan-btn" onclick="openQRScanner()">
+      <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3M19 14v2M14 19h2M19 19h2v2"/></svg>
+      <span>Scan QR Code</span>
+    </button>
+    <p class="doors-divider">or search by name</p>
+    <input type="text" class="doors-search" id="doors-search" placeholder="Type guest name…" oninput="renderDoorsSearchResults()" autocomplete="off">
+    <div class="doors-results" id="doors-results"></div>
+  </div>
+</div>
+
+<!-- COMMAND PALETTE (Ctrl/Cmd+K) — jump to any guest or tab instantly -->
+<div class="modal-backdrop notranslate" translate="no" id="cmdk-backdrop" onclick="if(event.target===this)closeCommandPalette()">
+  <div class="cmdk-panel">
+    <input type="text" id="cmdk-input" placeholder="Search guests or jump to a tab…" oninput="renderCommandPaletteResults()" autocomplete="off">
+    <div class="cmdk-results" id="cmdk-results"></div>
+    <div class="cmdk-hint">↑↓ navigate · Enter select · Esc close</div>
+  </div>
+</div>
+
+<!-- HELP OVERLAY — shown automatically on first login per browser,
+     re-openable anytime from the ❓ Help button -->
+<div class="modal-backdrop notranslate" translate="no" id="help-backdrop" onclick="if(event.target===this)closeHelpOverlay()">
+  <div class="modal" style="max-width:540px;">
+    <div class="modal-header">
+      <button class="modal-close" aria-label="Close" onclick="closeHelpOverlay()">✕</button>
+      <h2>Welcome to the Legacy Night Dashboard</h2>
+      <p>A quick guide to what each tab does</p>
+    </div>
+    <div class="edit-guest-body">
+      <div class="help-list">
+        <div class="help-row"><span class="help-icon">📊</span><div><b>Overview</b><p>Live stats, charts, and reports — including the catering sheet.</p></div></div>
+        <div class="help-row"><span class="help-icon">📋</span><div><b>Guest List</b><p>Every RSVP. Search, edit, delete, export, or add someone manually.</p></div></div>
+        <div class="help-row"><span class="help-icon">🎫</span><div><b>Approvals</b><p>Approve each guest and send their ticket — a unique QR code is generated automatically.</p></div></div>
+        <div class="help-row"><span class="help-icon">✅</span><div><b>Check-In</b><p>Day-of arrivals — scan a QR code or search by name.</p></div></div>
+        <div class="help-row"><span class="help-icon">⏰</span><div><b>Overdue</b><p>Mark guests who never arrived as a No-Show, after the event.</p></div></div>
+        <div class="help-row"><span class="help-icon">📧</span><div><b>Follow Up</b><p>Send a one-off message to an individual guest, with attachments.</p></div></div>
+        <div class="help-row"><span class="help-icon">🍽️</span><div><b>Tables</b><p>Assign guests to numbered tables for the seating chart.</p></div></div>
+        <div class="help-row"><span class="help-icon">🕐</span><div><b>Activity Log</b><p>Who did what, and when — every check-in, approval, and edit.</p></div></div>
+        <div class="help-row"><span class="help-icon">🚪</span><div><b>Doors Mode</b><p>A simplified, large-button view for whoever is at the door on the night.</p></div></div>
+        <div class="help-row"><span class="help-icon">🔍</span><div><b>Search</b><p>Press <kbd>Ctrl</kbd>/<kbd>Cmd</kbd> + <kbd>K</kbd> anytime to jump straight to a guest or tab.</p></div></div>
+      </div>
+      <button class="form-submit" onclick="closeHelpOverlay()">Got it</button>
     </div>
   </div>
 </div>
@@ -2108,13 +2243,42 @@ document.addEventListener('click', function(e) {
 let _rsvpSubmitCount = 0;
 const MAX_RSVP_SUBMITS = 3;
 
-function postToSheets(data) {
-  return fetch(SHEETS_URL, {
-    method: 'POST',
-    mode: 'no-cors',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify(data)
-  }).then(() => ({ status: 'ok' })).catch(() => ({ status: 'ok' }));
+// Posts a mutation to the backend. Uses no-cors mode (required for
+// this cross-origin Apps Script endpoint), which means the actual
+// response body can never be read — that's a hard browser
+// limitation, not a choice. What CAN be detected is whether the
+// request reached the network at all: a dropped connection, DNS
+// failure, or timeout will reject the fetch itself, and THAT is
+// what this reports as a real failure — rather than assuming
+// success just because no error happened to be visible. Retries
+// automatically up to twice with a short pause before giving up, in
+// case of a brief connectivity blip (e.g. a crowded venue WiFi).
+function postToSheets(data, _attempt) {
+  const attempt = _attempt || 0;
+  return new Promise(function(resolve) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(function() { controller.abort(); }, 12000);
+
+    fetch(SHEETS_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(data),
+      signal: controller.signal
+    }).then(function() {
+      clearTimeout(timeoutId);
+      resolve({ status: 'ok' });
+    }).catch(function(err) {
+      clearTimeout(timeoutId);
+      if (attempt < 2) {
+        setTimeout(function() {
+          resolve(postToSheets(data, attempt + 1));
+        }, 1200);
+      } else {
+        resolve({ status: 'error', message: (err && err.message) || 'Network error' });
+      }
+    });
+  });
 }
 
 /* ── Additional guests (max 2 per invitation) ── */
@@ -2234,7 +2398,13 @@ function handleRSVPSubmit(e) {
   btn.disabled = true;
   btn.textContent = 'Confirming…';
 
-  postToSheets(guest).then(() => {
+  postToSheets(guest).then((result) => {
+    if (result.status === 'error') {
+      btn.disabled = false;
+      btn.textContent = 'Confirm My Attendance';
+      showDashToast('⚠️ Could not reach the server — please check your connection and try again.');
+      return;
+    }
     celebrateRsvpSuccess(guest.fname);
     setTimeout(() => {
       closeRSVP();
@@ -2493,6 +2663,13 @@ function enterLegacyDashboard() {
   loadDashboardData();
   startAutoSync();
 
+  try {
+    if (!localStorage.getItem('legacy_help_seen')) {
+      setTimeout(openHelpOverlay, 600);
+      localStorage.setItem('legacy_help_seen', '1');
+    }
+  } catch (e) {}
+
   setTimeout(() => {
     if(document.body.classList.contains('dashboard-active')) {
       dashLogout();
@@ -2526,6 +2703,7 @@ function dashLogout() {
   document.body.classList.remove('role-marketing');
   _currentUser = null;
   stopAutoSync();
+  exitDoorsMode();
   try { sessionStorage.removeItem('legacy_session'); } catch(e){}
   const badge = document.getElementById('dash-user-badge');
   if(badge) badge.remove();
@@ -2615,6 +2793,7 @@ async function loadDashboardData() {
   renderCheckInTab();
   renderOverdueTab();
   renderTablesTab();
+  updateDoorsCounter();
 
   if (btn) { btn.disabled = false; btn.textContent = '↻ Resync'; }
 }
@@ -2965,9 +3144,9 @@ function renderGuestListTab() {
       <td${partyTitle}>${count > 1 ? `<span class="dash-party-pill">👥 ${count}</span>` : '1'}${hasDietary ? ' <span title="Has dietary notes">🍽️</span>' : ''}</td>
       <td>${g.checked_in ? '<span class="dash-arrived-pill">✓ Arrived</span>' : '<span style="color:var(--gray-mid);font-size:12px;">Not yet</span>'}</td>
       <td style="white-space:nowrap;">
-        <button class="dash-row-action-view" onclick="openGuestDetailModal('${g.ts}')" title="View Details">👁️</button>
-        <button class="dash-row-action" onclick="openEditGuestModal('${g.ts}')" title="Edit">✏️</button>
-        <button class="dash-row-action" onclick="confirmDeleteGuest('${g.ts}')" title="Delete">🗑️</button>
+        <button class="dash-row-action-view" onclick="openGuestDetailModal('${g.ts}')" title="View Details" aria-label="View details">👁️</button>
+        <button class="dash-row-action" onclick="openEditGuestModal('${g.ts}')" title="Edit" aria-label="Edit guest">✏️</button>
+        <button class="dash-row-action" onclick="confirmDeleteGuest('${g.ts}')" title="Delete" aria-label="Delete guest">🗑️</button>
       </td>
     </tr>`;
   }).join('');
@@ -3081,6 +3260,10 @@ function renderCheckInTab() {
 function markGuestCheckedIn(ts, checkedIn) {
   const guest = _dashGuestsCache.find(g => g.ts === ts);
   if(!guest) return;
+
+  // Snapshot so we can roll back the optimistic update if the save fails
+  const prevState = { checked_in: guest.checked_in, checked_in_at: guest.checked_in_at, no_show: guest.no_show, no_show_at: guest.no_show_at };
+
   guest.checked_in = checkedIn;
   guest.checked_in_at = checkedIn ? new Date().toISOString() : '';
   // Bidirectional sync with Overdue tab: a guest who checks in clearly
@@ -3095,7 +3278,13 @@ function markGuestCheckedIn(ts, checkedIn) {
   const payload = { action: 'markCheckedIn', ts: ts, checked_in: checkedIn, admin_key: ADMIN_ACTION_KEY, staff_name: _currentUser ? _currentUser.name : '' };
   if (clearingNoShow) payload.clear_no_show = true;
 
-  postToSheets(payload).then(() => {
+  postToSheets(payload).then((result) => {
+    if (result.status === 'error') {
+      Object.assign(guest, prevState);
+      renderCheckInTab(); renderOverviewTab(); renderGuestListTab(); renderOverdueTab();
+      showDashToast('⚠️ Could not save — check your connection and try again.');
+      return;
+    }
     showDashToast(checkedIn ? `✓ ${guest.fname} checked in` : `↩ Check-in undone for ${guest.fname}`);
   });
 }
@@ -3195,12 +3384,19 @@ function markGuestNoShow(ts, noShow) {
     if (!ok) return;
   }
 
+  const prevState = { no_show: guest.no_show, no_show_at: guest.no_show_at };
   guest.no_show = noShow;
   guest.no_show_at = noShow ? new Date().toISOString() : '';
   renderOverdueTab();
   renderOverviewTab();
 
-  postToSheets({ action: 'markNoShow', ts: ts, no_show: noShow, admin_key: ADMIN_ACTION_KEY, staff_name: _currentUser ? _currentUser.name : '' }).then(() => {
+  postToSheets({ action: 'markNoShow', ts: ts, no_show: noShow, admin_key: ADMIN_ACTION_KEY, staff_name: _currentUser ? _currentUser.name : '' }).then((result) => {
+    if (result.status === 'error') {
+      Object.assign(guest, prevState);
+      renderOverdueTab(); renderOverviewTab();
+      showDashToast('⚠️ Could not save — check your connection and try again.');
+      return;
+    }
     showDashToast(noShow ? `⏰ ${guest.fname} marked as no-show` : `↩ No-show undone for ${guest.fname}`);
   });
 }
@@ -3267,10 +3463,150 @@ function openGuestDetailModal(ts) {
   document.body.style.overflow = 'hidden';
 }
 
+function openHelpOverlay() {
+  document.getElementById('help-backdrop').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeHelpOverlay() {
+  document.getElementById('help-backdrop').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
 function closeGuestDetailModal() {
   document.getElementById('guest-detail-backdrop').classList.remove('open');
   document.body.style.overflow = '';
 }
+
+/* ── COMMAND PALETTE (Ctrl/Cmd+K) — jump to any guest or tab
+   instantly without hunting through nine tabs manually. ── */
+const CMDK_TABS = [
+  { id: 'overview', label: 'Overview', icon: '📊' },
+  { id: 'guestlist', label: 'Guest List', icon: '📋' },
+  { id: 'approvals', label: 'Approvals', icon: '🎫' },
+  { id: 'checkin', label: 'Check-In', icon: '✅' },
+  { id: 'overdue', label: 'Overdue', icon: '⏰' },
+  { id: 'followup', label: 'Follow Up', icon: '📧' },
+  { id: 'tables', label: 'Tables', icon: '🍽️' },
+  { id: 'activitylog', label: 'Activity Log', icon: '🕐' },
+];
+let _cmdkItems = [];
+let _cmdkSelectedIndex = 0;
+
+document.addEventListener('keydown', function(e) {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+    if (document.body.classList.contains('dashboard-active')) {
+      e.preventDefault();
+      openCommandPalette();
+    }
+  }
+  if (e.key === 'Escape') {
+    const cmdk = document.getElementById('cmdk-backdrop');
+    if (cmdk && cmdk.classList.contains('open')) { closeCommandPalette(); return; }
+    closeWhicheverModalIsOpen();
+  }
+});
+
+// Generic Escape-key handling for every modal on the page — maps
+// each backdrop to its own close function, so pressing Escape always
+// does the right thing regardless of which modal happens to be open.
+const MODAL_CLOSE_FNS = {
+  'rsvp-backdrop': closeRSVP,
+  'login-modal-backdrop': closeLoginModal,
+  'edit-guest-backdrop': closeEditGuestModal,
+  'add-guest-backdrop': closeAddGuestModal,
+  'followup-modal-backdrop': closeFollowUpModal,
+  'approve-modal-backdrop': closeApproveModal,
+  'qr-scanner-backdrop': closeQRScanner,
+  'guest-detail-backdrop': closeGuestDetailModal,
+  'danger-confirm-backdrop': closeDangerConfirm,
+  'help-backdrop': closeHelpOverlay,
+};
+function closeWhicheverModalIsOpen() {
+  Object.keys(MODAL_CLOSE_FNS).forEach(function(id) {
+    const el = document.getElementById(id);
+    if (el && el.classList.contains('open')) MODAL_CLOSE_FNS[id]();
+  });
+}
+
+function openCommandPalette() {
+  document.getElementById('cmdk-backdrop').classList.add('open');
+  document.getElementById('cmdk-input').value = '';
+  document.body.style.overflow = 'hidden';
+  renderCommandPaletteResults();
+  setTimeout(function() { document.getElementById('cmdk-input').focus(); }, 50);
+}
+
+function closeCommandPalette() {
+  document.getElementById('cmdk-backdrop').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function renderCommandPaletteResults() {
+  const term = document.getElementById('cmdk-input').value.trim().toLowerCase();
+  const resultsEl = document.getElementById('cmdk-results');
+
+  const tabMatches = CMDK_TABS.filter(t => !term || t.label.toLowerCase().includes(term))
+    .map(t => ({ type: 'tab', icon: t.icon, label: t.label, sub: 'Jump to tab', id: t.id }));
+
+  const guestMatches = term ? _dashGuestsCache.filter(g => (g.fname+' '+g.lname).toLowerCase().includes(term)).slice(0, 6)
+    .map(g => ({ type: 'guest', icon: '👤', label: (`${g.fname||''} ${g.lname||''}`).trim() || 'Guest', sub: g.email || 'No email on file', id: g.ts }))
+    : [];
+
+  _cmdkItems = guestMatches.concat(tabMatches).slice(0, 10);
+  _cmdkSelectedIndex = 0;
+
+  if (!_cmdkItems.length) {
+    resultsEl.innerHTML = '<div class="cmdk-empty">No matches found.</div>';
+    return;
+  }
+
+  resultsEl.innerHTML = _cmdkItems.map(function(item, i) {
+    return `<div class="cmdk-result-row ${i===0?'active':''}" onclick="selectCommandPaletteItem(${i})">
+      <span class="cmdk-result-icon">${item.icon}</span>
+      <span class="cmdk-result-label">${item.label}</span>
+      <span class="cmdk-result-sub">${item.sub}</span>
+    </div>`;
+  }).join('');
+}
+
+function selectCommandPaletteItem(index) {
+  const item = _cmdkItems[index];
+  if (!item) return;
+  closeCommandPalette();
+  if (item.type === 'tab') {
+    const btn = document.getElementById('dtab-' + item.id);
+    if (btn) switchDashTab(item.id, btn);
+  } else if (item.type === 'guest') {
+    openGuestDetailModal(item.id);
+  }
+}
+
+function updateCmdkActiveRow() {
+  document.querySelectorAll('.cmdk-result-row').forEach(function(row, i) {
+    row.classList.toggle('active', i === _cmdkSelectedIndex);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  const cmdkInput = document.getElementById('cmdk-input');
+  if (cmdkInput) {
+    cmdkInput.addEventListener('keydown', function(e) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        _cmdkSelectedIndex = Math.min(_cmdkSelectedIndex + 1, _cmdkItems.length - 1);
+        updateCmdkActiveRow();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        _cmdkSelectedIndex = Math.max(_cmdkSelectedIndex - 1, 0);
+        updateCmdkActiveRow();
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        selectCommandPaletteItem(_cmdkSelectedIndex);
+      }
+    });
+  }
+});
 
 function openEditGuestModal(ts) {
   const guest = _dashGuestsCache.find(g => g.ts === ts);
@@ -3355,7 +3691,13 @@ function submitAddGuest() {
   btn.disabled = true;
   btn.textContent = 'Adding…';
 
-  postToSheets(payload).then(() => {
+  postToSheets(payload).then((result) => {
+    if (result.status === 'error') {
+      showDashToast('⚠️ Could not reach the server — this guest was NOT added. Check your connection and try again.');
+      btn.disabled = false;
+      btn.textContent = '➕ Add Guest';
+      return;
+    }
     _dashGuestsCache.push({
       ts, fname, lname, email, phone,
       organization: payload.organization,
@@ -3377,10 +3719,6 @@ function submitAddGuest() {
     renderApprovalsTab();
     renderCheckInTab();
     renderOverdueTab();
-  }).catch(() => {
-    showDashToast('⚠️ Something went wrong — please try again.');
-    btn.disabled = false;
-    btn.textContent = '➕ Add Guest';
   });
 }
 
@@ -3410,6 +3748,7 @@ function saveEditGuest() {
     notes:        get('edit-notes').trim(),
   };
 
+  const prevState = Object.assign({}, guest); // full snapshot for rollback
   Object.assign(guest, updated); // optimistic local update
   closeEditGuestModal();
   renderGuestListTab();
@@ -3419,16 +3758,71 @@ function saveEditGuest() {
   renderOverdueTab();
   renderTablesTab();
 
-  postToSheets(Object.assign({ action: 'updateLegacyGuest', ts: ts, admin_key: ADMIN_ACTION_KEY, staff_name: _currentUser ? _currentUser.name : '' }, updated)).then(() => {
+  postToSheets(Object.assign({ action: 'updateLegacyGuest', ts: ts, admin_key: ADMIN_ACTION_KEY, staff_name: _currentUser ? _currentUser.name : '' }, updated)).then((result) => {
+    if (result.status === 'error') {
+      Object.assign(guest, prevState);
+      renderGuestListTab(); renderOverviewTab(); renderApprovalsTab(); renderCheckInTab(); renderOverdueTab(); renderTablesTab();
+      showDashToast('⚠️ Could not save changes — check your connection and try again.');
+      return;
+    }
     showDashToast(`✓ ${fname} ${lname} updated`);
   });
+}
+
+/* ── Reusable type-to-confirm modal for destructive/irreversible
+   actions — safer than a plain browser confirm(), which is one
+   misclick away from an accidental delete. ── */
+let _dangerConfirmCallback = null;
+let _dangerConfirmKeyword = '';
+
+function openDangerConfirm(title, message, keyword, onConfirm) {
+  document.getElementById('danger-confirm-title').textContent = title;
+  document.getElementById('danger-confirm-message').textContent = message;
+  document.getElementById('danger-confirm-keyword').textContent = keyword;
+  document.getElementById('danger-confirm-input').value = '';
+  _dangerConfirmKeyword = keyword;
+  _dangerConfirmCallback = onConfirm;
+
+  const btn = document.getElementById('danger-confirm-btn');
+  btn.disabled = true;
+  btn.onclick = function() {
+    if (_dangerConfirmCallback) _dangerConfirmCallback();
+    closeDangerConfirm();
+  };
+
+  document.getElementById('danger-confirm-backdrop').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  setTimeout(function() { document.getElementById('danger-confirm-input').focus(); }, 50);
+}
+
+function checkDangerConfirmInput() {
+  const val = document.getElementById('danger-confirm-input').value.trim();
+  document.getElementById('danger-confirm-btn').disabled = (val.toLowerCase() !== _dangerConfirmKeyword.toLowerCase());
+}
+
+function closeDangerConfirm() {
+  document.getElementById('danger-confirm-backdrop').classList.remove('open');
+  document.body.style.overflow = '';
+  _dangerConfirmCallback = null;
 }
 
 function confirmDeleteGuest(ts) {
   const guest = _dashGuestsCache.find(g => g.ts === ts);
   if (!guest) return;
-  const ok = confirm(`Delete ${guest.fname || 'this guest'} ${guest.lname || ''}'s RSVP?\n\nThis removes their row from the sheet entirely and can't be undone from here.`);
-  if (!ok) return;
+  const keyword = guest.fname || 'DELETE';
+  openDangerConfirm(
+    'Delete Guest RSVP?',
+    `This permanently removes ${guest.fname || 'this guest'} ${guest.lname || ''}'s row from the sheet. This can't be undone from here.`,
+    keyword,
+    function() { performDeleteGuest(ts); }
+  );
+}
+
+function performDeleteGuest(ts) {
+  const guest = _dashGuestsCache.find(g => g.ts === ts);
+  if (!guest) return;
+  const guestSnapshot = Object.assign({}, guest);
+  const guestIndex = _dashGuestsCache.indexOf(guest);
 
   _dashGuestsCache = _dashGuestsCache.filter(g => g.ts !== ts); // optimistic local removal
   renderGuestListTab();
@@ -3438,8 +3832,14 @@ function confirmDeleteGuest(ts) {
   renderOverdueTab();
   renderTablesTab();
 
-  postToSheets({ action: 'deleteLegacyGuest', ts: ts, admin_key: ADMIN_ACTION_KEY, staff_name: _currentUser ? _currentUser.name : '' }).then(() => {
-    showDashToast(`🗑️ ${guest.fname || 'Guest'}'s RSVP deleted`);
+  postToSheets({ action: 'deleteLegacyGuest', ts: ts, admin_key: ADMIN_ACTION_KEY, staff_name: _currentUser ? _currentUser.name : '' }).then((result) => {
+    if (result.status === 'error') {
+      _dashGuestsCache.splice(Math.min(guestIndex, _dashGuestsCache.length), 0, guestSnapshot);
+      renderGuestListTab(); renderOverviewTab(); renderApprovalsTab(); renderCheckInTab(); renderOverdueTab(); renderTablesTab();
+      showDashToast('⚠️ Could not delete — check your connection and try again.');
+      return;
+    }
+    showDashToast(`🗑️ ${guestSnapshot.fname || 'Guest'}'s RSVP deleted`);
   });
 }
 
@@ -3666,6 +4066,35 @@ function scanQRFrame() {
   _qrScannerRAF = requestAnimationFrame(scanQRFrame);
 }
 
+// Short tone + vibration on scan result, so the person scanning
+// doesn't need to stare at the screen the whole time in a noisy,
+// dim venue. Three distinct tones (success/warning/error) so the
+// outcome is distinguishable by ear alone. Fails silently if Web
+// Audio or the Vibration API aren't available — visual feedback
+// always still works regardless.
+function playScanFeedback(type) {
+  if (navigator.vibrate) {
+    if (type === 'success') navigator.vibrate(80);
+    else if (type === 'warning') navigator.vibrate([60, 60, 60]);
+    else navigator.vibrate([120, 60, 120]);
+  }
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    const freq = type === 'success' ? 880 : type === 'warning' ? 440 : 220;
+    const dur = type === 'success' ? 0.25 : type === 'warning' ? 0.3 : 0.35;
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+    osc.start();
+    osc.stop(ctx.currentTime + dur);
+    setTimeout(function() { ctx.close(); }, 500);
+  } catch (e) {}
+}
+
 function handleQRScanResult(data) {
   const match = /^PBIS-LEGACY\|ts=(.+)$/.exec(data);
   const resultEl = document.getElementById('qr-scanner-result');
@@ -3673,19 +4102,24 @@ function handleQRScanResult(data) {
 
   if (!match) {
     resultEl.innerHTML = '<div class="qr-scanner-error">⚠️ This QR code isn\'t a recognized Legacy Night ticket.</div>';
+    playScanFeedback('error');
   } else {
     const ts = match[1];
     const guest = _dashGuestsCache.find(g => g.ts === ts);
     if (!guest) {
       resultEl.innerHTML = '<div class="qr-scanner-error">⚠️ Guest not found — try resyncing the dashboard first.</div>';
+      playScanFeedback('error');
     } else {
       const fullName = `${guest.fname||''} ${guest.lname||''}`.trim() || 'Guest';
       if (guest.checked_in) {
         const atTime = guest.checked_in_at ? new Date(guest.checked_in_at).toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'}) : '';
         resultEl.innerHTML = `<div class="qr-scanner-warn">ℹ️ ${fullName} is already checked in${atTime ? ' (' + atTime + ')' : ''}.</div>`;
+        playScanFeedback('warning');
       } else {
         resultEl.innerHTML = `<div class="qr-scanner-success">✓ ${fullName} checked in!</div>`;
+        playScanFeedback('success');
         markGuestCheckedIn(ts, true);
+        updateDoorsCounter();
       }
     }
   }
@@ -3711,6 +4145,60 @@ function closeQRScanner() {
   const video = document.getElementById('qr-scanner-video');
   if (video) video.srcObject = null;
   _qrScannerCooldown = false;
+}
+
+/* ── DOORS MODE — a stripped-down, single-purpose view for the
+   actual door on the night: scan or search, nothing else. Reuses
+   the same QR scanner and markGuestCheckedIn() as the main
+   dashboard, so behavior (including network-failure rollback and
+   scan sound/vibration) is identical, just presented differently. ── */
+function enterDoorsMode() {
+  document.getElementById('doors-mode-view').classList.add('active');
+  document.body.style.overflow = 'hidden';
+  document.getElementById('doors-search').value = '';
+  updateDoorsCounter();
+  renderDoorsSearchResults();
+}
+
+function exitDoorsMode() {
+  document.getElementById('doors-mode-view').classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+function updateDoorsCounter() {
+  const el = document.getElementById('doors-counter');
+  if (!el) return;
+  const total = _dashGuestsCache.length;
+  const checkedIn = _dashGuestsCache.filter(g => g.checked_in).length;
+  el.textContent = `${checkedIn} / ${total} checked in`;
+}
+
+function renderDoorsSearchResults() {
+  const searchEl = document.getElementById('doors-search');
+  const resultsEl = document.getElementById('doors-results');
+  if (!searchEl || !resultsEl) return;
+  const term = searchEl.value.trim().toLowerCase();
+  if (!term) { resultsEl.innerHTML = ''; return; }
+
+  const matches = _dashGuestsCache.filter(g => (g.fname+' '+g.lname).toLowerCase().includes(term)).slice(0, 8);
+  if (!matches.length) {
+    resultsEl.innerHTML = '<p class="doors-empty">No matches found.</p>';
+    return;
+  }
+
+  resultsEl.innerHTML = matches.map(function(g) {
+    const fullName = `${g.fname||''} ${g.lname||''}`.trim() || 'Guest';
+    if (g.checked_in) {
+      return `<div class="doors-result-row"><span class="doors-result-name">${fullName}</span><span class="doors-result-arrived">✓ Arrived</span></div>`;
+    }
+    return `<div class="doors-result-row"><span class="doors-result-name">${fullName}</span><button class="doors-result-btn" onclick="doorsCheckIn('${g.ts}')">Check In</button></div>`;
+  }).join('');
+}
+
+function doorsCheckIn(ts) {
+  markGuestCheckedIn(ts, true);
+  updateDoorsCounter();
+  renderDoorsSearchResults();
 }
 
 function openApproveModal(ts) {
@@ -3841,7 +4329,14 @@ async function submitApproveGuest() {
       admin_key: ADMIN_ACTION_KEY,
       staff_name: _currentUser ? _currentUser.name : ''
     };
-    await postToSheets(payload);
+    const result = await postToSheets(payload);
+
+    if (result.status === 'error') {
+      showDashToast('⚠️ Could not reach the server — the ticket was NOT sent. Check your connection and try again.');
+      btn.disabled = false;
+      btn.textContent = '🎫 Approve & Send Ticket';
+      return;
+    }
 
     guest.approved = true;
     guest.approved_at = new Date().toISOString();
@@ -3863,12 +4358,19 @@ function undoApproval(ts) {
   const ok = confirm(`Undo approval for ${guest.fname || 'this guest'} ${guest.lname || ''}?\n\nThis only clears their approved status here — it does NOT unsend the ticket email already delivered.`);
   if (!ok) return;
 
+  const prevState = { approved: guest.approved, approved_at: guest.approved_at };
   guest.approved = false;
   guest.approved_at = '';
   renderApprovalsTab();
   renderOverviewTab();
 
-  postToSheets({ action: 'approveGuest', ts: ts, approve: false, admin_key: ADMIN_ACTION_KEY, staff_name: _currentUser ? _currentUser.name : '' }).then(() => {
+  postToSheets({ action: 'approveGuest', ts: ts, approve: false, admin_key: ADMIN_ACTION_KEY, staff_name: _currentUser ? _currentUser.name : '' }).then((result) => {
+    if (result.status === 'error') {
+      Object.assign(guest, prevState);
+      renderApprovalsTab(); renderOverviewTab();
+      showDashToast('⚠️ Could not save — check your connection and try again.');
+      return;
+    }
     showDashToast(`↩ Approval undone for ${guest.fname}`);
   });
 }
@@ -3982,11 +4484,18 @@ function assignGuestTable(ts, tableNumber) {
   const guest = _dashGuestsCache.find(g => g.ts === ts);
   if (!guest) return;
 
+  const prevTable = guest.table_number;
   guest.table_number = parseInt(tableNumber, 10);
   renderTablesTab();
   renderOverviewTab();
 
-  postToSheets({ action: 'assignTable', ts: ts, table_number: guest.table_number, admin_key: ADMIN_ACTION_KEY, staff_name: _currentUser ? _currentUser.name : '' }).then(() => {
+  postToSheets({ action: 'assignTable', ts: ts, table_number: guest.table_number, admin_key: ADMIN_ACTION_KEY, staff_name: _currentUser ? _currentUser.name : '' }).then((result) => {
+    if (result.status === 'error') {
+      guest.table_number = prevTable;
+      renderTablesTab(); renderOverviewTab();
+      showDashToast('⚠️ Could not save — check your connection and try again.');
+      return;
+    }
     showDashToast(`✓ ${guest.fname} assigned to Table ${guest.table_number}`);
   });
 }
@@ -3994,10 +4503,17 @@ function assignGuestTable(ts, tableNumber) {
 function unassignGuestTable(ts) {
   const guest = _dashGuestsCache.find(g => g.ts === ts);
   if (!guest) return;
+  const prevTable = guest.table_number;
   guest.table_number = '';
   renderTablesTab();
 
-  postToSheets({ action: 'assignTable', ts: ts, table_number: '', admin_key: ADMIN_ACTION_KEY, staff_name: _currentUser ? _currentUser.name : '' }).then(() => {
+  postToSheets({ action: 'assignTable', ts: ts, table_number: '', admin_key: ADMIN_ACTION_KEY, staff_name: _currentUser ? _currentUser.name : '' }).then((result) => {
+    if (result.status === 'error') {
+      guest.table_number = prevTable;
+      renderTablesTab();
+      showDashToast('⚠️ Could not save — check your connection and try again.');
+      return;
+    }
     showDashToast(`↩ Table assignment removed for ${guest.fname}`);
   });
 }
@@ -4228,7 +4744,14 @@ async function sendIndividualFollowUpEmail() {
       admin_key: ADMIN_ACTION_KEY,
       staff_name: _currentUser ? _currentUser.name : ''
     };
-    await postToSheets(payload);
+    const result = await postToSheets(payload);
+
+    if (result.status === 'error') {
+      showDashToast('⚠️ Could not reach the server — the email was NOT sent. Check your connection and try again.');
+      btn.disabled = false;
+      btn.textContent = '📧 Send to This Guest';
+      return;
+    }
 
     guest.followup_sent = true;
     guest.followup_sent_at = new Date().toISOString();
