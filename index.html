@@ -72,7 +72,7 @@ img{max-width:100%;height:auto;}
 .hero-glare::after{content:'';position:absolute;top:-45%;left:-35%;width:170%;height:230%;background:conic-gradient(from 205deg at 16% 10%, transparent 0deg, rgba(255,246,220,0.24) 3deg, transparent 8deg, transparent 26deg, rgba(232,201,110,0.14) 30deg, transparent 36deg, transparent 55deg, rgba(255,246,220,0.1) 58deg, transparent 63deg, transparent 360deg);animation:glareDrift 17s ease-in-out infinite alternate;}
 @keyframes glareDrift{0%{transform:rotate(0deg);}100%{transform:rotate(5deg);}}
 .hero-spotlight{position:absolute;top:0;left:0;width:560px;height:560px;margin-left:-280px;margin-top:-280px;border-radius:50%;background:radial-gradient(circle, rgba(232,201,110,0.22) 0%, rgba(232,201,110,0.08) 35%, transparent 70%);pointer-events:none;mix-blend-mode:screen;z-index:1;transform:translate3d(50vw,30vh,0);transition:transform 0.25s ease-out;will-change:transform;}
-@media (hover:none){.hero-spotlight{display:none;}}
+@media (hover:none){.hero-spotlight{width:420px;height:420px;margin-left:-210px;margin-top:-210px;opacity:0;transition:transform 0.4s ease-out,opacity 0.6s ease;}}
 .hero > *:not(.starfield):not(.hero-glare):not(.hero-scroll):not(.hero-spotlight){position:relative;z-index:2;opacity:0;transform:translateY(12px);transition:opacity 0.9s ease,transform 0.9s ease;}
 .hero.loaded > *:not(.starfield):not(.hero-glare):not(.hero-scroll):not(.hero-spotlight){opacity:1;transform:translateY(0);}
 @media (prefers-reduced-motion:reduce){
@@ -301,6 +301,12 @@ footer a{color:var(--gold);text-decoration:none;}
 
 /* Additional guests */
 .additional-guest-row{display:flex;gap:8px;margin-bottom:10px;}
+.additional-guest-row-detailed{border:1.5px solid var(--gray);border-radius:12px;padding:14px;margin-bottom:12px;background:var(--cream);}
+.additional-guest-row-header{display:flex;gap:8px;}
+.additional-guest-veg-label{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--gray-mid);margin-top:10px;cursor:pointer;}
+.additional-guest-veg-label input{width:15px;height:15px;accent-color:var(--gold);cursor:pointer;}
+.additional-guest-dietary,.additional-guest-main-course{width:100%;padding:10px 12px;border:1.5px solid var(--gray);border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;background:var(--white);color:var(--text);}
+.additional-guest-dietary:focus,.additional-guest-main-course:focus{outline:none;border-color:var(--gold);}
 .additional-guest-input{flex:1;padding:12px 14px;border:1.5px solid var(--gray);border-radius:9px;font-size:16px;font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);}
 .additional-guest-input:focus{outline:none;border-color:var(--gold);background:var(--white);}
 .additional-guest-remove{background:var(--gray);color:var(--gray-mid);border:none;width:42px;border-radius:9px;cursor:pointer;font-size:14px;flex-shrink:0;}
@@ -600,6 +606,7 @@ body.dashboard-active #dashboard-view{display:block !important;}
 #approve-modal-send-btn:disabled{opacity:0.45;cursor:not-allowed;}
 .approve-qr-preview{display:flex;align-items:center;gap:16px;padding:16px;border:1.5px dashed var(--gray);border-radius:10px;margin-bottom:20px;background:var(--cream);}
 .approve-qr-preview canvas{width:90px;height:90px;background:#fff;border-radius:6px;flex-shrink:0;border:1px solid var(--gray);}
+#approve-qr-list{display:flex;flex-direction:column;gap:10px;margin-bottom:20px;}
 .approve-qr-hint{font-size:12px;color:var(--gray-mid);line-height:1.5;}
 .qr-scanner-modal{max-width:420px;}
 .qr-scanner-viewport{position:relative;width:100%;aspect-ratio:1;background:#000;border-radius:12px;overflow:hidden;margin-bottom:16px;}
@@ -634,6 +641,21 @@ body.dashboard-active #dashboard-view{display:block !important;}
 /* ── DOORS MODE ── */
 .dash-btn-doors{background:rgba(201,168,76,0.18);border-color:rgba(201,168,76,0.45);}
 #doors-mode-view{display:none;position:fixed;inset:0;background:linear-gradient(160deg,var(--navy),var(--deep));z-index:450;flex-direction:column;overflow-y:auto;}
+
+/* ── RECEPTION MONITOR ── */
+#monitor-view{display:none;position:fixed;inset:0;background:radial-gradient(ellipse at 50% 0%, #10381f 0%, var(--navy) 45%, var(--deep) 100%);z-index:1000;align-items:center;justify-content:center;text-align:center;overflow:hidden;}
+#monitor-view.active{display:flex;}
+.monitor-waiting{opacity:0.85;}
+.monitor-crest{width:140px;height:140px;margin:0 auto 30px;}
+.monitor-crest img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 4px 20px rgba(201,168,76,0.35));}
+.monitor-waiting h1{font-family:'Cinzel',serif;font-weight:700;font-size:clamp(28px,4vw,48px);color:var(--gold-light);margin:0 0 12px;}
+.monitor-waiting p{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:clamp(16px,2vw,24px);color:rgba(255,255,255,0.6);}
+.monitor-welcome{animation:monitorWelcomeIn 0.6s ease;}
+@keyframes monitorWelcomeIn{from{opacity:0;transform:scale(0.92);}to{opacity:1;transform:scale(1);}}
+.monitor-welcome .monitor-check{width:100px;height:100px;margin:0 auto 24px;border-radius:50%;background:linear-gradient(135deg,#2d9e5f,#3dbf72);display:flex;align-items:center;justify-content:center;box-shadow:0 0 60px rgba(45,158,95,0.5);}
+.monitor-welcome .monitor-check svg{width:52px;height:52px;stroke:#fff;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;}
+.monitor-welcome h1{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:clamp(24px,3vw,36px);color:rgba(255,255,255,0.7);margin:0 0 8px;}
+.monitor-welcome h2{font-family:'Cinzel',serif;font-weight:700;font-size:clamp(40px,7vw,84px);background-image:linear-gradient(100deg,#8a6a26 0%,var(--gold) 20%,var(--gold-light) 38%,var(--gold) 55%,#8a6a26 72%,var(--gold) 88%,#8a6a26 100%);background-size:220% auto;background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin:0;animation:goldShimmer 7s linear infinite;}
 #doors-mode-view.active{display:flex;}
 .doors-header{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid rgba(201,168,76,0.25);flex-wrap:wrap;gap:12px;}
 .doors-header-left{display:flex;flex-direction:column;gap:4px;}
@@ -681,11 +703,49 @@ body.dashboard-active #dashboard-view{display:block !important;}
   .doors-scan-btn{padding:34px 20px;}
   .doors-scan-btn svg{width:46px;height:46px;}
   .doors-scan-btn span{font-size:18px;}
+
+  /* Dashboard mobile pass — this is the phone that scans QR codes,
+     checks guests in, and manages seating on the actual night, so
+     these touch targets and spacing get real priority over desktop. */
+  .dash-topbar{padding:10px 14px;}
+  .dash-topbar-right{gap:8px;}
+  .dash-topbar-right .dash-btn,.dash-topbar-right .dash-btn-logout{padding:9px 12px;font-size:11.5px;}
+  .dash-tabs{padding:0 8px;}
+  .dash-tab{padding:14px 12px;font-size:12px;}
+  .dash-main{padding:14px 12px;}
+  .dash-panel{padding:16px 14px;border-radius:12px;}
+  .dash-panel-title{font-size:14px;gap:8px;}
+  .dash-stats-row{grid-template-columns:1fr 1fr;gap:10px;}
+  .dash-stat-card{padding:16px 12px;}
+  .dash-stat-value{font-size:30px;}
+
+  /* Bigger, thumb-friendly action buttons — 44px is the standard
+     minimum comfortable touch target size. */
+  .dash-checkin-btn,.dash-checkin-undo,.dash-noshow-btn,.dash-noshow-undo{padding:12px 16px;font-size:13px;min-height:44px;}
+  .dash-row-action,.dash-row-action-view,.dash-row-action-delete{font-size:19px;padding:8px 10px;min-width:44px;min-height:44px;}
+  .dash-btn,.dash-btn-gold{padding:11px 16px;font-size:12.5px;min-height:42px;}
+
+  /* Tables scroll horizontally rather than squeeze illegibly — swipe
+     to see more columns instead of everything becoming tiny. */
+  .dash-table{font-size:12.5px;}
+  .dash-table thead th{padding:9px 10px;font-size:10px;}
+  .dash-table tbody td{padding:11px 10px;}
+  .dash-search-row input,.dash-search-row select{font-size:16px;padding:12px 14px;} /* 16px avoids iOS auto-zoom on focus */
+
+  .tables-grid{grid-template-columns:1fr;}
+  .table-assign-select{width:100%;padding:10px 12px;font-size:14px;}
+
+  #approve-qr-list .approve-qr-preview{flex-direction:column;align-items:flex-start;}
+  #approve-qr-list .approve-qr-preview canvas{width:100%;max-width:160px;height:auto;aspect-ratio:1;margin:0 auto;}
 }
 .dash-toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(200%);opacity:0;visibility:hidden;pointer-events:none;background:var(--navy);color:#fff;padding:13px 24px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 12px 32px rgba(0,0,0,0.3);z-index:99999;transition:transform 0.3s ease,opacity 0.3s ease,visibility 0.3s;border:1px solid rgba(201,168,76,0.3);}
 .dash-toast.show{transform:translateX(-50%) translateY(0);opacity:1;visibility:visible;pointer-events:auto;}
 body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,body.role-marketing .dash-row-action,body.role-marketing #followup-modal-send-btn,body.role-marketing #followup-modal-file-input,body.role-marketing .followup-compose-btn,body.role-marketing .dash-noshow-btn,body.role-marketing .dash-noshow-undo,body.role-marketing #edit-guest-save-btn,body.role-marketing .dash-approve-btn,body.role-marketing .dash-approve-undo,body.role-marketing #approve-modal-send-btn,body.role-marketing #approve-modal-file-input,body.role-marketing .dash-btn-gold,body.role-marketing #add-guest-save-btn,body.role-marketing #postevent-send-btn{opacity:0.3;pointer-events:none;filter:grayscale(1);}
+body.role-usher .dash-row-action-delete{opacity:0.3;pointer-events:none;filter:grayscale(1);}
 .dash-marketing-notice{background:rgba(59,130,246,0.12);border-bottom:1px solid rgba(59,130,246,0.25);padding:8px 24px;font-size:12px;color:rgba(30,30,30,0.7);text-align:center;letter-spacing:0.03em;}
+.dash-sync-error-banner{background:#a4453e;color:#fff;padding:12px 24px;font-size:13px;text-align:center;font-weight:600;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;}
+.dash-sync-error-banner button{background:rgba(255,255,255,0.2);border:1.5px solid rgba(255,255,255,0.5);color:#fff;padding:6px 16px;border-radius:100px;font-size:12px;font-weight:700;cursor:pointer;}
+.dash-sync-error-banner button:hover{background:rgba(255,255,255,0.3);}
 @media (max-width:768px){
   .dash-main{padding:20px 16px;}
   .dash-tabs{padding:0 16px;}
@@ -1067,6 +1127,34 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,bod
             <textarea id="rsvp-dietary-restrictions" placeholder="e.g. severe peanut allergy, specific ingredients to avoid…"></textarea>
           </div>
           <div class="form-row">
+            <label>Starter / Soup</label>
+            <select id="rsvp-course-starter">
+              <option value="">Select a starter…</option>
+              <option value="Roasted Pumpkin Soup">Roasted Pumpkin Soup</option>
+              <option value="Garden Salad with Citrus Vinaigrette">Garden Salad with Citrus Vinaigrette</option>
+              <option value="Chef's Soup of the Day">Chef's Soup of the Day</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>Preferred Main Course *</label>
+            <select id="rsvp-course-main" required onchange="validateRsvpField('rsvp-course-main')">
+              <option value="">Select a main course…</option>
+              <option value="Surf & Turf — Australian Wagyu Beef" data-diet="meat">Surf &amp; Turf — Australian Wagyu Beef</option>
+              <option value="Surf & Turf — Pan-Seared Barramundi" data-diet="seafood">Surf &amp; Turf — Pan-Seared Barramundi</option>
+              <option value="Vegetarian — Pan-Seared Mushrooms" data-diet="vegetarian">Vegetarian — Pan-Seared Mushrooms</option>
+            </select>
+            <p class="form-hint" id="rsvp-main-course-hint" style="display:none;">Meat and seafood options are hidden because you selected a vegetarian/vegan dietary preference above.</p>
+          </div>
+          <div class="form-row">
+            <label>Dessert</label>
+            <select id="rsvp-course-dessert">
+              <option value="">Select a dessert…</option>
+              <option value="Chocolate Fondant">Chocolate Fondant</option>
+              <option value="Seasonal Fruit Tart">Seasonal Fruit Tart</option>
+              <option value="Coconut Panna Cotta">Coconut Panna Cotta</option>
+            </select>
+          </div>
+          <div class="form-row">
             <label>Message <span style="text-transform:none;">(optional)</span></label>
             <textarea id="rsvp-notes" placeholder="Questions or anything else we should know"></textarea>
           </div>
@@ -1328,6 +1416,10 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,bod
           <input type="text" id="edit-dietary-restrictions" placeholder="e.g. peanut allergy">
         </div>
       </div>
+      <label class="rsvp-consent-box" for="edit-vvip-check" style="margin-bottom:16px;">
+        <input type="checkbox" id="edit-vvip-check">
+        <span>⭐ Mark as VVIP — Ushers and Events Team get an automatic email the moment this guest checks in, including their table, dietary notes, and main course.</span>
+      </label>
       <div class="form-row">
         <label>Message</label>
         <textarea id="edit-notes"></textarea>
@@ -1443,18 +1535,15 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,bod
     <div class="edit-guest-body">
       <input type="hidden" id="approve-modal-ts">
 
-      <div class="followup-warn">Approving sends this guest their official Legacy Night ticket by email. A unique QR code is generated automatically below for check-in — write a message, optionally attach an invitation card, then approve.</div>
+      <div class="followup-warn">Approving sends <strong id="approve-modal-recipient-count">1</strong> separate ticket email(s) to this guest's address — one per person in the party, each with their own name and unique QR code.</div>
 
-      <label style="display:block;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--navy);margin-bottom:8px;">Guest's Unique QR Code <span style="text-transform:none;font-weight:400;color:var(--gray-mid);">(auto-generated, included automatically)</span></label>
-      <div class="approve-qr-preview" id="approve-qr-preview">
-        <canvas id="approve-qr-canvas" width="180" height="180"></canvas>
-        <p class="approve-qr-hint">This code is scanned at check-in on the night — attached to the email automatically, no action needed.</p>
-      </div>
+      <label style="display:block;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--navy);margin-bottom:8px;">Individual QR Codes <span style="text-transform:none;font-weight:400;color:var(--gray-mid);">(one per person, auto-generated)</span></label>
+      <div id="approve-qr-list"></div>
 
       <label style="display:block;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--navy);margin-bottom:8px;">Message *</label>
       <textarea class="followup-textarea" id="approve-modal-message" placeholder="Your Legacy Night Ticket" oninput="updateApproveButtonState()"></textarea>
 
-      <label style="display:block;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--navy);margin-bottom:8px;">Additional Attachments <span style="text-transform:none;font-weight:400;color:var(--gray-mid);">(optional — e.g. invitation card design, PDF/JPEG/PNG)</span></label>
+      <label style="display:block;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--navy);margin-bottom:8px;">Additional Attachments <span style="text-transform:none;font-weight:400;color:var(--gray-mid);">(optional — e.g. invitation card design, PDF/JPEG/PNG, included with every ticket email)</span></label>
       <div class="followup-file-row">
         <input type="file" id="approve-modal-file-input" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" multiple onchange="handleApproveFilesSelect(event)">
       </div>
@@ -1544,6 +1633,21 @@ body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,bod
   </div>
 </div>
 
+<!-- RECEPTION MONITOR — a passive, full-screen "Welcome" display for
+     screens at the door. Opened via ?monitor=1 in the URL on however
+     many screens you want (each just polls independently, no login
+     needed since it's read-only). Shows "Welcome, [Name]" the moment
+     a QR scan checks someone in, then resets itself automatically. -->
+<div id="monitor-view">
+  <div id="monitor-content">
+    <div class="monitor-waiting">
+      <div class="monitor-crest"><img src="" alt="PBIS" class="js-logo"></div>
+      <h1>PBIS Legacy Night</h1>
+      <p>Please scan your ticket at the entrance</p>
+    </div>
+  </div>
+</div>
+
 <div class="dash-toast" id="dash-toast"></div>
 
 <script>
@@ -1574,6 +1678,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const params = new URLSearchParams(window.location.search);
     if (params.get('admin') === '1') {
       setTimeout(function() { openLoginModal(); }, 300);
+    }
+    if (params.get('monitor') === '1') {
+      enterMonitorMode();
     }
   } catch (e) {}
 
@@ -1664,6 +1771,25 @@ document.addEventListener('DOMContentLoaded', function() {
       const y = e.clientY - rect.top;
       spotlightEl.style.transform = 'translate3d(' + x + 'px,' + y + 'px,0)';
     });
+  } else if (heroEl && spotlightEl) {
+    // Touch devices have no cursor to react to, so give them a
+    // comparable effect driven by scroll position instead — the
+    // glow sweeps gently across the hero as the visitor scrolls,
+    // rather than just being permanently absent on mobile.
+    spotlightEl.style.opacity = '1';
+    let spotlightTicking = false;
+    function updateTouchSpotlight() {
+      const rect = heroEl.getBoundingClientRect();
+      const progress = Math.min(Math.max(-rect.top / Math.max(rect.height, 1), 0), 1);
+      const x = rect.width * (0.15 + progress * 0.7);
+      const y = rect.height * 0.35;
+      spotlightEl.style.transform = 'translate3d(' + x + 'px,' + y + 'px,0)';
+      spotlightTicking = false;
+    }
+    updateTouchSpotlight();
+    window.addEventListener('scroll', function() {
+      if (!spotlightTicking) { requestAnimationFrame(updateTouchSpotlight); spotlightTicking = true; }
+    }, { passive: true });
   }
 
   // Animated count-up for the "25 / 2001 / 1" stat numbers, once scrolled into view
@@ -2252,6 +2378,29 @@ function goToRsvpConfirmStep() {
     }
     return;
   }
+
+  const mainCourseEl = document.getElementById('rsvp-course-main');
+  if (mainCourseEl && !mainCourseEl.value) {
+    mainCourseEl.classList.add('field-shake');
+    setTimeout(() => mainCourseEl.classList.remove('field-shake'), 400);
+    mainCourseEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    showDashToast('⚠️ Please select a main course before continuing.');
+    return;
+  }
+
+  const additionalRows = document.querySelectorAll('.additional-guest-row-detailed');
+  for (const row of additionalRows) {
+    const nameInput = row.querySelector('.additional-guest-input');
+    const mainSelect = row.querySelector('.additional-guest-main-course');
+    if (nameInput.value.trim() && !mainSelect.value) {
+      mainSelect.classList.add('field-shake');
+      setTimeout(() => mainSelect.classList.remove('field-shake'), 400);
+      mainSelect.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      showDashToast('⚠️ Please select a main course for ' + nameInput.value.trim() + '.');
+      return;
+    }
+  }
+
   showRsvpStep(2);
 }
 
@@ -2348,14 +2497,53 @@ const MAX_ADDITIONAL_GUESTS = 2;
 function addGuestRow() {
   if (_additionalGuestCount >= MAX_ADDITIONAL_GUESTS) return;
   _additionalGuestCount++;
+  const n = _additionalGuestCount;
   const list = document.getElementById('additional-guests-list');
   const row = document.createElement('div');
-  row.className = 'additional-guest-row';
-  row.innerHTML = `<input type="text" class="additional-guest-input" placeholder="Guest ${_additionalGuestCount} full name">` +
-    `<button type="button" class="additional-guest-remove" onclick="removeGuestRow(this)" title="Remove">✕</button>`;
+  row.className = 'additional-guest-row-detailed';
+  row.innerHTML = `
+    <div class="additional-guest-row-header">
+      <input type="text" class="additional-guest-input" placeholder="Guest ${n} full name">
+      <button type="button" class="additional-guest-remove" onclick="removeGuestRow(this)" title="Remove">✕</button>
+    </div>
+    <div class="form-row two" style="margin:10px 0 0;">
+      <div>
+        <label style="font-size:10px;">Dietary Restrictions <span style="text-transform:none;">(optional)</span></label>
+        <input type="text" class="additional-guest-dietary" placeholder="e.g. nut allergy">
+      </div>
+      <div>
+        <label style="font-size:10px;">Main Course *</label>
+        <select class="additional-guest-main-course">
+          <option value="">Select…</option>
+          <option value="Surf & Turf — Australian Wagyu Beef" data-diet="meat">Surf &amp; Turf — Australian Wagyu Beef</option>
+          <option value="Surf & Turf — Pan-Seared Barramundi" data-diet="seafood">Surf &amp; Turf — Pan-Seared Barramundi</option>
+          <option value="Vegetarian — Pan-Seared Mushrooms" data-diet="vegetarian">Vegetarian &mdash; Pan-Seared Mushrooms</option>
+        </select>
+      </div>
+    </div>
+    <label class="additional-guest-veg-label">
+      <input type="checkbox" class="additional-guest-veg-check" onchange="filterAdditionalGuestMainCourse(this)"> This guest is vegetarian/vegan
+    </label>`;
   list.appendChild(row);
   updateAddGuestBtnState();
   updatePartySizeChip();
+}
+
+// Same filtering logic as the primary guest's main course dropdown,
+// scoped to just this one additional-guest row.
+function filterAdditionalGuestMainCourse(checkbox) {
+  const row = checkbox.closest('.additional-guest-row-detailed');
+  const select = row.querySelector('.additional-guest-main-course');
+  const isVeg = checkbox.checked;
+  let cleared = false;
+  Array.from(select.options).forEach(function(opt) {
+    if (!opt.value) return;
+    const shouldHide = isVeg && opt.getAttribute('data-diet') !== 'vegetarian';
+    opt.hidden = shouldHide;
+    opt.disabled = shouldHide;
+    if (shouldHide && select.value === opt.value) { select.value = ''; cleared = true; }
+  });
+  if (cleared) showDashToast('⚠️ Main course selection cleared — please choose the vegetarian option.');
 }
 
 function removeGuestRow(btn) {
@@ -2401,6 +2589,36 @@ function updateDietarySelection() {
   _selectedDietary = checked;
   const label = document.getElementById('dietary-trigger-label');
   if (label) label.textContent = checked.length ? checked.join(', ') : 'Select dietary preferences…';
+  filterMainCourseOptions();
+}
+
+// Hides meat/seafood main course options when the guest has selected
+// Vegetarian or Vegan above, so they're only ever offered dishes they
+// can actually eat. If their current selection becomes hidden, it's
+// cleared so they have to pick again rather than silently submitting
+// a meat dish for a vegetarian guest.
+function filterMainCourseOptions() {
+  const isVeg = _selectedDietary.includes('Vegetarian') || _selectedDietary.includes('Vegan');
+  const select = document.getElementById('rsvp-course-main');
+  const hint = document.getElementById('rsvp-main-course-hint');
+  if (!select) return;
+
+  let clearedSelection = false;
+  Array.from(select.options).forEach(function(opt) {
+    if (!opt.value) return; // keep the placeholder always visible
+    const diet = opt.getAttribute('data-diet');
+    const shouldHide = isVeg && diet !== 'vegetarian';
+    opt.hidden = shouldHide;
+    opt.disabled = shouldHide;
+    if (shouldHide && select.value === opt.value) {
+      select.value = '';
+      clearedSelection = true;
+    }
+  });
+  if (hint) hint.style.display = isVeg ? 'block' : 'none';
+  if (clearedSelection) {
+    showDashToast('⚠️ Your main course selection was cleared — please choose the vegetarian option.');
+  }
 }
 
 // Clears the additional-guest rows and dietary selection so the form
@@ -2437,8 +2655,12 @@ function handleRSVPSubmit(e) {
 
   const get = id => { const el = document.getElementById(id); return el ? el.value : ''; };
 
-  const additionalGuestNames = Array.from(document.querySelectorAll('.additional-guest-input'))
-    .map(inp => sanitize(inp.value)).filter(Boolean);
+  const additionalGuestsDetail = Array.from(document.querySelectorAll('.additional-guest-row-detailed')).map(function(row) {
+    const name = sanitize(row.querySelector('.additional-guest-input').value);
+    const dietary = sanitize(row.querySelector('.additional-guest-dietary').value);
+    const mainCourse = row.querySelector('.additional-guest-main-course').value;
+    return { name: name, dietary_restrictions: dietary, main_course: mainCourse };
+  }).filter(function(g) { return g.name; });
 
   const guest = {
     action: 'newLegacyGuest',
@@ -2447,10 +2669,14 @@ function handleRSVPSubmit(e) {
     email: sanitize(get('rsvp-email')),
     phone: sanitize(get('rsvp-phone')),
     organization: sanitize(get('rsvp-organization')),
-    guest_count: 1 + additionalGuestNames.length,
-    additional_guests: additionalGuestNames.join(', '),
+    guest_count: 1 + additionalGuestsDetail.length,
+    additional_guests: additionalGuestsDetail.map(g => g.name).join(', '),
+    additional_guests_detail: JSON.stringify(additionalGuestsDetail),
     dietary_preferences: _selectedDietary.join(', '),
     dietary_restrictions: sanitize(get('rsvp-dietary-restrictions')),
+    course_starter: sanitize(get('rsvp-course-starter')),
+    course_main: sanitize(get('rsvp-course-main')),
+    course_dessert: sanitize(get('rsvp-course-dessert')),
     notes: sanitize(get('rsvp-notes')),
     ts: new Date().toISOString()
   };
@@ -2516,6 +2742,11 @@ const STAFF_DIRECTORY = [
   { name:'Richard', role:'admissions', team:'Events Team', hash:'04b6fdf85e226e12a0b2522b83411c0a35c0973529683677c4fd0be4e86bcd1e' },
   // ── SECRETARY (same full access as Admissions — focus on VVIP guests) ──
   { name:'Da', role:'admissions', team:'Secretary', hash:'a270ca5a8da214fba6dda75413a7a00d026919e20501d41fb92fd43f901523d4' },
+  // ── USHERS (same access as Events Team, but cannot delete guests) ──
+  // Placeholder names — rename to your actual ushers and re-generate
+  // passwords/hashes the same way (see project notes for the script).
+  { name:'Usher1', role:'usher', team:'Ushers', hash:'b03eee80e2d07eb14ee8e353758229afa4f34b46824cf7bbdbb7302fb008ab7a' },
+  { name:'Usher2', role:'usher', team:'Ushers', hash:'034588476d9c2e21fa8f593aa8e4a5b73d1491c4ec14da8bb5ff37f53a00680a' },
 ];
 let _currentUser = null;
 const MAX_ATTEMPTS = 4;
@@ -2687,6 +2918,7 @@ function enterLegacyDashboard() {
       'Marketing':   { color:'#3b82f6', bg:'rgba(59,130,246,0.18)' },
       'Events Team': { color:'#8b5cf6', bg:'rgba(139,92,246,0.18)' },
       'Secretary':   { color:'#c2477a', bg:'rgba(194,71,122,0.18)' },
+      'Ushers':      { color:'#0d9488', bg:'rgba(13,148,136,0.18)' },
     };
     const teamLabel = _currentUser.team || (_currentUser.role === 'marketing' ? 'Marketing' : 'Admissions');
     const teamInfo  = TEAM_COLORS[teamLabel] || TEAM_COLORS['Admissions'];
@@ -2707,6 +2939,7 @@ function enterLegacyDashboard() {
 
   if(_currentUser && _currentUser.role === 'marketing') {
     document.body.classList.add('role-marketing');
+    document.body.classList.remove('role-usher');
     if(!document.getElementById('dash-marketing-notice')) {
       const notice = document.createElement('div');
       notice.id = 'dash-marketing-notice';
@@ -2715,8 +2948,14 @@ function enterLegacyDashboard() {
       const dbView = document.getElementById('dashboard-view');
       dbView.insertBefore(notice, dbView.firstChild);
     }
+  } else if(_currentUser && _currentUser.role === 'usher') {
+    document.body.classList.add('role-usher');
+    document.body.classList.remove('role-marketing');
+    const oldNotice = document.getElementById('dash-marketing-notice');
+    if (oldNotice) oldNotice.remove();
   } else {
     document.body.classList.remove('role-marketing');
+    document.body.classList.remove('role-usher');
   }
 
   showDashSkeletons();
@@ -2815,13 +3054,36 @@ async function fetchDashboardGuests() {
         _dashGuestsCache = j.guests;
         const el = document.getElementById('dash-sync-status');
         if(el) el.textContent = '● Live · ' + new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
-        return j.guests;
+        hideDashSyncErrorBanner();
+        return true;
       }
     }
   } catch(e) { console.warn('Fetch failed:', e); }
   const el = document.getElementById('dash-sync-status');
   if(el) el.textContent = '● Sync Error';
-  return _dashGuestsCache;
+  showDashSyncErrorBanner();
+  return false;
+}
+
+// A tiny "● Sync Error" label in the topbar is easy to miss — this
+// puts an impossible-to-miss banner at the top of the dashboard when
+// guest data genuinely fails to load, so tabs that look empty come
+// with an obvious explanation and a retry button instead of just
+// looking broken.
+function showDashSyncErrorBanner() {
+  if (document.getElementById('dash-sync-error-banner')) return;
+  const banner = document.createElement('div');
+  banner.id = 'dash-sync-error-banner';
+  banner.className = 'dash-sync-error-banner';
+  banner.innerHTML = '⚠️ Could not load guest data — check your connection and tap Retry. Tabs may look empty until this succeeds. ' +
+    '<button onclick="loadDashboardData()">Retry</button>';
+  const dbView = document.getElementById('dashboard-view');
+  if (dbView) dbView.insertBefore(banner, dbView.firstChild);
+}
+
+function hideDashSyncErrorBanner() {
+  const banner = document.getElementById('dash-sync-error-banner');
+  if (banner) banner.remove();
 }
 
 let _knownGuestTsSet = null; // null until the first successful load completes
@@ -3216,7 +3478,7 @@ function renderGuestListTab() {
       <td style="white-space:nowrap;">
         <button class="dash-row-action-view" onclick="openGuestDetailModal('${g.ts}')" title="View Details" aria-label="View details">👁️</button>
         <button class="dash-row-action" onclick="openEditGuestModal('${g.ts}')" title="Edit" aria-label="Edit guest">✏️</button>
-        <button class="dash-row-action" onclick="confirmDeleteGuest('${g.ts}')" title="Delete" aria-label="Delete guest">🗑️</button>
+        <button class="dash-row-action dash-row-action-delete" onclick="confirmDeleteGuest('${g.ts}')" title="Delete" aria-label="Delete guest">🗑️</button>
       </td>
     </tr>`;
   }).join('');
@@ -3290,18 +3552,36 @@ function renderCheckInTab() {
     return;
   }
 
-  const filtered = guests.filter(g =>
-    !_checkinSearchTerm || (g.fname+' '+g.lname).toLowerCase().includes(_checkinSearchTerm.toLowerCase())
-  );
-  const arrivedCount = guests.filter(g => g.checked_in).length;
+  // Expand every party into one row per individual person, since
+  // each person now checks in separately with their own QR code.
+  let people = [];
+  guests.forEach(function(g) {
+    const checkins = parseIndividualCheckins(g);
+    const additional = parseAdditionalGuestsDetail(g);
+    const partySize = g.guest_count || 1;
+    for (let idx = 0; idx < partySize; idx++) {
+      const name = idx === 0 ? (`${g.fname||''} ${g.lname||''}`.trim() || 'Guest') : ((additional[idx-1] && additional[idx-1].name) || 'Guest ' + idx);
+      people.push({
+        ts: g.ts, idx: idx, name: name,
+        checked_in: !!(checkins[idx] && checkins[idx].checked_in),
+        checked_in_at: checkins[idx] ? checkins[idx].checked_in_at : '',
+        table: g.table_number || '',
+        isPrimary: idx === 0,
+      });
+    }
+  });
 
-  const rows = filtered.slice().reverse().map(g => {
-    const tid = g.ts.replace(/[^a-zA-Z0-9]/g,'');
-    const action = g.checked_in
-      ? `<span class="dash-arrived-pill">✓ Arrived</span> <button class="dash-checkin-undo" onclick="markGuestCheckedIn('${g.ts}',false)">Undo</button>`
-      : `<button class="dash-checkin-btn" onclick="markGuestCheckedIn('${g.ts}',true)">Check In</button>`;
+  const filtered = people.filter(p => !_checkinSearchTerm || p.name.toLowerCase().includes(_checkinSearchTerm.toLowerCase()));
+  const arrivedCount = people.filter(p => p.checked_in).length;
+
+  const rows = filtered.slice().reverse().map(p => {
+    const tid = (p.ts + '_' + p.idx).replace(/[^a-zA-Z0-9]/g,'');
+    const action = p.checked_in
+      ? `<span class="dash-arrived-pill">✓ Arrived</span> <button class="dash-checkin-undo" onclick="markGuestCheckedIn('${p.ts}',false,${p.idx},'${p.name.replace(/'/g,"\\'")}')">Undo</button>`
+      : `<button class="dash-checkin-btn" onclick="markGuestCheckedIn('${p.ts}',true,${p.idx},'${p.name.replace(/'/g,"\\'")}')">Check In</button>`;
     return `<tr id="checkin-row-${tid}">
-      <td style="font-weight:600;color:var(--navy);white-space:nowrap;">${g.fname||'—'} ${g.lname||''}</td>
+      <td style="font-weight:600;color:var(--navy);white-space:nowrap;">${p.name}${!p.isPrimary ? ' <span style="color:var(--gray-mid);font-weight:400;font-size:11.5px;">(guest)</span>' : ''}</td>
+      <td>${p.table ? 'Table ' + p.table : '<span style="color:var(--gray-mid);">—</span>'}</td>
       <td>${action}</td>
     </tr>`;
   }).join('');
@@ -3309,10 +3589,10 @@ function renderCheckInTab() {
   el.innerHTML = `
     <div class="dash-stats-row">
       <div class="dash-stat-card"><div class="dash-stat-value">${arrivedCount}</div><div class="dash-stat-label">Guests Arrived</div></div>
-      <div class="dash-stat-card"><div class="dash-stat-value">${guests.length - arrivedCount}</div><div class="dash-stat-label">Not Yet Arrived</div></div>
+      <div class="dash-stat-card"><div class="dash-stat-value">${people.length - arrivedCount}</div><div class="dash-stat-label">Not Yet Arrived</div></div>
     </div>
     <div class="dash-panel">
-      <div class="dash-panel-title">Day-Of Check-In
+      <div class="dash-panel-title">Day-Of Check-In <span>${arrivedCount} / ${people.length} individuals</span>
         <button class="dash-btn-gold" onclick="openQRScanner()" style="margin-left:auto;">📷 Scan QR Code</button>
       </div>
       <div class="dash-search-row">
@@ -3320,22 +3600,50 @@ function renderCheckInTab() {
       </div>
       <div class="dash-table-wrap">
         <table class="dash-table">
-          <thead><tr><th>Guest Name</th><th></th></tr></thead>
+          <thead><tr><th>Guest Name</th><th>Table</th><th></th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
       </div>
     </div>`;
 }
 
-function markGuestCheckedIn(ts, checkedIn) {
+// Individual Check-Ins is stored as a JSON object keyed by index
+// (0 = primary registrant, 1+ = additional guests). These two
+// helpers are used everywhere per-person status needs to be read.
+function parseIndividualCheckins(guest) {
+  try { return JSON.parse(guest.individual_checkins || '{}'); } catch (e) { return {}; }
+}
+
+function parseAdditionalGuestsDetail(guest) {
+  try { return JSON.parse(guest.additional_guests_detail || '[]'); } catch (e) { return []; }
+}
+
+function resolvePersonName(guest, idx) {
+  if (idx === 0) return `${guest.fname||''} ${guest.lname||''}`.trim() || 'Guest';
+  const additional = parseAdditionalGuestsDetail(guest);
+  const person = additional[idx - 1];
+  return (person && person.name) ? person.name : `${guest.fname||''} ${guest.lname||''}`.trim() + ' (guest ' + idx + ')';
+}
+
+function markGuestCheckedIn(ts, checkedIn, idx, personName) {
   const guest = _dashGuestsCache.find(g => g.ts === ts);
   if(!guest) return;
+  idx = (idx === undefined || idx === null) ? 0 : idx;
+  personName = personName || resolvePersonName(guest, idx);
 
   // Snapshot so we can roll back the optimistic update if the save fails
-  const prevState = { checked_in: guest.checked_in, checked_in_at: guest.checked_in_at, no_show: guest.no_show, no_show_at: guest.no_show_at };
+  const prevState = { checked_in: guest.checked_in, checked_in_at: guest.checked_in_at, no_show: guest.no_show, no_show_at: guest.no_show_at, individual_checkins: guest.individual_checkins };
 
-  guest.checked_in = checkedIn;
-  guest.checked_in_at = checkedIn ? new Date().toISOString() : '';
+  const checkins = parseIndividualCheckins(guest);
+  checkins[idx] = { checked_in: checkedIn, checked_in_at: checkedIn ? new Date().toISOString() : '' };
+  guest.individual_checkins = JSON.stringify(checkins);
+
+  // Aggregate party-level status, kept in sync for every other view
+  // that already reads guest.checked_in (Guest List, Overview stats).
+  const anyoneCheckedIn = Object.keys(checkins).some(k => checkins[k] && checkins[k].checked_in);
+  guest.checked_in = anyoneCheckedIn;
+  guest.checked_in_at = anyoneCheckedIn ? (guest.checked_in_at || new Date().toISOString()) : '';
+
   // Bidirectional sync with Overdue tab: a guest who checks in clearly
   // did show up, so any earlier no-show mark no longer applies.
   const clearingNoShow = checkedIn && guest.no_show;
@@ -3344,18 +3652,19 @@ function markGuestCheckedIn(ts, checkedIn) {
   renderOverviewTab();
   renderGuestListTab();
   renderOverdueTab();
+  renderTablesTab();
 
-  const payload = { action: 'markCheckedIn', ts: ts, checked_in: checkedIn, admin_key: ADMIN_ACTION_KEY, staff_name: _currentUser ? _currentUser.name : '' };
+  const payload = { action: 'markCheckedIn', ts: ts, checked_in: checkedIn, idx: idx, admin_key: ADMIN_ACTION_KEY, staff_name: _currentUser ? _currentUser.name : '' };
   if (clearingNoShow) payload.clear_no_show = true;
 
   postToSheets(payload).then((result) => {
     if (result.status === 'error') {
       Object.assign(guest, prevState);
-      renderCheckInTab(); renderOverviewTab(); renderGuestListTab(); renderOverdueTab();
+      renderCheckInTab(); renderOverviewTab(); renderGuestListTab(); renderOverdueTab(); renderTablesTab();
       showDashToast('⚠️ Could not save — check your connection and try again.');
       return;
     }
-    showDashToast(checkedIn ? `✓ ${guest.fname} checked in` : `↩ Check-in undone for ${guest.fname}`);
+    showDashToast(checkedIn ? `✓ ${personName} checked in` : `↩ Check-in undone for ${personName}`);
   });
 }
 
@@ -3548,6 +3857,61 @@ function closeGuestDetailModal() {
   document.body.style.overflow = '';
 }
 
+/* ══════════════════════════════════════════════════════════════
+   RECEPTION MONITOR — a read-only, full-screen display for however
+   many screens you put at the door. No login needed (it never takes
+   any action, just displays), just polls the backend every 2.5s for
+   the most recent check-in and shows a "Welcome" screen when a new
+   one comes in, then resets itself automatically a few seconds
+   later — ready for the next guest without anyone touching it.
+   ══════════════════════════════════════════════════════════════ */
+let _monitorPollInterval = null;
+let _monitorLastSeenAt = 0;
+let _monitorResetTimeout = null;
+
+function enterMonitorMode() {
+  document.getElementById('monitor-view').classList.add('active');
+  pollForRecentCheckIn();
+  _monitorPollInterval = setInterval(pollForRecentCheckIn, 2500);
+}
+
+async function pollForRecentCheckIn() {
+  try {
+    const url = SHEETS_URL + '?action=getRecentCheckIn&key=' + encodeURIComponent(ADMIN_ACTION_KEY) + '&_=' + Date.now();
+    const res = await fetch(url, { method: 'GET' });
+    const j = await res.json();
+    if (j.status === 'ok' && j.checkin && j.checkin.at > _monitorLastSeenAt) {
+      _monitorLastSeenAt = j.checkin.at;
+      showMonitorWelcome(j.checkin.name);
+    }
+  } catch (e) {
+    // Silent — the monitor just keeps showing whatever it last showed
+    // and tries again on the next poll. No one's watching a console.
+  }
+}
+
+function showMonitorWelcome(name) {
+  if (_monitorResetTimeout) clearTimeout(_monitorResetTimeout);
+  const el = document.getElementById('monitor-content');
+  el.innerHTML = `
+    <div class="monitor-welcome">
+      <div class="monitor-check"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></div>
+      <h1>Welcome,</h1>
+      <h2>${name}</h2>
+    </div>`;
+  _monitorResetTimeout = setTimeout(resetMonitorToWaiting, 6000);
+}
+
+function resetMonitorToWaiting() {
+  const el = document.getElementById('monitor-content');
+  el.innerHTML = `
+    <div class="monitor-waiting">
+      <div class="monitor-crest"><img src="${LOGO}" alt="PBIS" class="js-logo"></div>
+      <h1>PBIS Legacy Night</h1>
+      <p>Please scan your ticket at the entrance</p>
+    </div>`;
+}
+
 /* ── COMMAND PALETTE (Ctrl/Cmd+K) — jump to any guest or tab
    instantly without hunting through nine tabs manually. ── */
 const CMDK_TABS = [
@@ -3692,6 +4056,7 @@ function openEditGuestModal(ts) {
   document.getElementById('edit-additional-guests').value = guest.additional_guests || '';
   document.getElementById('edit-dietary-preferences').value = guest.dietary_preferences || '';
   document.getElementById('edit-dietary-restrictions').value = guest.dietary_restrictions || '';
+  document.getElementById('edit-vvip-check').checked = !!guest.vvip;
   document.getElementById('edit-notes').value = guest.notes || '';
 
   document.getElementById('edit-guest-backdrop').classList.add('open');
@@ -3815,6 +4180,7 @@ function saveEditGuest() {
     additional_guests: get('edit-additional-guests').trim(),
     dietary_preferences: get('edit-dietary-preferences').trim(),
     dietary_restrictions: get('edit-dietary-restrictions').trim(),
+    vvip: document.getElementById('edit-vvip-check').checked,
     notes:        get('edit-notes').trim(),
   };
 
@@ -3902,7 +4268,7 @@ function performDeleteGuest(ts) {
   renderOverdueTab();
   renderTablesTab();
 
-  postToSheets({ action: 'deleteLegacyGuest', ts: ts, admin_key: ADMIN_ACTION_KEY, staff_name: _currentUser ? _currentUser.name : '' }).then((result) => {
+  postToSheets({ action: 'deleteLegacyGuest', ts: ts, admin_key: ADMIN_ACTION_KEY, staff_name: _currentUser ? _currentUser.name : '', staff_role: _currentUser ? _currentUser.role : '' }).then((result) => {
     if (result.status === 'error') {
       _dashGuestsCache.splice(Math.min(guestIndex, _dashGuestsCache.length), 0, guestSnapshot);
       renderGuestListTab(); renderOverviewTab(); renderApprovalsTab(); renderCheckInTab(); renderOverdueTab(); renderTablesTab();
@@ -4036,38 +4402,56 @@ function ensureQRScanLibLoaded(callback) {
 
 let _approveQrBlob = null;
 
-function generateApproveQR(ts) {
-  const canvas = document.getElementById('approve-qr-canvas');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+let _approveRecipients = []; // [{idx, name, qrBlob}] — populated as each QR finishes generating
+let _approveExpectedCount = 0;
 
-  ensureQRGenLibLoaded(function() {
-    try {
-      const payload = 'PBIS-LEGACY|ts=' + ts;
-      const qr = qrcode(0, 'M');
-      qr.addData(payload);
-      qr.make();
-      const moduleCount = qr.getModuleCount();
-      const size = canvas.width;
-      const cellSize = size / moduleCount;
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, size, size);
-      ctx.fillStyle = '#0a2818';
-      for (let row = 0; row < moduleCount; row++) {
-        for (let col = 0; col < moduleCount; col++) {
-          if (qr.isDark(row, col)) {
-            ctx.fillRect(col * cellSize, row * cellSize, Math.ceil(cellSize), Math.ceil(cellSize));
+function generateAllApproveQRs(ts, primaryName, additionalGuests) {
+  const listEl = document.getElementById('approve-qr-list');
+  listEl.innerHTML = '';
+  _approveRecipients = [];
+
+  const people = [{ idx: 0, name: primaryName }].concat(
+    additionalGuests.map(function(g, i) { return { idx: i + 1, name: g.name }; })
+  );
+  _approveExpectedCount = people.length;
+
+  people.forEach(function(person) {
+    const card = document.createElement('div');
+    card.className = 'approve-qr-preview';
+    const canvasId = 'approve-qr-canvas-' + person.idx;
+    card.innerHTML = `<canvas id="${canvasId}" width="180" height="180"></canvas>` +
+      `<p class="approve-qr-hint"><strong>${person.name}</strong><br>Scanned at check-in — attached to their own ticket email automatically.</p>`;
+    listEl.appendChild(card);
+
+    ensureQRGenLibLoaded(function() {
+      try {
+        const canvas = document.getElementById(canvasId);
+        const ctx = canvas.getContext('2d');
+        const payload = 'PBIS-LEGACY|ts=' + ts + '|idx=' + person.idx;
+        const qr = qrcode(0, 'M');
+        qr.addData(payload);
+        qr.make();
+        const moduleCount = qr.getModuleCount();
+        const size = canvas.width;
+        const cellSize = size / moduleCount;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, size, size);
+        ctx.fillStyle = '#0a2818';
+        for (let row = 0; row < moduleCount; row++) {
+          for (let col = 0; col < moduleCount; col++) {
+            if (qr.isDark(row, col)) {
+              ctx.fillRect(col * cellSize, row * cellSize, Math.ceil(cellSize), Math.ceil(cellSize));
+            }
           }
         }
+        canvas.toBlob(function(blob) {
+          _approveRecipients.push({ idx: person.idx, name: person.name, qrBlob: blob });
+          updateApproveButtonState();
+        }, 'image/png');
+      } catch (e) {
+        showDashToast('⚠️ Could not generate a QR code for ' + person.name + '.');
       }
-      canvas.toBlob(function(blob) {
-        _approveQrBlob = blob;
-        updateApproveButtonState();
-      }, 'image/png');
-    } catch (e) {
-      showDashToast('⚠️ Could not generate a QR code for this guest.');
-    }
+    });
   });
 }
 
@@ -4121,17 +4505,22 @@ function scanQRFrame() {
   const video = document.getElementById('qr-scanner-video');
   if (!video || !video.srcObject) return; // scanner was closed
 
-  if (video.readyState === video.HAVE_ENOUGH_DATA && !_qrScannerCooldown) {
-    const canvas = _qrScannerCanvas;
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const code = jsQR(imageData.data, imageData.width, imageData.height);
-    if (code && code.data) {
-      handleQRScanResult(code.data);
+  try {
+    if (video.readyState === video.HAVE_ENOUGH_DATA && !_qrScannerCooldown && typeof jsQR !== 'undefined') {
+      const canvas = _qrScannerCanvas;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const code = jsQR(imageData.data, imageData.width, imageData.height);
+      if (code && code.data) {
+        handleQRScanResult(code.data);
+      }
     }
+  } catch (e) {
+    // A single bad frame (camera glitch, brief resource hiccup) should
+    // never kill scanning entirely — just skip this frame and keep going.
   }
   _qrScannerRAF = requestAnimationFrame(scanQRFrame);
 }
@@ -4166,7 +4555,7 @@ function playScanFeedback(type) {
 }
 
 function handleQRScanResult(data) {
-  const match = /^PBIS-LEGACY\|ts=(.+)$/.exec(data);
+  const match = /^PBIS-LEGACY\|ts=([^|]+)\|idx=(\d+)$/.exec(data);
   const resultEl = document.getElementById('qr-scanner-result');
   if (!resultEl) return;
 
@@ -4175,20 +4564,25 @@ function handleQRScanResult(data) {
     playScanFeedback('error');
   } else {
     const ts = match[1];
+    const idx = parseInt(match[2], 10);
     const guest = _dashGuestsCache.find(g => g.ts === ts);
     if (!guest) {
       resultEl.innerHTML = '<div class="qr-scanner-error">⚠️ Guest not found — try resyncing the dashboard first.</div>';
       playScanFeedback('error');
     } else {
-      const fullName = `${guest.fname||''} ${guest.lname||''}`.trim() || 'Guest';
-      if (guest.checked_in) {
-        const atTime = guest.checked_in_at ? new Date(guest.checked_in_at).toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'}) : '';
-        resultEl.innerHTML = `<div class="qr-scanner-warn">ℹ️ ${fullName} is already checked in${atTime ? ' (' + atTime + ')' : ''}.</div>`;
+      const personName = resolvePersonName(guest, idx);
+      const checkins = parseIndividualCheckins(guest);
+      const alreadyIn = !!(checkins[idx] && checkins[idx].checked_in);
+
+      if (alreadyIn) {
+        const atIso = checkins[idx].checked_in_at;
+        const atTime = atIso ? new Date(atIso).toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'}) : '';
+        resultEl.innerHTML = `<div class="qr-scanner-warn">ℹ️ ${personName} is already checked in${atTime ? ' (' + atTime + ')' : ''}.</div>`;
         playScanFeedback('warning');
       } else {
-        resultEl.innerHTML = `<div class="qr-scanner-success">✓ ${fullName} checked in!</div>`;
+        resultEl.innerHTML = `<div class="qr-scanner-success">✓ ${personName} checked in!</div>`;
         playScanFeedback('success');
-        markGuestCheckedIn(ts, true);
+        markGuestCheckedIn(ts, true, idx, personName);
         updateDoorsCounter();
       }
     }
@@ -4206,7 +4600,8 @@ function handleQRScanResult(data) {
 
 function closeQRScanner() {
   document.getElementById('qr-scanner-backdrop').classList.remove('open');
-  document.body.style.overflow = '';
+  const doorsActive = document.getElementById('doors-mode-view').classList.contains('active');
+  if (!doorsActive) document.body.style.overflow = '';
   if (_qrScannerRAF) { cancelAnimationFrame(_qrScannerRAF); _qrScannerRAF = null; }
   if (_qrScannerStream) {
     _qrScannerStream.getTracks().forEach(function(t) { t.stop(); });
@@ -4238,8 +4633,15 @@ function exitDoorsMode() {
 function updateDoorsCounter() {
   const el = document.getElementById('doors-counter');
   if (!el) return;
-  const total = _dashGuestsCache.length;
-  const checkedIn = _dashGuestsCache.filter(g => g.checked_in).length;
+  let total = 0, checkedIn = 0;
+  _dashGuestsCache.forEach(function(g) {
+    const checkins = parseIndividualCheckins(g);
+    const partySize = g.guest_count || 1;
+    total += partySize;
+    for (let idx = 0; idx < partySize; idx++) {
+      if (checkins[idx] && checkins[idx].checked_in) checkedIn++;
+    }
+  });
   el.textContent = `${checkedIn} / ${total} checked in`;
 }
 
@@ -4250,23 +4652,33 @@ function renderDoorsSearchResults() {
   const term = searchEl.value.trim().toLowerCase();
   if (!term) { resultsEl.innerHTML = ''; return; }
 
-  const matches = _dashGuestsCache.filter(g => (g.fname+' '+g.lname).toLowerCase().includes(term)).slice(0, 8);
+  let people = [];
+  _dashGuestsCache.forEach(function(g) {
+    const checkins = parseIndividualCheckins(g);
+    const additional = parseAdditionalGuestsDetail(g);
+    const partySize = g.guest_count || 1;
+    for (let idx = 0; idx < partySize; idx++) {
+      const name = idx === 0 ? (`${g.fname||''} ${g.lname||''}`.trim() || 'Guest') : ((additional[idx-1] && additional[idx-1].name) || 'Guest ' + idx);
+      people.push({ ts: g.ts, idx: idx, name: name, checked_in: !!(checkins[idx] && checkins[idx].checked_in) });
+    }
+  });
+
+  const matches = people.filter(p => p.name.toLowerCase().includes(term)).slice(0, 8);
   if (!matches.length) {
     resultsEl.innerHTML = '<p class="doors-empty">No matches found.</p>';
     return;
   }
 
-  resultsEl.innerHTML = matches.map(function(g) {
-    const fullName = `${g.fname||''} ${g.lname||''}`.trim() || 'Guest';
-    if (g.checked_in) {
-      return `<div class="doors-result-row"><span class="doors-result-name">${fullName}</span><span class="doors-result-arrived">✓ Arrived</span></div>`;
+  resultsEl.innerHTML = matches.map(function(p) {
+    if (p.checked_in) {
+      return `<div class="doors-result-row"><span class="doors-result-name">${p.name}</span><span class="doors-result-arrived">✓ Arrived</span></div>`;
     }
-    return `<div class="doors-result-row"><span class="doors-result-name">${fullName}</span><button class="doors-result-btn" onclick="doorsCheckIn('${g.ts}')">Check In</button></div>`;
+    return `<div class="doors-result-row"><span class="doors-result-name">${p.name}</span><button class="doors-result-btn" onclick="doorsCheckIn('${p.ts}',${p.idx},'${p.name.replace(/'/g,"\\'")}')">Check In</button></div>`;
   }).join('');
 }
 
-function doorsCheckIn(ts) {
-  markGuestCheckedIn(ts, true);
+function doorsCheckIn(ts, idx, name) {
+  markGuestCheckedIn(ts, true, idx, name);
   updateDoorsCounter();
   renderDoorsSearchResults();
 }
@@ -4278,18 +4690,22 @@ function openApproveModal(ts) {
 
   _approveTargetTs = ts;
   _approveFiles = [];
-  _approveQrBlob = null;
+  _approveRecipients = [];
 
   const fullName = `${guest.fname||''} ${guest.lname||''}`.trim() || 'Guest';
-  document.getElementById('approve-modal-recipient').textContent = `To: ${fullName} · ${guest.email}`;
+  let additionalGuests = [];
+  try { additionalGuests = JSON.parse(guest.additional_guests_detail || '[]'); } catch (e) {}
+
+  document.getElementById('approve-modal-recipient').textContent = `To: ${guest.email}`;
+  document.getElementById('approve-modal-recipient-count').textContent = 1 + additionalGuests.length;
   document.getElementById('approve-modal-ts').value = ts;
   document.getElementById('approve-modal-message').value = 'Your Legacy Night Ticket';
   document.getElementById('approve-modal-file-input').value = '';
   renderApproveFileList();
-  generateApproveQR(ts);
+  generateAllApproveQRs(ts, fullName, additionalGuests);
 
   const sendBtn = document.getElementById('approve-modal-send-btn');
-  sendBtn.textContent = '🎫 Approve & Send Ticket';
+  sendBtn.textContent = '🎫 Approve & Send Ticket(s)';
   updateApproveButtonState();
 
   document.getElementById('approve-modal-backdrop').classList.add('open');
@@ -4301,6 +4717,8 @@ function closeApproveModal() {
   document.body.style.overflow = '';
   _approveTargetTs = null;
   _approveFiles = [];
+  _approveRecipients = [];
+  _approveExpectedCount = 0;
 }
 
 function handleApproveFilesSelect(e) {
@@ -4358,7 +4776,8 @@ function updateApproveButtonState() {
   if (!btn) return;
   const messageEl = document.getElementById('approve-modal-message');
   const message = messageEl ? messageEl.value.trim() : '';
-  btn.disabled = !(message && _approveQrBlob);
+  const allQrsReady = _approveExpectedCount > 0 && _approveRecipients.length === _approveExpectedCount;
+  btn.disabled = !(message && allQrsReady);
 }
 
 async function submitApproveGuest() {
@@ -4368,12 +4787,14 @@ async function submitApproveGuest() {
 
   const message = document.getElementById('approve-modal-message').value.trim();
   if (!message) { showDashToast('⚠️ Write a message before approving.'); return; }
-  if (!_approveQrBlob) { showDashToast('⚠️ QR code is still generating — please wait a moment.'); return; }
+  if (_approveRecipients.length !== _approveExpectedCount) { showDashToast('⚠️ QR codes are still generating — please wait a moment.'); return; }
 
   const fullName = `${guest.fname||''} ${guest.lname||''}`.trim() || 'Guest';
   const extraCount = _approveFiles.length;
-  const confirmMsg = `Approve ${fullName} (${guest.email}) and send their ticket now?\n\n` +
-    `Includes their unique QR code${extraCount ? ' plus ' + extraCount + ' additional file' + (extraCount === 1 ? '' : 's') : ''}. This can't be undone once sent.`;
+  const partyCount = _approveRecipients.length;
+  const confirmMsg = `Send ${partyCount} separate ticket email${partyCount === 1 ? '' : 's'} to ${guest.email}?\n\n` +
+    `One per person (${_approveRecipients.map(r => r.name).join(', ')}), each with their own QR code` +
+    `${extraCount ? ' plus ' + extraCount + ' shared attachment' + (extraCount === 1 ? '' : 's') : ''}. This can't be undone once sent.`;
   const ok = confirm(confirmMsg);
   if (!ok) return;
 
@@ -4382,43 +4803,49 @@ async function submitApproveGuest() {
   btn.textContent = 'Sending…';
 
   try {
-    const qrBase64 = await blobToBase64(_approveQrBlob);
-    const safeName = fullName.replace(/[^a-z0-9]/gi, '_');
-    const files = [{ filename: safeName + '-QR-Code.png', mimeType: 'image/png', base64: qrBase64 }];
+    const recipients = await Promise.all(_approveRecipients.map(async function(r) {
+      const safeName = r.name.replace(/[^a-z0-9]/gi, '_');
+      return {
+        idx: r.idx,
+        name: r.name,
+        qr_filename: safeName + '-QR-Code.png',
+        qr_base64: await blobToBase64(r.qrBlob)
+      };
+    }));
     const extraFiles = await Promise.all(_approveFiles.map(async f => ({
       filename: f.name, mimeType: f.type, base64: await fileToBase64(f)
     })));
-    files.push(...extraFiles);
 
     const payload = {
       action: 'approveGuest',
       ts: ts,
       approve: true,
       message: message,
-      files: files,
+      recipients: recipients,
+      extra_files: extraFiles,
       admin_key: ADMIN_ACTION_KEY,
       staff_name: _currentUser ? _currentUser.name : ''
     };
     const result = await postToSheets(payload);
 
     if (result.status === 'error') {
-      showDashToast('⚠️ Could not reach the server — the ticket was NOT sent. Check your connection and try again.');
+      showDashToast('⚠️ Could not reach the server — tickets were NOT sent. Check your connection and try again.');
       btn.disabled = false;
-      btn.textContent = '🎫 Approve & Send Ticket';
+      btn.textContent = '🎫 Approve & Send Ticket(s)';
       return;
     }
 
     guest.approved = true;
     guest.approved_at = new Date().toISOString();
 
-    showDashToast(`🎫 ${fullName} approved — ticket sent`);
+    showDashToast(`🎫 ${partyCount} ticket${partyCount === 1 ? '' : 's'} sent to ${guest.email}`);
     closeApproveModal();
     renderApprovalsTab();
     renderOverviewTab();
   } catch (e) {
-    showDashToast('⚠️ Something went wrong preparing the attachments — please try again.');
+    showDashToast('⚠️ Something went wrong preparing the tickets — please try again.');
     btn.disabled = false;
-    btn.textContent = '🎫 Approve & Send Ticket';
+    btn.textContent = '🎫 Approve & Send Ticket(s)';
   }
 }
 
