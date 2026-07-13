@@ -3047,7 +3047,10 @@ function showDashSkeletons() {
 async function fetchDashboardGuests() {
   try {
     const url = SHEETS_URL + '?action=getLegacyGuests&key=' + encodeURIComponent(ADMIN_ACTION_KEY) + '&_=' + Date.now();
-    const res = await fetch(url, { method: 'GET' });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    const res = await fetch(url, { method: 'GET', signal: controller.signal });
+    clearTimeout(timeoutId);
     if(res.ok) {
       const j = await res.json();
       if(j.status === 'ok' && Array.isArray(j.guests)) {
@@ -3878,7 +3881,10 @@ function enterMonitorMode() {
 async function pollForRecentCheckIn() {
   try {
     const url = SHEETS_URL + '?action=getRecentCheckIn&key=' + encodeURIComponent(ADMIN_ACTION_KEY) + '&_=' + Date.now();
-    const res = await fetch(url, { method: 'GET' });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    const res = await fetch(url, { method: 'GET', signal: controller.signal });
+    clearTimeout(timeoutId);
     const j = await res.json();
     if (j.status === 'ok' && j.checkin && j.checkin.at > _monitorLastSeenAt) {
       _monitorLastSeenAt = j.checkin.at;
@@ -4368,6 +4374,35 @@ function renderApprovalsTab() {
 let _qrGenLibLoading = false;
 let _qrScanLibLoading = false;
 
+// Tries a list of CDN sources in order, falling back to the next one
+// if a script fails to load — some school/venue networks block one
+// CDN (cdnjs) but not others, so this meaningfully improves the odds
+// the QR features actually work on the real venue network, rather
+// than depending on a single provider being reachable.
+function loadScriptWithFallback(urls, onSuccess, onAllFailed, index) {
+  index = index || 0;
+  if (index >= urls.length) { onAllFailed(); return; }
+  const script = document.createElement('script');
+  script.src = urls[index];
+  script.onload = onSuccess;
+  script.onerror = function() {
+    script.remove();
+    loadScriptWithFallback(urls, onSuccess, onAllFailed, index + 1);
+  };
+  document.body.appendChild(script);
+}
+
+const QR_GEN_SOURCES = [
+  'https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js',
+  'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js',
+  'https://unpkg.com/qrcode-generator@1.4.4/qrcode.min.js',
+];
+const QR_SCAN_SOURCES = [
+  'https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.js',
+  'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js',
+  'https://unpkg.com/jsqr@1.4.0/dist/jsQR.js',
+];
+
 function ensureQRGenLibLoaded(callback) {
   if (typeof qrcode !== 'undefined') { callback(); return; }
   if (_qrGenLibLoading) {
@@ -4377,11 +4412,10 @@ function ensureQRGenLibLoaded(callback) {
     return;
   }
   _qrGenLibLoading = true;
-  const script = document.createElement('script');
-  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js';
-  script.onload = callback;
-  script.onerror = function() { showDashToast('⚠️ Could not load the QR code generator — check your connection.'); };
-  document.body.appendChild(script);
+  loadScriptWithFallback(QR_GEN_SOURCES, callback, function() {
+    _qrGenLibLoading = false;
+    showDashToast('⚠️ Could not load the QR code generator from any source — check your internet connection.');
+  });
 }
 
 function ensureQRScanLibLoaded(callback) {
@@ -4393,11 +4427,10 @@ function ensureQRScanLibLoaded(callback) {
     return;
   }
   _qrScanLibLoading = true;
-  const script = document.createElement('script');
-  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.js';
-  script.onload = callback;
-  script.onerror = function() { showDashToast('⚠️ Could not load the QR scanner — check your connection.'); };
-  document.body.appendChild(script);
+  loadScriptWithFallback(QR_SCAN_SOURCES, callback, function() {
+    _qrScanLibLoading = false;
+    showDashToast('⚠️ Could not load the QR scanner from any source — check your internet connection, or check guests in manually.');
+  });
 }
 
 let _approveQrBlob = null;
@@ -5041,7 +5074,10 @@ async function loadActivityLog() {
 
   try {
     const url = SHEETS_URL + '?action=getActivityLog&key=' + encodeURIComponent(ADMIN_ACTION_KEY) + '&_=' + Date.now();
-    const res = await fetch(url, { method: 'GET' });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    const res = await fetch(url, { method: 'GET', signal: controller.signal });
+    clearTimeout(timeoutId);
     const j = await res.json();
     if (j.status === 'ok' && Array.isArray(j.entries)) {
       renderActivityLog(j.entries);
