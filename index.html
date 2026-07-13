@@ -3102,23 +3102,39 @@ async function loadDashboardData() {
   // rather than a stat card silently changing. Skipped on the very
   // first load after logging in, since "N new RSVPs" would be a
   // meaningless message the moment the dashboard opens.
-  const currentTsSet = new Set(_dashGuestsCache.map(g => g.ts));
-  if (previousTsSet) {
-    let newCount = 0;
-    currentTsSet.forEach(function(ts) { if (!previousTsSet.has(ts)) newCount++; });
-    if (newCount > 0) {
-      showDashToast(`🎉 ${newCount} new RSVP${newCount === 1 ? '' : 's'} since you last checked!`);
+  try {
+    const currentTsSet = new Set(_dashGuestsCache.map(g => g.ts));
+    if (previousTsSet) {
+      let newCount = 0;
+      currentTsSet.forEach(function(ts) { if (!previousTsSet.has(ts)) newCount++; });
+      if (newCount > 0) {
+        showDashToast(`🎉 ${newCount} new RSVP${newCount === 1 ? '' : 's'} since you last checked!`);
+      }
     }
-  }
-  _knownGuestTsSet = currentTsSet;
+    _knownGuestTsSet = currentTsSet;
+  } catch (e) { console.error('New-RSVP detection failed:', e); }
 
-  renderOverviewTab();
-  renderGuestListTab();
-  renderApprovalsTab();
-  renderCheckInTab();
-  renderOverdueTab();
-  renderTablesTab();
-  updateDoorsCounter();
+  // Each tab renders independently — if one throws (e.g. a single
+  // malformed guest record), the rest still render instead of the
+  // whole dashboard silently freezing on "Syncing…" forever. The
+  // actual error is surfaced so it can be diagnosed, not swallowed.
+  const renderSteps = [
+    ['Overview', renderOverviewTab], ['Guest List', renderGuestListTab],
+    ['Approvals', renderApprovalsTab], ['Check-In', renderCheckInTab],
+    ['Overdue', renderOverdueTab], ['Tables', renderTablesTab],
+  ];
+  const failures = [];
+  renderSteps.forEach(function(step) {
+    try { step[1](); } catch (e) {
+      failures.push(step[0] + ': ' + e.message);
+      console.error(step[0] + ' tab failed to render:', e);
+    }
+  });
+  try { updateDoorsCounter(); } catch (e) { console.error('updateDoorsCounter failed:', e); }
+
+  if (failures.length) {
+    showDashToast('⚠️ Some tabs failed to load: ' + failures.join(' · '));
+  }
 
   if (btn) { btn.disabled = false; btn.textContent = '↻ Resync'; }
 }
@@ -3204,71 +3220,6 @@ function svgTrendChart(points, width, height) {
 }
 
 /* ── OVERVIEW TAB — key stats + RSVP analytics ── */
-/* ── Catering / Kitchen Sheet — a clean, print-ready report for
-   caterers, separate from the full guest database. Opens in a new
-   tab styled for printing (browser's own "Print to PDF" covers the
-   PDF-export need without adding a PDF-generation library). ── */
-function openCateringSheet() {
-  const guests = _dashGuestsCache;
-  const totalHeadcount = guests.reduce((sum, g) => sum + (g.guest_count || 1), 0);
-
-  const dietaryCounts = {};
-  guests.forEach(g => {
-    if (!g.dietary_preferences) return;
-    g.dietary_preferences.split(',').map(s => s.trim()).filter(Boolean).forEach(pref => {
-      dietaryCounts[pref] = (dietaryCounts[pref] || 0) + (g.guest_count || 1);
-    });
-  });
-  const dietaryRows = Object.entries(dietaryCounts).sort((a,b) => b[1]-a[1])
-    .map(([pref, count]) => `<tr><td>${pref}</td><td style="text-align:right;">${count}</td></tr>`).join('');
-
-  const restrictionGuests = guests.filter(g => g.dietary_restrictions && g.dietary_restrictions.trim());
-  const restrictionRows = restrictionGuests.map(g => {
-    const fullName = `${g.fname||''} ${g.lname||''}`.trim() || 'Guest';
-    return `<tr><td>${fullName}${g.table_number ? ' (Table ' + g.table_number + ')' : ''}</td><td>${g.dietary_restrictions}</td></tr>`;
-  }).join('');
-
-  const generatedAt = new Date().toLocaleString('en-GB', { day:'2-digit', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' });
-
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>PBIS Legacy Night — Catering Sheet</title>
-    <style>
-      body{font-family:Arial,Helvetica,sans-serif;color:#222;max-width:720px;margin:40px auto;padding:0 24px;}
-      h1{font-size:22px;margin-bottom:2px;}
-      .subtitle{color:#666;font-size:13px;margin-bottom:28px;}
-      .stat-row{display:flex;gap:24px;margin-bottom:32px;}
-      .stat-box{border:1.5px solid #ccc;border-radius:8px;padding:14px 20px;text-align:center;flex:1;}
-      .stat-box .num{font-size:28px;font-weight:700;}
-      .stat-box .label{font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:#666;margin-top:4px;}
-      table{width:100%;border-collapse:collapse;margin-bottom:32px;}
-      th,td{text-align:left;padding:8px 10px;border-bottom:1px solid #ddd;font-size:13.5px;}
-      th{background:#f4f1ea;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:#666;}
-      h2{font-size:15px;border-bottom:2px solid #222;padding-bottom:6px;margin-top:0;}
-      .empty{color:#888;font-style:italic;font-size:13px;}
-      .print-btn{background:#0a2818;color:#e8c96e;border:none;padding:10px 22px;border-radius:6px;font-size:13px;cursor:pointer;margin-bottom:24px;}
-      @media print{.print-btn{display:none;}}
-      .footer{color:#999;font-size:11px;margin-top:40px;}
-    </style></head><body>
-    <h1>PBIS Legacy Night — Catering &amp; Kitchen Sheet</h1>
-    <p class="subtitle">Generated ${generatedAt}</p>
-    <button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
-    <div class="stat-row">
-      <div class="stat-box"><div class="num">${guests.length}</div><div class="label">RSVPs</div></div>
-      <div class="stat-box"><div class="num">${totalHeadcount}</div><div class="label">Total Guests</div></div>
-      <div class="stat-box"><div class="num">${restrictionGuests.length}</div><div class="label">With Restrictions</div></div>
-    </div>
-    <h2>Dietary Preferences Breakdown</h2>
-    ${dietaryRows ? `<table><thead><tr><th>Preference</th><th style="text-align:right;">Guests</th></tr></thead><tbody>${dietaryRows}</tbody></table>` : `<p class="empty">No dietary preferences recorded yet.</p>`}
-    <h2>Individual Dietary Restrictions &amp; Allergies</h2>
-    ${restrictionRows ? `<table><thead><tr><th>Guest</th><th>Restriction / Allergy</th></tr></thead><tbody>${restrictionRows}</tbody></table>` : `<p class="empty">No specific restrictions or allergies recorded yet.</p>`}
-    <p class="footer">PBIS Legacy Night · 25th Anniversary Gala · 25 September 2026</p>
-    </body></html>`;
-
-  const win = window.open('', '_blank');
-  if (!win) { showDashToast('⚠️ Pop-up blocked — please allow pop-ups for this site and try again.'); return; }
-  win.document.write(html);
-  win.document.close();
-}
-
 function renderOverviewTab() {
   const el = document.getElementById('dash-tab-content-overview');
   const guests = _dashGuestsCache;
