@@ -644,6 +644,21 @@ body.dashboard-active #dashboard-view{display:block !important;}
 
 /* ── RECEPTION MONITOR ── */
 #monitor-view{display:none;position:fixed;inset:0;background:radial-gradient(ellipse at 50% 0%, #10381f 0%, var(--navy) 45%, var(--deep) 100%);z-index:1000;align-items:center;justify-content:center;text-align:center;overflow:hidden;}
+
+/* ── TICKET VIEW ── */
+#ticket-view{display:none;position:fixed;inset:0;background:radial-gradient(ellipse at 50% 0%, #10381f 0%, var(--navy) 45%, var(--deep) 100%);z-index:1000;align-items:center;justify-content:center;text-align:center;overflow-y:auto;padding:24px;}
+#ticket-view.active{display:flex;}
+.ticket-view-card{max-width:420px;width:100%;}
+.ticket-view-crest{width:110px;height:110px;margin:0 auto 20px;}
+.ticket-view-crest img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 4px 20px rgba(201,168,76,0.35));}
+.ticket-view-eyebrow{font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;}
+.ticket-view-card h1{font-family:'Cinzel',serif;font-weight:700;font-size:clamp(26px,6vw,36px);background-image:linear-gradient(100deg,#8a6a26 0%,var(--gold) 20%,var(--gold-light) 38%,var(--gold) 55%,#8a6a26 72%,var(--gold) 88%,#8a6a26 100%);background-size:220% auto;background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin:0 0 6px;animation:goldShimmer 7s linear infinite;}
+.ticket-view-sub{font-family:'Cormorant Garamond',serif;font-style:italic;color:rgba(255,255,255,0.65);font-size:18px;margin-bottom:24px;}
+.ticket-view-details{display:flex;flex-direction:column;gap:10px;margin-bottom:24px;}
+.ticket-view-details span{background:rgba(255,255,255,0.06);border:1.5px solid rgba(201,168,76,0.3);border-radius:100px;padding:11px 20px;color:#fff;font-size:14px;font-weight:600;}
+.ticket-view-note{color:rgba(255,255,255,0.55);font-size:13px;line-height:1.6;margin-bottom:26px;}
+.ticket-view-close{background:linear-gradient(135deg,var(--gold),var(--gold-light));color:var(--deep);border:none;padding:13px 32px;border-radius:100px;font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.ticket-view-close:active{transform:scale(0.97);}
 #monitor-view.active{display:flex;}
 .monitor-waiting{opacity:0.85;}
 .monitor-crest{width:140px;height:140px;margin:0 auto 30px;}
@@ -1094,15 +1109,6 @@ body.role-usher .dash-row-action-delete{opacity:0.3;pointer-events:none;filter:g
             </div>
           </div>
           <div class="form-row">
-            <label>Bringing Additional Guests? <span style="text-transform:none;">(optional — max 2, arriving with you)</span></label>
-            <span class="party-size-chip" id="party-size-chip">👥 Party of 1</span>
-            <div id="additional-guests-list"></div>
-            <button type="button" class="add-guest-btn" id="add-guest-btn" onclick="addGuestRow()">
-              <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Add a Guest
-            </button>
-            <p class="form-hint">Only guests arriving with an invited RSVP will be admitted — up to 2 additional guests per invitation.</p>
-          </div>
-          <div class="form-row">
             <label>Dietary Preferences <span style="text-transform:none;">(select all that apply)</span></label>
             <div class="multiselect" id="dietary-multiselect">
               <button type="button" class="multiselect-trigger" onclick="toggleDietaryDropdown(event)">
@@ -1110,30 +1116,15 @@ body.role-usher .dash-row-action-delete{opacity:0.3;pointer-events:none;filter:g
                 <svg class="multiselect-chevron" viewBox="0 0 24 24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
               </button>
               <div class="multiselect-panel" id="dietary-panel">
-                <label class="multiselect-option"><input type="checkbox" value="Vegetarian" onchange="updateDietarySelection()"> Vegetarian</label>
+                <label class="multiselect-option"><input type="checkbox" value="Meat" onchange="updateDietarySelection()"> Meat</label>
+                <label class="multiselect-option"><input type="checkbox" value="Seafood" onchange="updateDietarySelection()"> Seafood</label>
                 <label class="multiselect-option"><input type="checkbox" value="Vegan" onchange="updateDietarySelection()"> Vegan</label>
-                <label class="multiselect-option"><input type="checkbox" value="Halal" onchange="updateDietarySelection()"> Halal</label>
-                <label class="multiselect-option"><input type="checkbox" value="Kosher" onchange="updateDietarySelection()"> Kosher</label>
-                <label class="multiselect-option"><input type="checkbox" value="Gluten-Free" onchange="updateDietarySelection()"> Gluten-Free</label>
-                <label class="multiselect-option"><input type="checkbox" value="Dairy-Free" onchange="updateDietarySelection()"> Dairy-Free</label>
-                <label class="multiselect-option"><input type="checkbox" value="Nut Allergy" onchange="updateDietarySelection()"> Nut Allergy</label>
-                <label class="multiselect-option"><input type="checkbox" value="Shellfish Allergy" onchange="updateDietarySelection()"> Shellfish Allergy</label>
-                <label class="multiselect-option"><input type="checkbox" value="No Restrictions" onchange="updateDietarySelection()"> No Restrictions</label>
               </div>
             </div>
           </div>
           <div class="form-row">
             <label>Dietary Restrictions / Allergies <span style="text-transform:none;">(optional — tell us more)</span></label>
             <textarea id="rsvp-dietary-restrictions" placeholder="e.g. severe peanut allergy, specific ingredients to avoid…"></textarea>
-          </div>
-          <div class="form-row">
-            <label>Starter / Soup</label>
-            <select id="rsvp-course-starter">
-              <option value="">Select a starter…</option>
-              <option value="Roasted Pumpkin Soup">Roasted Pumpkin Soup</option>
-              <option value="Garden Salad with Citrus Vinaigrette">Garden Salad with Citrus Vinaigrette</option>
-              <option value="Chef's Soup of the Day">Chef's Soup of the Day</option>
-            </select>
           </div>
           <div class="form-row">
             <label>Preferred Main Course *</label>
@@ -1143,16 +1134,7 @@ body.role-usher .dash-row-action-delete{opacity:0.3;pointer-events:none;filter:g
               <option value="Surf & Turf — Pan-Seared Barramundi" data-diet="seafood">Surf &amp; Turf — Pan-Seared Barramundi</option>
               <option value="Vegetarian — Pan-Seared Mushrooms" data-diet="vegetarian">Vegetarian — Pan-Seared Mushrooms</option>
             </select>
-            <p class="form-hint" id="rsvp-main-course-hint" style="display:none;">Meat and seafood options are hidden because you selected a vegetarian/vegan dietary preference above.</p>
-          </div>
-          <div class="form-row">
-            <label>Dessert</label>
-            <select id="rsvp-course-dessert">
-              <option value="">Select a dessert…</option>
-              <option value="Chocolate Fondant">Chocolate Fondant</option>
-              <option value="Seasonal Fruit Tart">Seasonal Fruit Tart</option>
-              <option value="Coconut Panna Cotta">Coconut Panna Cotta</option>
-            </select>
+            <p class="form-hint" id="rsvp-main-course-hint" style="display:none;">Meat and seafood options are hidden because you selected Vegan as a dietary preference above.</p>
           </div>
           <div class="form-row">
             <label>Message <span style="text-transform:none;">(optional)</span></label>
@@ -1167,6 +1149,16 @@ body.role-usher .dash-row-action-delete{opacity:0.3;pointer-events:none;filter:g
             <input type="checkbox" id="rsvp-consent-check" onchange="toggleRsvpFinalSubmit()">
             <span>Thank you for your RSVP. Please note that admission is valid only for the name you have just registered and may not be transferred to another guest. We look forward to welcoming you to the event.</span>
           </label>
+          <div class="form-row">
+            <label>Bringing Additional Guests? <span style="text-transform:none;">(optional — max 2, arriving with you)</span></label>
+            <p class="form-hint" style="margin-top:0;margin-bottom:12px;">If you have additional guest(s) joining you, please fill in their information below. If not, you can just proceed and submit.</p>
+            <span class="party-size-chip" id="party-size-chip">👥 Party of 1</span>
+            <div id="additional-guests-list"></div>
+            <button type="button" class="add-guest-btn" id="add-guest-btn" onclick="addGuestRow()">
+              <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Add a Guest
+            </button>
+            <p class="form-hint">Only guests arriving with an invited RSVP will be admitted — up to 2 additional guests per invitation.</p>
+          </div>
           <button type="button" class="form-submit" id="rsvp-submit-btn" onclick="handleRSVPSubmit(event)" disabled>Confirm My Attendance</button>
           <button type="button" class="form-back-link" onclick="backToRsvpFormStep()">← Back to edit my details</button>
         </div>
@@ -1648,6 +1640,28 @@ body.role-usher .dash-row-action-delete{opacity:0.3;pointer-events:none;filter:g
   </div>
 </div>
 
+<!-- TICKET VIEW — what a guest sees if they scan their own QR code
+     out of curiosity with their phone's regular camera app. The QR
+     now encodes a real URL specifically so this happens, rather than
+     showing raw unrecognized text. Deliberately shows no personal
+     data (no name lookup) — just a clean confirmation that this is a
+     genuine ticket, so there's nothing here worth trying to fake. -->
+<div id="ticket-view">
+  <div class="ticket-view-card">
+    <div class="ticket-view-crest"><img src="" alt="PBIS" class="js-logo"></div>
+    <p class="ticket-view-eyebrow">Your Official Ticket</p>
+    <h1>PBIS Legacy Night</h1>
+    <p class="ticket-view-sub">25th Anniversary Gala</p>
+    <div class="ticket-view-details">
+      <span>📅 Friday, 25 September 2026</span>
+      <span>🕔 5:00 PM</span>
+      <span>📍 Holiday Inn &amp; Suites Vientiane</span>
+    </div>
+    <p class="ticket-view-note">Please keep this QR code and present it at the entrance for check-in on the night.</p>
+    <button type="button" class="ticket-view-close" onclick="closeTicketView()">Close</button>
+  </div>
+</div>
+
 <div class="dash-toast" id="dash-toast"></div>
 
 <script>
@@ -1681,6 +1695,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     if (params.get('monitor') === '1') {
       enterMonitorMode();
+    }
+    if (params.get('ticket') === '1' && params.get('ts')) {
+      showTicketView();
     }
   } catch (e) {}
 
@@ -2388,19 +2405,6 @@ function goToRsvpConfirmStep() {
     return;
   }
 
-  const additionalRows = document.querySelectorAll('.additional-guest-row-detailed');
-  for (const row of additionalRows) {
-    const nameInput = row.querySelector('.additional-guest-input');
-    const mainSelect = row.querySelector('.additional-guest-main-course');
-    if (nameInput.value.trim() && !mainSelect.value) {
-      mainSelect.classList.add('field-shake');
-      setTimeout(() => mainSelect.classList.remove('field-shake'), 400);
-      mainSelect.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      showDashToast('⚠️ Please select a main course for ' + nameInput.value.trim() + '.');
-      return;
-    }
-  }
-
   showRsvpStep(2);
 }
 
@@ -2598,7 +2602,7 @@ function updateDietarySelection() {
 // cleared so they have to pick again rather than silently submitting
 // a meat dish for a vegetarian guest.
 function filterMainCourseOptions() {
-  const isVeg = _selectedDietary.includes('Vegetarian') || _selectedDietary.includes('Vegan');
+  const isVeg = _selectedDietary.includes('Vegan');
   const select = document.getElementById('rsvp-course-main');
   const hint = document.getElementById('rsvp-main-course-hint');
   if (!select) return;
@@ -2645,6 +2649,19 @@ function handleRSVPSubmit(e) {
 
   if (!document.getElementById('rsvp-consent-check').checked) return;
 
+  const additionalRowsToCheck = document.querySelectorAll('.additional-guest-row-detailed');
+  for (const row of additionalRowsToCheck) {
+    const nameInput = row.querySelector('.additional-guest-input');
+    const mainSelect = row.querySelector('.additional-guest-main-course');
+    if (nameInput.value.trim() && !mainSelect.value) {
+      mainSelect.classList.add('field-shake');
+      setTimeout(() => mainSelect.classList.remove('field-shake'), 400);
+      mainSelect.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      showDashToast('⚠️ Please select a main course for ' + nameInput.value.trim() + '.');
+      return;
+    }
+  }
+
   _rsvpSubmitCount++;
   const btn = document.getElementById('rsvp-submit-btn');
   if (_rsvpSubmitCount > MAX_RSVP_SUBMITS) {
@@ -2674,9 +2691,7 @@ function handleRSVPSubmit(e) {
     additional_guests_detail: JSON.stringify(additionalGuestsDetail),
     dietary_preferences: _selectedDietary.join(', '),
     dietary_restrictions: sanitize(get('rsvp-dietary-restrictions')),
-    course_starter: sanitize(get('rsvp-course-starter')),
     course_main: sanitize(get('rsvp-course-main')),
-    course_dessert: sanitize(get('rsvp-course-dessert')),
     notes: sanitize(get('rsvp-notes')),
     ts: new Date().toISOString()
   };
@@ -2983,7 +2998,7 @@ function enterLegacyDashboard() {
 // anyone having to remember to click Resync. Only runs while logged in
 // and the tab is visible, to avoid wasted calls in the background.
 let _autoSyncTimer = null;
-const AUTO_SYNC_MS = 90 * 1000; // 90 seconds — within the requested 1-2 minute range
+const AUTO_SYNC_MS = 12 * 1000; // 12 seconds — fast enough that a scan on one device shows up on another almost immediately, without hammering the backend
 
 function startAutoSync() {
   stopAutoSync();
@@ -3091,7 +3106,12 @@ function hideDashSyncErrorBanner() {
 
 let _knownGuestTsSet = null; // null until the first successful load completes
 
+let _loadDashboardDataInFlight = false;
+
 async function loadDashboardData() {
+  if (_loadDashboardDataInFlight) return; // avoid overlapping syncs if one runs long
+  _loadDashboardDataInFlight = true;
+
   const btn = document.getElementById('dash-resync-btn');
   if (btn) { btn.disabled = true; btn.textContent = '↻ Syncing…'; }
 
@@ -3137,6 +3157,7 @@ async function loadDashboardData() {
   }
 
   if (btn) { btn.disabled = false; btn.textContent = '↻ Resync'; }
+  _loadDashboardDataInFlight = false;
 }
 
 /* ── TAB SWITCHING ── */
@@ -3895,6 +3916,26 @@ function resetMonitorToWaiting() {
     </div>`;
 }
 
+/* ── TICKET VIEW — shown when a guest scans their own QR code with
+   their phone's regular camera app rather than our admin scanner.
+   Purely informational, no personal data looked up or displayed. ── */
+function showTicketView() {
+  document.getElementById('ticket-view').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeTicketView() {
+  document.getElementById('ticket-view').classList.remove('active');
+  document.body.style.overflow = '';
+  // Drop the ?ticket=... params from the URL so refreshing or
+  // sharing the link afterward doesn't reopen this view.
+  try {
+    const url = new URL(window.location.href);
+    url.search = '';
+    window.history.replaceState({}, '', url.toString());
+  } catch (e) {}
+}
+
 /* ── COMMAND PALETTE (Ctrl/Cmd+K) — jump to any guest or tab
    instantly without hunting through nine tabs manually. ── */
 const CMDK_TABS = [
@@ -4437,7 +4478,7 @@ function generateAllApproveQRs(ts, primaryName, additionalGuests) {
       try {
         const canvas = document.getElementById(canvasId);
         const ctx = canvas.getContext('2d');
-        const payload = 'PBIS-LEGACY|ts=' + ts + '|idx=' + person.idx;
+        const payload = 'https://legacynight.pbis.edu.la/?ticket=1&ts=' + encodeURIComponent(ts) + '&idx=' + person.idx;
         const qr = qrcode(0, 'M');
         qr.addData(payload);
         qr.make();
@@ -4564,17 +4605,34 @@ function playScanFeedback(type) {
   } catch (e) {}
 }
 
+function parseTicketQRPayload(data) {
+  // New format: a real URL, so a guest's own camera app can open it.
+  // Old format: plain "PBIS-LEGACY|ts=...|idx=..." from before this
+  // change — still accepted so any tickets already sent out keep working.
+  try {
+    const url = new URL(data);
+    if (url.searchParams.get('ticket') === '1' && url.searchParams.has('ts') && url.searchParams.has('idx')) {
+      return { ts: url.searchParams.get('ts'), idx: parseInt(url.searchParams.get('idx'), 10) };
+    }
+  } catch (e) { /* not a URL — fall through to the legacy format */ }
+
+  const legacyMatch = /^PBIS-LEGACY\|ts=([^|]+)\|idx=(\d+)$/.exec(data);
+  if (legacyMatch) return { ts: legacyMatch[1], idx: parseInt(legacyMatch[2], 10) };
+
+  return null;
+}
+
 function handleQRScanResult(data) {
-  const match = /^PBIS-LEGACY\|ts=([^|]+)\|idx=(\d+)$/.exec(data);
+  const parsed = parseTicketQRPayload(data);
   const resultEl = document.getElementById('qr-scanner-result');
   if (!resultEl) return;
 
-  if (!match) {
+  if (!parsed) {
     resultEl.innerHTML = '<div class="qr-scanner-error">⚠️ This QR code isn\'t a recognized Legacy Night ticket.</div>';
     playScanFeedback('error');
   } else {
-    const ts = match[1];
-    const idx = parseInt(match[2], 10);
+    const ts = parsed.ts;
+    const idx = parsed.idx;
     const guest = _dashGuestsCache.find(g => g.ts === ts);
     if (!guest) {
       resultEl.innerHTML = '<div class="qr-scanner-error">⚠️ Guest not found — try resyncing the dashboard first.</div>';
