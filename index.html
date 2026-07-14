@@ -3228,108 +3228,134 @@ function renderOverviewTab() {
   const checkinCountEl = document.getElementById('checkin-tab-count');
   if(checkinCountEl) checkinCountEl.textContent = guests.filter(g => !g.checked_in).length;
 
-  const eventDate = new Date(LEGACY_NIGHT_TIMESTAMP);
-  const daysLeft = Math.max(0, Math.ceil((eventDate - new Date()) / 86400000));
-
   if(!guests.length) {
     el.innerHTML = `<div class="dash-panel"><div class="dash-empty">No RSVPs yet. Once guests confirm via the landing page or QR code, they'll appear here — along with live charts on guest mix, check-in progress, and RSVP momentum.</div></div>`;
     return;
   }
 
-  const arrivedCount     = guests.filter(g => g.checked_in).length;
-  const noShowCount      = guests.filter(g => g.no_show).length;
-  const withEmailCount   = guests.filter(g => g.email).length;
-  const followUpEligible = withEmailCount;
-  const followUpSent     = guests.filter(g => g.followup_sent).length;
-  const totalHeadcount   = guests.reduce((sum, g) => sum + (g.guest_count || 1), 0);
-  const waitlistedCount  = guests.filter(g => g.status === 'Waitlisted').length;
-  const capacityPct      = Math.min(100, Math.round((totalHeadcount / VENUE_CAPACITY) * 100));
+  // Every section below builds its own HTML independently and catches
+  // its own errors — so if, say, the trend chart hits a data edge
+  // case, the stat cards and everything else still render normally
+  // instead of the whole tab going blank over one bad section.
+  let capacityHTML = '', statsHTML = '', trendHTML = '', chartsHTML = '', reportsHTML = '';
 
-  // Check-in progress → donut
-  const checkinData = [
-    { label: 'Checked In', value: arrivedCount, color: '#2d9e5f' },
-    { label: 'Not Yet Arrived', value: guests.length - arrivedCount, color: '#e3ddc9' },
-  ];
+  try {
+    const eventDate = new Date(LEGACY_NIGHT_TIMESTAMP);
+    const daysLeft = Math.max(0, Math.ceil((eventDate - new Date()) / 86400000));
+    const arrivedCount    = guests.filter(g => g.checked_in).length;
+    const noShowCount     = guests.filter(g => g.no_show).length;
+    const withEmailCount  = guests.filter(g => g.email).length;
+    const followUpSent    = guests.filter(g => g.followup_sent).length;
+    const totalHeadcount  = guests.reduce((sum, g) => sum + (parseInt(g.guest_count, 10) || 1), 0);
+    const waitlistedCount = guests.filter(g => g.status === 'Waitlisted').length;
+    const capacityPct     = Math.min(100, Math.round((totalHeadcount / VENUE_CAPACITY) * 100) || 0);
+    const sortedDaysCount = new Set(guests.filter(g => g.ts && !isNaN(new Date(g.ts))).map(g => new Date(g.ts).toISOString().slice(0,10))).size;
+    const avgPerDay = sortedDaysCount ? (guests.length / sortedDaysCount).toFixed(1) : '0';
 
-  // Follow-up delivery status → donut
-  const followUpData = [
-    { label: 'Follow-Up Sent', value: followUpSent, color: '#c9a84c' },
-    { label: 'Not Sent Yet', value: followUpEligible - followUpSent, color: '#e3ddc9' },
-  ];
+    capacityHTML = `
+      <div class="dash-panel capacity-panel">
+        <div class="dash-panel-title">Venue Capacity <span>${totalHeadcount} / ${VENUE_CAPACITY} attendees</span></div>
+        <div class="capacity-bar"><div class="capacity-bar-fill ${capacityPct >= 100 ? 'full' : capacityPct >= 85 ? 'warn' : ''}" style="width:${capacityPct}%;"></div></div>
+        ${waitlistedCount > 0 ? `<p class="capacity-waitlist-note">⚠️ Capacity reached — <strong>${waitlistedCount} guest${waitlistedCount===1?'':'s'}</strong> currently on the waitlist.</p>` : ''}
+      </div>`;
 
-  // Organization representation → horizontal bars (top 6)
-  const orgBreakdown = {};
-  guests.forEach(g => { const o = (g.organization||'').trim(); if(o) orgBreakdown[o] = (orgBreakdown[o]||0)+1; });
-  const topOrgs = Object.entries(orgBreakdown).sort((a,b)=>b[1]-a[1]).slice(0,6);
-  const maxOrgCount = topOrgs.length ? topOrgs[0][1] : 1;
-  const orgRows = topOrgs.map(([org,count]) => `
-    <div class="dash-org-bar-row">
-      <div class="dash-org-bar-label"><b>${org}</b><span>${count}</span></div>
-      <div class="dash-org-bar-track"><div class="dash-org-bar-fill" style="width:${Math.round((count/maxOrgCount)*100)}%;"></div></div>
-    </div>`).join('');
+    statsHTML = `
+      <div class="dash-stats-row">
+        <div class="dash-stat-card"><div class="dash-stat-value">${daysLeft}</div><div class="dash-stat-label">Days Until Legacy Night</div></div>
+        <div class="dash-stat-card"><div class="dash-stat-value">${guests.length}</div><div class="dash-stat-label">Total RSVPs</div></div>
+        <div class="dash-stat-card"><div class="dash-stat-value">${arrivedCount}</div><div class="dash-stat-label">Checked In So Far</div></div>
+        <div class="dash-stat-card"><div class="dash-stat-value">${noShowCount}</div><div class="dash-stat-label">Marked No-Show</div></div>
+        <div class="dash-stat-card"><div class="dash-stat-value">${withEmailCount}</div><div class="dash-stat-label">Guests With Email</div></div>
+        <div class="dash-stat-card"><div class="dash-stat-value">${followUpSent}</div><div class="dash-stat-label">Follow-Ups Sent</div></div>
+        <div class="dash-stat-card"><div class="dash-stat-value">${avgPerDay}</div><div class="dash-stat-label">Avg RSVPs / Day</div></div>
+      </div>`;
+  } catch (e) {
+    console.error('Overview: capacity/stats section failed:', e);
+    statsHTML = `<div class="dash-panel"><div class="dash-empty">Could not compute summary stats.</div></div>`;
+  }
 
-  // RSVP momentum → daily count trend since the first RSVP
-  const dayCounts = {};
-  guests.forEach(g => {
-    if (!g.ts) return;
-    const d = new Date(g.ts);
-    if (isNaN(d)) return;
-    const key = d.toISOString().slice(0,10);
-    dayCounts[key] = (dayCounts[key]||0) + 1;
-  });
-  const sortedDays = Object.keys(dayCounts).sort();
-  const trendPoints = sortedDays.map(day => ({
-    label: new Date(day+'T00:00:00').toLocaleDateString('en-GB', {day:'2-digit', month:'short'}),
-    value: dayCounts[day]
-  }));
-  const avgPerDay = sortedDays.length ? (guests.length / sortedDays.length).toFixed(1) : '0';
+  try {
+    const dayCounts = {};
+    guests.forEach(g => {
+      if (!g.ts) return;
+      const d = new Date(g.ts);
+      if (isNaN(d)) return;
+      const key = d.toISOString().slice(0,10);
+      dayCounts[key] = (dayCounts[key]||0) + 1;
+    });
+    const sortedDays = Object.keys(dayCounts).sort();
+    const trendPoints = sortedDays.map(day => ({
+      label: new Date(day+'T00:00:00').toLocaleDateString('en-GB', {day:'2-digit', month:'short'}),
+      value: dayCounts[day]
+    }));
+    trendHTML = `
+      <div class="dash-panel">
+        <div class="dash-panel-title">RSVP Momentum <span>${sortedDays.length} day${sortedDays.length===1?'':'s'} tracked</span></div>
+        ${trendPoints.length > 1
+          ? svgTrendChart(trendPoints)
+          : `<div class="dash-trend-empty">Need at least two different RSVP days to plot a trend — check back once more guests confirm.</div>`}
+      </div>`;
+  } catch (e) {
+    console.error('Overview: trend chart section failed:', e);
+    trendHTML = `<div class="dash-panel"><div class="dash-empty">Could not build the RSVP momentum chart.</div></div>`;
+  }
 
-  el.innerHTML = `
-    <div class="dash-panel capacity-panel">
-      <div class="dash-panel-title">Venue Capacity <span>${totalHeadcount} / ${VENUE_CAPACITY} attendees</span></div>
-      <div class="capacity-bar"><div class="capacity-bar-fill ${capacityPct >= 100 ? 'full' : capacityPct >= 85 ? 'warn' : ''}" style="width:${capacityPct}%;"></div></div>
-      ${waitlistedCount > 0 ? `<p class="capacity-waitlist-note">⚠️ Capacity reached — <strong>${waitlistedCount} guest${waitlistedCount===1?'':'s'}</strong> currently on the waitlist.</p>` : ''}
-    </div>
+  try {
+    const arrivedCount = guests.filter(g => g.checked_in).length;
+    const followUpSent = guests.filter(g => g.followup_sent).length;
+    const withEmailCount = guests.filter(g => g.email).length;
+    const checkinData = [
+      { label: 'Checked In', value: arrivedCount, color: '#2d9e5f' },
+      { label: 'Not Yet Arrived', value: guests.length - arrivedCount, color: '#e3ddc9' },
+    ];
+    const followUpData = [
+      { label: 'Follow-Up Sent', value: followUpSent, color: '#c9a84c' },
+      { label: 'Not Sent Yet', value: withEmailCount - followUpSent, color: '#e3ddc9' },
+    ];
+    const orgBreakdown = {};
+    guests.forEach(g => { const o = String(g.organization||'').trim(); if(o) orgBreakdown[o] = (orgBreakdown[o]||0)+1; });
+    const topOrgs = Object.entries(orgBreakdown).sort((a,b)=>b[1]-a[1]).slice(0,6);
+    const maxOrgCount = topOrgs.length ? topOrgs[0][1] : 1;
+    const orgRows = topOrgs.map(([org,count]) => `
+      <div class="dash-org-bar-row">
+        <div class="dash-org-bar-label"><b>${org}</b><span>${count}</span></div>
+        <div class="dash-org-bar-track"><div class="dash-org-bar-fill" style="width:${Math.round((count/maxOrgCount)*100)}%;"></div></div>
+      </div>`).join('');
 
-    <div class="dash-stats-row">
-      <div class="dash-stat-card"><div class="dash-stat-value">${daysLeft}</div><div class="dash-stat-label">Days Until Legacy Night</div></div>
-      <div class="dash-stat-card"><div class="dash-stat-value">${guests.length}</div><div class="dash-stat-label">Total RSVPs</div></div>
-      <div class="dash-stat-card"><div class="dash-stat-value">${arrivedCount}</div><div class="dash-stat-label">Checked In So Far</div></div>
-      <div class="dash-stat-card"><div class="dash-stat-value">${noShowCount}</div><div class="dash-stat-label">Marked No-Show</div></div>
-      <div class="dash-stat-card"><div class="dash-stat-value">${withEmailCount}</div><div class="dash-stat-label">Guests With Email</div></div>
-      <div class="dash-stat-card"><div class="dash-stat-value">${followUpSent}</div><div class="dash-stat-label">Follow-Ups Sent</div></div>
-      <div class="dash-stat-card"><div class="dash-stat-value">${avgPerDay}</div><div class="dash-stat-label">Avg RSVPs / Day</div></div>
-    </div>
+    chartsHTML = `
+      <div class="dash-charts-grid">
+        <div class="dash-panel" style="margin-bottom:0;">
+          <div class="dash-panel-title">Check-In Progress</div>
+          <div class="dash-chart-flex">${svgDonut(checkinData)}${chartLegend(checkinData)}</div>
+        </div>
+        <div class="dash-panel" style="margin-bottom:0;">
+          <div class="dash-panel-title">Follow-Up Delivery <span title="Only guests with an email address can receive a follow-up">of guests with email</span></div>
+          ${withEmailCount
+            ? `<div class="dash-chart-flex">${svgDonut(followUpData)}${chartLegend(followUpData)}</div>`
+            : `<div class="dash-chart-empty">No guests with an email address yet.</div>`}
+        </div>
+        <div class="dash-panel" style="margin-bottom:0;">
+          <div class="dash-panel-title">Top Organizations <span>${topOrgs.length} of ${Object.keys(orgBreakdown).length}</span></div>
+          ${topOrgs.length ? orgRows : `<div class="dash-chart-empty">No organizations recorded yet.</div>`}
+        </div>
+      </div>`;
+  } catch (e) {
+    console.error('Overview: donut/org charts section failed:', e);
+    chartsHTML = `<div class="dash-panel"><div class="dash-empty">Could not build the check-in/follow-up/organization charts.</div></div>`;
+  }
 
-    <div class="dash-panel">
-      <div class="dash-panel-title">RSVP Momentum <span>${sortedDays.length} day${sortedDays.length===1?'':'s'} tracked</span></div>
-      ${trendPoints.length > 1
-        ? svgTrendChart(trendPoints)
-        : `<div class="dash-trend-empty">Need at least two different RSVP days to plot a trend — check back once more guests confirm.</div>`}
-    </div>
+  try {
+    reportsHTML = `
+      <div class="dash-panel">
+        <div class="dash-panel-title">Reports</div>
+        <div class="followup-warn" style="margin-bottom:16px;">A clean, print-ready summary for caterers — total headcount and a dietary breakdown, without the rest of the guest database.</div>
+        <button class="dash-btn-gold" onclick="openCateringSheet()">🍽️ Open Catering / Kitchen Sheet</button>
+      </div>`;
+  } catch (e) {
+    console.error('Overview: reports section failed:', e);
+  }
 
-    <div class="dash-charts-grid">
-      <div class="dash-panel" style="margin-bottom:0;">
-        <div class="dash-panel-title">Check-In Progress</div>
-        <div class="dash-chart-flex">${svgDonut(checkinData)}${chartLegend(checkinData)}</div>
-      </div>
-      <div class="dash-panel" style="margin-bottom:0;">
-        <div class="dash-panel-title">Follow-Up Delivery <span title="Only guests with an email address can receive a follow-up">of guests with email</span></div>
-        ${followUpEligible
-          ? `<div class="dash-chart-flex">${svgDonut(followUpData)}${chartLegend(followUpData)}</div>`
-          : `<div class="dash-chart-empty">No guests with an email address yet.</div>`}
-      </div>
-      <div class="dash-panel" style="margin-bottom:0;">
-        <div class="dash-panel-title">Top Organizations <span>${topOrgs.length} of ${Object.keys(orgBreakdown).length}</span></div>
-        ${topOrgs.length ? orgRows : `<div class="dash-chart-empty">No organizations recorded yet.</div>`}
-      </div>
-    </div>
-
-    <div class="dash-panel">
-      <div class="dash-panel-title">Reports</div>
-      <div class="followup-warn" style="margin-bottom:16px;">A clean, print-ready summary for caterers — total headcount and a dietary breakdown, without the rest of the guest database.</div>
-      <button class="dash-btn-gold" onclick="openCateringSheet()">🍽️ Open Catering / Kitchen Sheet</button>
-    </div>`;
+  el.innerHTML = capacityHTML + statsHTML + trendHTML + chartsHTML + reportsHTML;
 }
 
 /* ── Catering / Kitchen Sheet — a clean, print-ready report for
@@ -3345,14 +3371,14 @@ function openCateringSheet() {
   const prefCounts = {};
   guests.forEach(function(g) {
     if (!g.dietary_preferences) return;
-    g.dietary_preferences.split(',').map(s => s.trim()).filter(Boolean).forEach(function(pref) {
+    String(g.dietary_preferences).split(',').map(s => s.trim()).filter(Boolean).forEach(function(pref) {
       prefCounts[pref] = (prefCounts[pref] || 0) + (g.guest_count || 1);
     });
   });
   const prefRows = Object.entries(prefCounts).sort((a,b) => b[1]-a[1])
     .map(([pref, count]) => `<tr><td>${pref}</td><td>${count}</td></tr>`).join('');
 
-  const restrictionGuests = guests.filter(g => g.dietary_restrictions && g.dietary_restrictions.trim());
+  const restrictionGuests = guests.filter(g => g.dietary_restrictions && String(g.dietary_restrictions).trim());
   const restrictionRows = restrictionGuests.map(function(g) {
     const fullName = `${g.fname||''} ${g.lname||''}`.trim() || 'Guest';
     return `<tr><td>${fullName}${g.guest_count > 1 ? ' (party of ' + g.guest_count + ')' : ''}</td><td>${g.dietary_restrictions}</td></tr>`;
