@@ -284,6 +284,8 @@ footer a{color:var(--gold);text-decoration:none;}
 .rsvp-success-recap span{background:var(--cream);border:1px solid var(--gray);border-radius:100px;padding:8px 16px;font-size:12.5px;font-weight:600;color:var(--navy);}
 .rsvp-success-note{text-align:center;font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--gray-mid);font-size:15px;opacity:0;animation:successFadeUp 0.6s ease 0.8s forwards;}
 .rsvp-share{margin-top:22px;padding-top:20px;border-top:1px solid var(--gray);text-align:center;opacity:0;animation:successFadeUp 0.6s ease 0.95s forwards;}
+.rsvp-success-done-btn{display:block;width:100%;margin-top:24px;background:linear-gradient(135deg,var(--gold),var(--gold-light));color:var(--deep);border:none;padding:15px 24px;border-radius:100px;font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;opacity:0;animation:successFadeUp 0.6s ease 1.05s forwards;}
+.rsvp-success-done-btn:active{transform:scale(0.98);}
 .rsvp-share-label{font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--gray-mid);font-weight:700;margin-bottom:12px;}
 .rsvp-share-buttons{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;}
 .rsvp-share-btn{display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border-radius:100px;font-size:12.5px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;text-decoration:none;border:1.5px solid var(--gray);background:var(--white);color:var(--text);transition:background 0.2s ease,border-color 0.2s ease;}
@@ -1050,7 +1052,7 @@ body.role-usher .dash-row-action-delete{opacity:0.3;pointer-events:none;filter:g
 </footer>
 
 <!-- RSVP MODAL -->
-<div class="modal-backdrop" id="rsvp-backdrop" onclick="if(event.target===this)closeRSVP()">
+<div class="modal-backdrop" id="rsvp-backdrop" onclick="if(event.target===this)guardedCloseRSVP()">
   <div class="modal">
     <div class="modal-header">
       <button class="modal-close" aria-label="Close" onclick="closeRSVP()">✕</button>
@@ -1187,6 +1189,7 @@ body.role-usher .dash-row-action-delete{opacity:0.3;pointer-events:none;filter:g
               </button>
             </div>
           </div>
+          <button type="button" class="rsvp-success-done-btn" onclick="finishRsvpSuccess()">Done — Close This Window</button>
         </div>
       </form>
     </div>
@@ -1277,6 +1280,7 @@ body.role-usher .dash-row-action-delete{opacity:0.3;pointer-events:none;filter:g
       <button class="dash-btn" onclick="openHelpOverlay()" title="What does each tab do?">❓ Help</button>
       <button class="dash-btn" onclick="openCommandPalette()" title="Search guests or jump to a tab (Ctrl/Cmd+K)">🔍 Search</button>
       <button class="dash-btn dash-btn-doors" onclick="enterDoorsMode()">🚪 Doors Mode</button>
+      <button class="dash-btn" onclick="openReceptionMonitor()" title="Opens a full-screen 'Welcome' display for a screen at the door">📺 Open Monitor</button>
       <button class="dash-btn-logout" onclick="dashLogout()">Log Out</button>
     </div>
   </div>
@@ -2123,6 +2127,16 @@ function closeRSVP() {
   document.body.style.overflow = '';
 }
 
+// Used by backdrop-click and the Escape key — deliberately refuses
+// to close while the success screen is showing, so a guest has to
+// explicitly click "Done" rather than accidentally dismissing their
+// confirmation by clicking outside the modal or hitting Escape.
+function guardedCloseRSVP() {
+  const successEl = document.getElementById('rsvp-step-success');
+  if (successEl && successEl.style.display !== 'none') return;
+  closeRSVP();
+}
+
 function showRsvpStep(step) {
   document.getElementById('rsvp-step-1').style.display = step === 1 ? 'block' : 'none';
   document.getElementById('rsvp-step-2').style.display = step === 2 ? 'block' : 'none';
@@ -2707,14 +2721,21 @@ function handleRSVPSubmit(e) {
       return;
     }
     celebrateRsvpSuccess(guest.fname);
-    setTimeout(() => {
-      closeRSVP();
-      resetRsvpDynamicFields();
-      btn.disabled = false;
-      btn.textContent = 'Confirm My Attendance';
-      btn.style.background = '';
-    }, 3600);
   });
+}
+
+// Called only when the guest explicitly clicks "Done" on the success
+// screen — the confirmation no longer auto-dismisses after a few
+// seconds, so nothing closes this until they choose to.
+function finishRsvpSuccess() {
+  closeRSVP();
+  resetRsvpDynamicFields();
+  const btn = document.getElementById('rsvp-submit-btn');
+  if (btn) {
+    btn.disabled = false;
+    btn.textContent = 'Confirm My Attendance';
+    btn.style.background = '';
+  }
 }
 
 /* ════════════════════════════════════════════════════════════════
@@ -3870,6 +3891,14 @@ let _monitorPollInterval = null;
 let _monitorLastSeenAt = 0;
 let _monitorResetTimeout = null;
 
+// Opens the reception monitor in a new tab — this is what you'd run
+// on however many screens/TVs you want at the door. Each one polls
+// independently, no login needed since it's read-only.
+function openReceptionMonitor() {
+  const base = window.location.origin + window.location.pathname;
+  window.open(base + '?monitor=1', '_blank');
+}
+
 function enterMonitorMode() {
   document.getElementById('monitor-view').classList.add('active');
   pollForRecentCheckIn();
@@ -3969,7 +3998,7 @@ document.addEventListener('keydown', function(e) {
 // each backdrop to its own close function, so pressing Escape always
 // does the right thing regardless of which modal happens to be open.
 const MODAL_CLOSE_FNS = {
-  'rsvp-backdrop': closeRSVP,
+  'rsvp-backdrop': guardedCloseRSVP,
   'login-modal-backdrop': closeLoginModal,
   'edit-guest-backdrop': closeEditGuestModal,
   'add-guest-backdrop': closeAddGuestModal,
@@ -4470,7 +4499,7 @@ function generateAllApproveQRs(ts, primaryName, additionalGuests) {
     const card = document.createElement('div');
     card.className = 'approve-qr-preview';
     const canvasId = 'approve-qr-canvas-' + person.idx;
-    card.innerHTML = `<canvas id="${canvasId}" width="180" height="180"></canvas>` +
+    card.innerHTML = `<canvas id="${canvasId}" width="640" height="640"></canvas>` +
       `<p class="approve-qr-hint"><strong>${person.name}</strong><br>Scanned at check-in — attached to their own ticket email automatically.</p>`;
     listEl.appendChild(card);
 
