@@ -304,14 +304,12 @@ footer a{color:var(--gold);text-decoration:none;}
 /* Additional guests */
 .additional-guest-row{display:flex;gap:8px;margin-bottom:10px;}
 .additional-guest-row-detailed{border:1.5px solid var(--gray);border-radius:12px;padding:14px;margin-bottom:12px;background:var(--cream);}
-.additional-guest-row-header{display:flex;gap:8px;}
-.additional-guest-veg-label{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--gray-mid);margin-top:10px;cursor:pointer;}
-.additional-guest-veg-label input{width:15px;height:15px;accent-color:var(--gold);cursor:pointer;}
-.additional-guest-dietary,.additional-guest-main-course{width:100%;padding:10px 12px;border:1.5px solid var(--gray);border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;background:var(--white);color:var(--text);}
-.additional-guest-dietary:focus,.additional-guest-main-course:focus{outline:none;border-color:var(--gold);}
-.additional-guest-input{flex:1;padding:12px 14px;border:1.5px solid var(--gray);border-radius:9px;font-size:16px;font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);}
-.additional-guest-input:focus{outline:none;border-color:var(--gold);background:var(--white);}
-.additional-guest-remove{background:var(--gray);color:var(--gray-mid);border:none;width:42px;border-radius:9px;cursor:pointer;font-size:14px;flex-shrink:0;}
+.additional-guest-row-header{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.additional-guest-row-label{font-size:12px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--gold);}
+.additional-guest-fname,.additional-guest-lname,.additional-guest-main-course,.additional-guest-message{width:100%;padding:10px 12px;border:1.5px solid var(--gray);border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;background:var(--white);color:var(--text);}
+.additional-guest-fname:focus,.additional-guest-lname:focus,.additional-guest-main-course:focus,.additional-guest-message:focus{outline:none;border-color:var(--gold);}
+.additional-guest-message{resize:vertical;min-height:60px;font-family:'DM Sans',sans-serif;}
+.additional-guest-remove{background:var(--gray);color:var(--gray-mid);border:none;width:42px;height:42px;border-radius:9px;cursor:pointer;font-size:14px;flex-shrink:0;}
 .additional-guest-remove:hover{background:#e8dfc8;color:var(--text);}
 .add-guest-btn{display:inline-flex;align-items:center;gap:6px;background:none;border:1.5px dashed var(--gold);color:var(--gold);padding:9px 16px;border-radius:9px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;}
 .party-size-chip{display:inline-flex;align-items:center;gap:5px;background:rgba(45,158,95,0.1);color:#1a7a45;border:1px solid rgba(45,158,95,0.3);padding:4px 12px;border-radius:100px;font-size:11.5px;font-weight:700;margin:8px 0 12px;transition:transform 0.2s ease;}
@@ -1057,7 +1055,7 @@ body.role-usher .dash-row-action-delete{opacity:0.3;pointer-events:none;filter:g
     <div class="modal-header">
       <button class="modal-close" aria-label="Close" onclick="closeRSVP()">✕</button>
       <h2>Confirm Your Attendance</h2>
-      <p>PBIS Legacy Night · 25 September 2026 · 5:00 PM</p>
+      <p>PBIS Legacy Night · 25 September 2026 · 4:30 PM</p>
     </div>
     <div class="rsvp-progress" id="rsvp-progress">
       <div class="rsvp-progress-step active" id="rsvp-progress-step-1">
@@ -1104,46 +1102,26 @@ body.role-usher .dash-row-action-delete{opacity:0.3;pointer-events:none;filter:g
             </div>
           </div>
           <div class="form-row">
-            <label>Organization <span style="text-transform:none;">(if applicable)</span></label>
+            <label>Organisation <span style="text-transform:none;">(if applicable)</span></label>
             <div class="form-input-wrap">
               <svg viewBox="0 0 24 24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="1"/><path d="M9 8h1M14 8h1M9 12h1M14 12h1M9 16h1M14 16h1"/></svg>
               <input type="text" id="rsvp-organization" placeholder="e.g. company or institution name">
             </div>
           </div>
           <div class="form-row">
-            <label>Dietary Preferences <span style="text-transform:none;">(select all that apply)</span></label>
-            <div class="multiselect" id="dietary-multiselect">
-              <button type="button" class="multiselect-trigger" onclick="toggleDietaryDropdown(event)">
-                <span id="dietary-trigger-label">Select dietary preferences…</span>
-                <svg class="multiselect-chevron" viewBox="0 0 24 24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-              </button>
-              <div class="multiselect-panel" id="dietary-panel">
-                <label class="multiselect-option"><input type="checkbox" value="Meat" onchange="updateDietarySelection()"> Meat</label>
-                <label class="multiselect-option"><input type="checkbox" value="Seafood" onchange="updateDietarySelection()"> Seafood</label>
-                <label class="multiselect-option"><input type="checkbox" value="Vegan" onchange="updateDietarySelection()"> Vegan</label>
-              </div>
-            </div>
-          </div>
-          <div class="form-row">
-            <label>Dietary Restrictions / Allergies <span style="text-transform:none;">(optional — tell us more)</span></label>
-            <textarea id="rsvp-dietary-restrictions" placeholder="e.g. severe peanut allergy, specific ingredients to avoid…"></textarea>
-          </div>
-          <div class="form-row">
             <label>Preferred Main Course *</label>
             <select id="rsvp-course-main" required onchange="validateRsvpField('rsvp-course-main')">
               <option value="">Select a main course…</option>
-              <option value="Surf & Turf — Australian Wagyu Beef" data-diet="meat">Surf &amp; Turf — Australian Wagyu Beef</option>
-              <option value="Surf & Turf — Pan-Seared Barramundi" data-diet="seafood">Surf &amp; Turf — Pan-Seared Barramundi</option>
-              <option value="Vegetarian — Pan-Seared Mushrooms" data-diet="vegetarian">Vegetarian — Pan-Seared Mushrooms</option>
+              <option value="Surf & Turf — Australian Wagyu Beef" data-diet="meat">Surf &amp; Turf — Australian Wagyu Beef (Meat)</option>
+              <option value="Surf & Turf — Pan-Seared Barramundi" data-diet="seafood">Surf &amp; Turf — Pan-Seared Barramundi (Seafood)</option>
+              <option value="Vegetarian — Pan-Seared Mushrooms" data-diet="vegetarian">Vegetarian — Pan-Seared Mushrooms (Vegan)</option>
             </select>
-            <p class="form-hint" id="rsvp-main-course-hint" style="display:none;">Meat and seafood options are hidden because you selected Vegan as a dietary preference above.</p>
           </div>
           <div class="form-row">
             <label>Message <span style="text-transform:none;">(optional)</span></label>
             <textarea id="rsvp-notes" placeholder="Questions or anything else we should know"></textarea>
           </div>
           <button type="button" class="form-submit" id="rsvp-next-btn" onclick="goToRsvpConfirmStep()">Continue</button>
-          <p class="form-note">You'll receive a confirmation email with full event details.</p>
         </div>
 
         <div id="rsvp-step-2" style="display:none;">
@@ -1152,14 +1130,13 @@ body.role-usher .dash-row-action-delete{opacity:0.3;pointer-events:none;filter:g
             <span>Thank you for your RSVP. Please note that admission is valid only for the name you have just registered and may not be transferred to another guest. We look forward to welcoming you to the event.</span>
           </label>
           <div class="form-row">
-            <label>Bringing Additional Guests? <span style="text-transform:none;">(optional — max 2, arriving with you)</span></label>
-            <p class="form-hint" style="margin-top:0;margin-bottom:12px;">If you have additional guest(s) joining you, please fill in their information below. If not, you can just proceed and submit.</p>
+            <label>Additional Guests <span style="text-transform:none;">(optional)</span></label>
+            <p class="form-hint" style="margin-top:0;margin-bottom:12px;">If your invitation is addressed to two guests, please click the Add Guest button below to register the additional attendee. If only one guest is named, you may proceed directly to complete your RSVP.</p>
             <span class="party-size-chip" id="party-size-chip">👥 Party of 1</span>
             <div id="additional-guests-list"></div>
             <button type="button" class="add-guest-btn" id="add-guest-btn" onclick="addGuestRow()">
               <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Add a Guest
             </button>
-            <p class="form-hint">Only guests arriving with an invited RSVP will be admitted — up to 2 additional guests per invitation.</p>
           </div>
           <button type="button" class="form-submit" id="rsvp-submit-btn" onclick="handleRSVPSubmit(event)" disabled>Confirm My Attendance</button>
           <button type="button" class="form-back-link" onclick="backToRsvpFormStep()">← Back to edit my details</button>
@@ -2521,27 +2498,32 @@ function addGuestRow() {
   row.className = 'additional-guest-row-detailed';
   row.innerHTML = `
     <div class="additional-guest-row-header">
-      <input type="text" class="additional-guest-input" placeholder="Guest ${n} full name">
+      <span class="additional-guest-row-label">Guest ${n}</span>
       <button type="button" class="additional-guest-remove" onclick="removeGuestRow(this)" title="Remove">✕</button>
     </div>
     <div class="form-row two" style="margin:10px 0 0;">
       <div>
-        <label style="font-size:10px;">Dietary Restrictions <span style="text-transform:none;">(optional)</span></label>
-        <input type="text" class="additional-guest-dietary" placeholder="e.g. nut allergy">
+        <label style="font-size:10px;">First Name</label>
+        <input type="text" class="additional-guest-fname" placeholder="First name">
       </div>
       <div>
-        <label style="font-size:10px;">Main Course *</label>
-        <select class="additional-guest-main-course">
-          <option value="">Select…</option>
-          <option value="Surf & Turf — Australian Wagyu Beef" data-diet="meat">Surf &amp; Turf — Australian Wagyu Beef</option>
-          <option value="Surf & Turf — Pan-Seared Barramundi" data-diet="seafood">Surf &amp; Turf — Pan-Seared Barramundi</option>
-          <option value="Vegetarian — Pan-Seared Mushrooms" data-diet="vegetarian">Vegetarian &mdash; Pan-Seared Mushrooms</option>
-        </select>
+        <label style="font-size:10px;">Last Name</label>
+        <input type="text" class="additional-guest-lname" placeholder="Last name">
       </div>
     </div>
-    <label class="additional-guest-veg-label">
-      <input type="checkbox" class="additional-guest-veg-check" onchange="filterAdditionalGuestMainCourse(this)"> This guest is vegetarian/vegan
-    </label>`;
+    <div class="form-row" style="margin:10px 0 0;">
+      <label style="font-size:10px;">Main Course *</label>
+      <select class="additional-guest-main-course">
+        <option value="">Select…</option>
+        <option value="Surf & Turf — Australian Wagyu Beef" data-diet="meat">Surf &amp; Turf — Australian Wagyu Beef (Meat)</option>
+        <option value="Surf & Turf — Pan-Seared Barramundi" data-diet="seafood">Surf &amp; Turf — Pan-Seared Barramundi (Seafood)</option>
+        <option value="Vegetarian — Pan-Seared Mushrooms" data-diet="vegetarian">Vegetarian &mdash; Pan-Seared Mushrooms (Vegan)</option>
+      </select>
+    </div>
+    <div class="form-row" style="margin:10px 0 0;">
+      <label style="font-size:10px;">Message <span style="text-transform:none;">(optional)</span></label>
+      <textarea class="additional-guest-message" placeholder="Anything we should know about this guest" style="min-height:60px;"></textarea>
+    </div>`;
   list.appendChild(row);
   updateAddGuestBtnState();
   updatePartySizeChip();
@@ -2549,21 +2531,6 @@ function addGuestRow() {
 
 // Same filtering logic as the primary guest's main course dropdown,
 // scoped to just this one additional-guest row.
-function filterAdditionalGuestMainCourse(checkbox) {
-  const row = checkbox.closest('.additional-guest-row-detailed');
-  const select = row.querySelector('.additional-guest-main-course');
-  const isVeg = checkbox.checked;
-  let cleared = false;
-  Array.from(select.options).forEach(function(opt) {
-    if (!opt.value) return;
-    const shouldHide = isVeg && opt.getAttribute('data-diet') !== 'vegetarian';
-    opt.hidden = shouldHide;
-    opt.disabled = shouldHide;
-    if (shouldHide && select.value === opt.value) { select.value = ''; cleared = true; }
-  });
-  if (cleared) showDashToast('⚠️ Main course selection cleared — please choose the vegetarian option.');
-}
-
 function removeGuestRow(btn) {
   btn.parentElement.remove();
   _additionalGuestCount--;
@@ -2589,71 +2556,14 @@ function updatePartySizeChip() {
   setTimeout(() => chip.classList.remove('bump'), 220);
 }
 
-/* ── Dietary preferences multi-select ── */
-let _selectedDietary = [];
-
-function toggleDietaryDropdown(e) {
-  e.stopPropagation();
-  document.getElementById('dietary-multiselect').classList.toggle('open');
-}
-
-document.addEventListener('click', function(e) {
-  const ms = document.getElementById('dietary-multiselect');
-  if (ms && !ms.contains(e.target)) ms.classList.remove('open');
-});
-
-function updateDietarySelection() {
-  const checked = Array.from(document.querySelectorAll('#dietary-panel input[type="checkbox"]:checked')).map(cb => cb.value);
-  _selectedDietary = checked;
-  const label = document.getElementById('dietary-trigger-label');
-  if (label) label.textContent = checked.length ? checked.join(', ') : 'Select dietary preferences…';
-  filterMainCourseOptions();
-}
-
-// Hides meat/seafood main course options when the guest has selected
-// Vegetarian or Vegan above, so they're only ever offered dishes they
-// can actually eat. If their current selection becomes hidden, it's
-// cleared so they have to pick again rather than silently submitting
-// a meat dish for a vegetarian guest.
-function filterMainCourseOptions() {
-  const isVeg = _selectedDietary.includes('Vegan');
-  const select = document.getElementById('rsvp-course-main');
-  const hint = document.getElementById('rsvp-main-course-hint');
-  if (!select) return;
-
-  let clearedSelection = false;
-  Array.from(select.options).forEach(function(opt) {
-    if (!opt.value) return; // keep the placeholder always visible
-    const diet = opt.getAttribute('data-diet');
-    const shouldHide = isVeg && diet !== 'vegetarian';
-    opt.hidden = shouldHide;
-    opt.disabled = shouldHide;
-    if (shouldHide && select.value === opt.value) {
-      select.value = '';
-      clearedSelection = true;
-    }
-  });
-  if (hint) hint.style.display = isVeg ? 'block' : 'none';
-  if (clearedSelection) {
-    showDashToast('⚠️ Your main course selection was cleared — please choose the vegetarian option.');
-  }
-}
-
-// Clears the additional-guest rows and dietary selection so the form
-// starts fresh next time it's opened (e.g. after a successful submit).
+// Clears the additional-guest rows so the form starts fresh next
+// time it's opened (e.g. after a successful submit).
 function resetRsvpDynamicFields() {
   const list = document.getElementById('additional-guests-list');
   if (list) list.innerHTML = '';
   _additionalGuestCount = 0;
   updateAddGuestBtnState();
   updatePartySizeChip();
-
-  document.querySelectorAll('#dietary-panel input[type="checkbox"]').forEach(cb => { cb.checked = false; });
-  _selectedDietary = [];
-  const label = document.getElementById('dietary-trigger-label');
-  if (label) label.textContent = 'Select dietary preferences…';
-  const ms = document.getElementById('dietary-multiselect');
-  if (ms) ms.classList.remove('open');
 
   resetRsvpValidationState();
 }
@@ -2665,16 +2575,20 @@ function handleRSVPSubmit(e) {
 
   const additionalRowsToCheck = document.querySelectorAll('.additional-guest-row-detailed');
   for (const row of additionalRowsToCheck) {
-    const nameInput = row.querySelector('.additional-guest-input');
+    const fnameInput = row.querySelector('.additional-guest-fname');
+    const lnameInput = row.querySelector('.additional-guest-lname');
     const mainSelect = row.querySelector('.additional-guest-main-course');
-    if (nameInput.value.trim() && !mainSelect.value) {
+    const hasName = fnameInput.value.trim() || lnameInput.value.trim();
+    if (hasName && !mainSelect.value) {
       mainSelect.classList.add('field-shake');
       setTimeout(() => mainSelect.classList.remove('field-shake'), 400);
       mainSelect.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      showDashToast('⚠️ Please select a main course for ' + nameInput.value.trim() + '.');
+      showDashToast('⚠️ Please select a main course for ' + (fnameInput.value.trim() || 'this guest') + '.');
       return;
     }
   }
+
+  alert('Thank you for confirming your attendance. Your personalised Admission Pass will be emailed to you within the next few days. The pass will include your registered name and a unique QR code. Please keep this email and present the QR code at the registration desk for admission to the event.');
 
   _rsvpSubmitCount++;
   const btn = document.getElementById('rsvp-submit-btn');
@@ -2687,11 +2601,20 @@ function handleRSVPSubmit(e) {
   const get = id => { const el = document.getElementById(id); return el ? el.value : ''; };
 
   const additionalGuestsDetail = Array.from(document.querySelectorAll('.additional-guest-row-detailed')).map(function(row) {
-    const name = sanitize(row.querySelector('.additional-guest-input').value);
-    const dietary = sanitize(row.querySelector('.additional-guest-dietary').value);
+    const fname = sanitize(row.querySelector('.additional-guest-fname').value);
+    const lname = sanitize(row.querySelector('.additional-guest-lname').value);
     const mainCourse = row.querySelector('.additional-guest-main-course').value;
-    return { name: name, dietary_restrictions: dietary, main_course: mainCourse };
+    const message = sanitize(row.querySelector('.additional-guest-message').value);
+    return { name: (fname + ' ' + lname).trim(), fname: fname, lname: lname, main_course: mainCourse, message: message };
   }).filter(function(g) { return g.name; });
+
+  // Preferred Main Course doubles as the dietary signal now (Meat /
+  // Seafood / Vegan), so derive it from the selected option rather
+  // than a separate dietary-preferences field.
+  const mainCourseSelect = document.getElementById('rsvp-course-main');
+  const selectedDietOption = mainCourseSelect ? mainCourseSelect.selectedOptions[0] : null;
+  const dietMap = { meat: 'Meat', seafood: 'Seafood', vegetarian: 'Vegan' };
+  const derivedDietaryPreference = selectedDietOption ? (dietMap[selectedDietOption.getAttribute('data-diet')] || '') : '';
 
   const guest = {
     action: 'newLegacyGuest',
@@ -2703,8 +2626,7 @@ function handleRSVPSubmit(e) {
     guest_count: 1 + additionalGuestsDetail.length,
     additional_guests: additionalGuestsDetail.map(g => g.name).join(', '),
     additional_guests_detail: JSON.stringify(additionalGuestsDetail),
-    dietary_preferences: _selectedDietary.join(', '),
-    dietary_restrictions: sanitize(get('rsvp-dietary-restrictions')),
+    dietary_preferences: derivedDietaryPreference,
     course_main: sanitize(get('rsvp-course-main')),
     notes: sanitize(get('rsvp-notes')),
     ts: new Date().toISOString()
