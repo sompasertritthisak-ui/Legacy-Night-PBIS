@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>PBIS Legacy Night — 25th Anniversary Gala | Panyathip British International School</title>
-<meta name="description" content="Join us for PBIS Legacy Night, celebrating 25 years of Panyathip British International School. Friday, 25 September 2026, 5:00 PM.">
+<meta name="description" content="Join us for PBIS Legacy Night, celebrating 25 years of Panyathip British International School. Friday, 25 September 2026, 4:30 PM.">
 
 <!-- Open Graph / social share preview (WhatsApp, Facebook, etc.) -->
 <meta property="og:type" content="website">
 <meta property="og:title" content="PBIS Legacy Night — 25th Anniversary Gala">
-<meta property="og:description" content="Celebrating 25 Years of Commitment to Excellence. Friday, 25 September 2026, 5:00 PM · Holiday Inn & Suites Vientiane.">
+<meta property="og:description" content="Celebrating 25 Years of Commitment to Excellence. Friday, 25 September 2026, 4:30 PM · Holiday Inn & Suites Vientiane.">
 <meta property="og:image" content="https://legacynight.pbis.edu.la/og-image.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -19,7 +19,7 @@
 <!-- Twitter Card (also read by some link-preview tools) -->
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="PBIS Legacy Night — 25th Anniversary Gala">
-<meta name="twitter:description" content="Celebrating 25 Years of Commitment to Excellence. Friday, 25 September 2026, 5:00 PM · Holiday Inn & Suites Vientiane.">
+<meta name="twitter:description" content="Celebrating 25 Years of Commitment to Excellence. Friday, 25 September 2026, 4:30 PM · Holiday Inn & Suites Vientiane.">
 <meta name="twitter:image" content="https://legacynight.pbis.edu.la/og-image.jpg">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -875,7 +875,7 @@ body.role-usher .dash-row-action-delete{opacity:0.3;pointer-events:none;filter:g
   <p class="hero-slogan">Celebrating 25 Years of Commitment to Excellence. Growing Generations.</p>
   <div class="hero-meta">
     <div class="hero-meta-item">📅 <b>Friday, 25 September 2026</b></div>
-    <div class="hero-meta-item">🕔 <b>5:00 PM</b></div>
+    <div class="hero-meta-item">🕔 <b>4:30 PM</b></div>
     <div class="hero-meta-item">📍 <b>Holiday Inn & Suites Vientiane</b></div>
   </div>
   <button class="hero-cta" onclick="openRSVP()">Confirm My Attendance</button>
@@ -930,7 +930,7 @@ body.role-usher .dash-row-action-delete{opacity:0.3;pointer-events:none;filter:g
         <div class="legacy-stat-label">Years of Excellence</div>
       </div>
       <div class="legacy-stat"><div class="legacy-stat-icon">🏛️</div><div class="legacy-stat-num">2001</div><div class="legacy-stat-label">Est. Founded</div></div>
-      <div class="legacy-stat"><div class="legacy-stat-icon">🌱</div><div class="legacy-stat-num">1</div><div class="legacy-stat-label">Growing Community</div></div>
+      <div class="legacy-stat"><div class="legacy-stat-icon">🌱</div><div class="legacy-stat-num">One</div><div class="legacy-stat-label">Growing Community</div></div>
     </div>
   </div>
   <div class="section-wave section-wave-cream"><svg viewBox="0 0 1440 60" preserveAspectRatio="none"><path d="M0,28 C360,0 1080,60 1440,32 L1440,60 L0,60 Z"/></svg></div>
@@ -977,7 +977,7 @@ body.role-usher .dash-row-action-delete{opacity:0.3;pointer-events:none;filter:g
       <div class="detail-card">
         <div class="detail-icon">🕔</div>
         <h4>Time</h4>
-        <p>5:00 PM</p>
+        <p>4:30 PM</p>
         <span>Doors open, welcome reception</span>
       </div>
       <div class="detail-card">
@@ -1652,7 +1652,7 @@ body.role-usher .dash-row-action-delete{opacity:0.3;pointer-events:none;filter:g
     <p class="ticket-view-sub">25th Anniversary Gala</p>
     <div class="ticket-view-details">
       <span>📅 Friday, 25 September 2026</span>
-      <span>🕔 5:00 PM</span>
+      <span>🕔 4:30 PM</span>
       <span>📍 Holiday Inn &amp; Suites Vientiane</span>
     </div>
     <p class="ticket-view-note">Please keep this QR code and present it at the entrance for check-in on the night.</p>
@@ -1673,7 +1673,7 @@ const ADMIN_ACTION_KEY = '2UY57hi5GRdPDtjjpqa6FrDDtZsEkCbGJ1VxwVWzWjc';
 // Single source of truth for the event date/time — used by both the public
 // countdown timer and the admin dashboard's "Days Until Legacy Night" stat.
 // Change it here once and both stay in sync.
-const LEGACY_NIGHT_TIMESTAMP = '2026-09-25T17:00:00+07:00';
+const LEGACY_NIGHT_TIMESTAMP = '2026-09-25T16:30:00+07:00';
 // Must match VENUE_CAPACITY in code.gs — used here only to display
 // the live capacity meter on the Overview tab; the actual
 // waitlisting decision happens server-side in code.gs.
@@ -1933,7 +1933,7 @@ document.addEventListener('click', function(e) {
 function addToGoogleCalendar(e) {
   e.preventDefault();
   const text = encodeURIComponent('PBIS Legacy Night — 25th Anniversary Gala');
-  const dates = '20260925T170000/20260925T210000';
+  const dates = '20260925T163000/20260925T203000';
   const details = encodeURIComponent('Join us as we celebrate 25 years of Panyathip British International School. RSVP: https://legacynight.pbis.edu.la/');
   const location = encodeURIComponent('Holiday Inn & Suites Vientiane');
   const url = 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + text +
@@ -2067,8 +2067,8 @@ function downloadICS() {
     'BEGIN:VEVENT',
     'UID:pbis-legacy-night-2026@legacynight.pbis.edu.la',
     'DTSTAMP:' + stamp,
-    'DTSTART:20260925T100000Z',
-    'DTEND:20260925T140000Z',
+    'DTSTART:20260925T093000Z',
+    'DTEND:20260925T133000Z',
     'SUMMARY:PBIS Legacy Night — 25th Anniversary Gala',
     'DESCRIPTION:Join us as we celebrate 25 years of Panyathip British International School. RSVP: https://legacynight.pbis.edu.la/',
     'LOCATION:Holiday Inn & Suites Vientiane',
@@ -2502,9 +2502,9 @@ function postToSheetsOnce(data) {
   });
 }
 
-/* ── Additional guests (max 2 per invitation) ── */
+/* ── Additional guests (max 1 per invitation) ── */
 let _additionalGuestCount = 0;
-const MAX_ADDITIONAL_GUESTS = 2;
+const MAX_ADDITIONAL_GUESTS = 1;
 
 function addGuestRow() {
   if (_additionalGuestCount >= MAX_ADDITIONAL_GUESTS) return;
