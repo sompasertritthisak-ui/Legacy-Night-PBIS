@@ -1086,9 +1086,9 @@ body.role-usher .dash-row-action-delete{opacity:0.3;pointer-events:none;filter:g
             <label>Preferred Main Course *</label>
             <select id="rsvp-course-main" required onchange="validateRsvpField('rsvp-course-main')">
               <option value="">Select a main course…</option>
-              <option value="Surf & Turf — Australian Wagyu Beef" data-diet="meat">Surf &amp; Turf — Australian Wagyu Beef (Meat)</option>
-              <option value="Surf & Turf — Pan-Seared Barramundi" data-diet="seafood">Surf &amp; Turf — Pan-Seared Barramundi (Seafood)</option>
-              <option value="Vegetarian — Pan-Seared Mushrooms" data-diet="vegetarian">Vegetarian — Pan-Seared Mushrooms (Vegan)</option>
+              <option value="Australian Wagyu Beef (Meat)" data-diet="meat">Australian Wagyu Beef (Meat)</option>
+              <option value="Pan Seared Barramundi (Fish)" data-diet="seafood">Pan Seared Barramundi (Fish)</option>
+              <option value="Pan Seared Mushrooms (Vegetarian)" data-diet="vegetarian">Pan Seared Mushrooms (Vegetarian)</option>
             </select>
           </div>
           <div class="form-row">
@@ -2477,9 +2477,9 @@ function addGuestRow() {
       <label style="font-size:10px;">Main Course *</label>
       <select class="additional-guest-main-course">
         <option value="">Select…</option>
-        <option value="Surf & Turf — Australian Wagyu Beef" data-diet="meat">Surf &amp; Turf — Australian Wagyu Beef (Meat)</option>
-        <option value="Surf & Turf — Pan-Seared Barramundi" data-diet="seafood">Surf &amp; Turf — Pan-Seared Barramundi (Seafood)</option>
-        <option value="Vegetarian — Pan-Seared Mushrooms" data-diet="vegetarian">Vegetarian &mdash; Pan-Seared Mushrooms (Vegan)</option>
+        <option value="Australian Wagyu Beef (Meat)" data-diet="meat">Australian Wagyu Beef (Meat)</option>
+        <option value="Pan Seared Barramundi (Fish)" data-diet="seafood">Pan Seared Barramundi (Fish)</option>
+        <option value="Pan Seared Mushrooms (Vegetarian)" data-diet="vegetarian">Pan Seared Mushrooms (Vegetarian)</option>
       </select>
     </div>
     <div class="form-row" style="margin:10px 0 0;">
@@ -2569,11 +2569,11 @@ function handleRSVPSubmit(e) {
   }).filter(function(g) { return g.name; });
 
   // Preferred Main Course doubles as the dietary signal now (Meat /
-  // Seafood / Vegan), so derive it from the selected option rather
+  // Fish / Vegetarian), so derive it from the selected option rather
   // than a separate dietary-preferences field.
   const mainCourseSelect = document.getElementById('rsvp-course-main');
   const selectedDietOption = mainCourseSelect ? mainCourseSelect.selectedOptions[0] : null;
-  const dietMap = { meat: 'Meat', seafood: 'Seafood', vegetarian: 'Vegan' };
+  const dietMap = { meat: 'Meat', seafood: 'Fish', vegetarian: 'Vegetarian' };
   const derivedDietaryPreference = selectedDietOption ? (dietMap[selectedDietOption.getAttribute('data-diet')] || '') : '';
 
   const guest = {
