@@ -279,10 +279,12 @@ footer a{color:var(--gold);text-decoration:none;}
 @keyframes successCircleDraw{to{stroke-dashoffset:0;}}
 @keyframes successCheckDraw{to{stroke-dashoffset:0;}}
 .rsvp-success-title{text-align:center;font-family:'Cinzel',serif;font-weight:700;font-size:24px;color:var(--navy);margin-bottom:10px;opacity:0;animation:successFadeUp 0.6s ease 0.5s forwards;}
-.rsvp-success-sub{text-align:center;color:var(--gray-mid);font-size:14px;margin-bottom:20px;opacity:0;animation:successFadeUp 0.6s ease 0.6s forwards;}
-.rsvp-success-recap{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-bottom:18px;opacity:0;animation:successFadeUp 0.6s ease 0.7s forwards;}
+.rsvp-success-next{text-align:left;background:var(--cream);border:1.5px solid rgba(201,168,76,0.4);border-radius:12px;padding:16px 18px;margin-bottom:18px;opacity:0;animation:successFadeUp 0.6s ease 0.7s forwards;}
+.rsvp-success-next-title{margin:0 0 8px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--gold);}
+.rsvp-success-next-text{margin:0;font-size:13.5px;line-height:1.65;color:var(--text);}
+.rsvp-success-recap{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-bottom:18px;opacity:0;animation:successFadeUp 0.6s ease 0.6s forwards;}
 .rsvp-success-recap span{background:var(--cream);border:1px solid var(--gray);border-radius:100px;padding:8px 16px;font-size:12.5px;font-weight:600;color:var(--navy);}
-.rsvp-success-note{text-align:center;font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--gray-mid);font-size:15px;opacity:0;animation:successFadeUp 0.6s ease 0.8s forwards;}
+.rsvp-success-note{text-align:center;font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--gray-mid);font-size:15px;opacity:0;animation:successFadeUp 0.6s ease 0.85s forwards;}
 .rsvp-share{margin-top:22px;padding-top:20px;border-top:1px solid var(--gray);text-align:center;opacity:0;animation:successFadeUp 0.6s ease 0.95s forwards;}
 .rsvp-success-done-btn{display:block;width:100%;margin-top:24px;background:linear-gradient(135deg,var(--gold),var(--gold-light));color:var(--deep);border:none;padding:15px 24px;border-radius:100px;font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;opacity:0;animation:successFadeUp 0.6s ease 1.05s forwards;}
 .rsvp-success-done-btn:active{transform:scale(0.98);}
@@ -1147,10 +1149,13 @@ body.role-usher .dash-row-action-delete{opacity:0.3;pointer-events:none;filter:g
             <svg viewBox="0 0 52 52"><circle class="rsvp-success-check-circle" cx="26" cy="26" r="24" fill="none"/><path class="rsvp-success-check-mark" fill="none" d="M14 27l7 7 17-17"/></svg>
           </div>
           <h3 class="rsvp-success-title">You're Confirmed<span id="rsvp-success-name"></span>!</h3>
-          <p class="rsvp-success-sub">Check your email for your confirmation and full event details.</p>
           <div class="rsvp-success-recap">
             <span>📅 Friday, 25 September 2026</span>
             <span>📍 Holiday Inn &amp; Suites Vientiane</span>
+          </div>
+          <div class="rsvp-success-next">
+            <p class="rsvp-success-next-title">🎫 What Happens Next</p>
+            <p class="rsvp-success-next-text">Thank you for confirming your attendance. Your personalised Admission Pass will be emailed to you within the next few days. The pass will include your registered name and a unique QR code. Please keep this email and present the QR code at the registration desk for admission to the event.</p>
           </div>
           <p class="rsvp-success-note">We look forward to celebrating this milestone with you.</p>
           <div class="rsvp-share">
@@ -2587,8 +2592,6 @@ function handleRSVPSubmit(e) {
       return;
     }
   }
-
-  alert('Thank you for confirming your attendance. Your personalised Admission Pass will be emailed to you within the next few days. The pass will include your registered name and a unique QR code. Please keep this email and present the QR code at the registration desk for admission to the event.');
 
   _rsvpSubmitCount++;
   const btn = document.getElementById('rsvp-submit-btn');
