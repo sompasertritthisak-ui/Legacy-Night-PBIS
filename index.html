@@ -167,6 +167,8 @@ img{max-width:100%;height:auto;}
 
 /* ── SECTION WAVE DIVIDERS ── */
 .section-wave{position:absolute;left:0;right:0;bottom:-1px;height:56px;line-height:0;pointer-events:none;z-index:0;}
+.section-wave-standalone{position:relative;margin-top:-2px;height:56px;line-height:0;pointer-events:none;z-index:1;}
+.section-wave-standalone svg{width:100%;height:100%;display:block;}
 .section-wave svg{width:100%;height:100%;display:block;}
 .section-wave-white path{fill:var(--white);}
 .section-wave-cream path{fill:var(--cream);}
@@ -873,8 +875,8 @@ body.role-usher .dash-row-action-delete{opacity:0.3;pointer-events:none;filter:g
   <button class="hero-cta" onclick="openRSVP()">RSVP Now</button>
   <p class="hero-note">Kindly RSVP so we can prepare a seat for you.</p>
   <div class="hero-scroll"><span>Scroll</span><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
-  <div class="section-wave section-wave-cream"><svg viewBox="0 0 1440 60" preserveAspectRatio="none"><path d="M0,32 C360,60 1080,0 1440,28 L1440,60 L0,60 Z"/></svg></div>
 </section>
+<div class="section-wave-standalone section-wave-cream"><svg viewBox="0 0 1440 60" preserveAspectRatio="none"><path d="M0,32 C360,60 1080,0 1440,28 L1440,60 L0,60 Z"/></svg></div>
 
 <!-- 25 YEARS IN PHOTOS (placeholder frames — swap in real photos, see comment below) -->
 <!--
