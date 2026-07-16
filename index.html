@@ -4614,7 +4614,7 @@ function openWhatsAppQrModal(ts) {
         '<strong>' + person.name + '</strong>' +
         '<span class="wa-qr-person-status" id="wa-qr-status-' + person.idx + '">' + (guest.approved ? '✓ Ticket Issued' : 'Not yet issued') + '</span>' +
       '</div>' +
-      '<canvas id="wa-qr-canvas-' + person.idx + '" width="600" height="1060" style="display:none;"></canvas>' +
+      '<canvas id="wa-qr-canvas-' + person.idx + '" width="600" height="1160" style="display:none;"></canvas>' +
       '<img id="wa-qr-preview-' + person.idx + '" class="wa-qr-preview-img" alt="Ticket preview for ' + person.name + '">' +
       '<div class="wa-qr-person-actions">' +
         '<button class="dash-btn-gold" onclick="downloadWhatsAppTicket(\'' + person.idx + '\',\'' + safeName + '\')">⬇ Download Image</button>' +
