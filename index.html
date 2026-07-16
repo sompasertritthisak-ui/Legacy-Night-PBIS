@@ -1039,10 +1039,10 @@ body.role-usher .dash-row-action-delete{opacity:0.3;pointer-events:none;filter:g
             </div>
           </div>
           <div class="form-row">
-            <label>Email *</label>
+            <label>Email <span style="text-transform:none;">(optional, but recommended)</span></label>
             <div class="form-input-wrap">
               <svg viewBox="0 0 24 24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
-              <input type="email" id="rsvp-email" required>
+              <input type="email" id="rsvp-email">
             </div>
           </div>
           <div class="form-row">
@@ -2105,7 +2105,7 @@ function celebrateRsvpSuccess(firstName) {
 const RSVP_VALIDATORS = {
   'rsvp-fname': { test: v => v.trim().length >= 1, msg: 'Please enter your first name.' },
   'rsvp-lname': { test: v => v.trim().length >= 1, msg: 'Please enter your last name.' },
-  'rsvp-email': { test: v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()), msg: 'Please enter a valid email address.' },
+  'rsvp-email': { test: v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()), msg: 'Please enter a valid email address.', optional: true },
   'rsvp-phone': { test: v => v.trim().replace(/[^0-9]/g, '').length >= 6, msg: 'Please enter a valid phone number.' },
 };
 
@@ -2294,10 +2294,16 @@ function goToRsvpConfirmStep() {
 
   ids.forEach(id => {
     const el = document.getElementById(id);
+    const rule = RSVP_VALIDATORS[id];
+    const isEmpty = el.value.trim() === '';
     const isValid = validateRsvpField(id);
-    // An untouched-but-empty required field also blocks progress —
-    // force its error to show now that a submit was attempted.
-    if (el.value.trim() === '') {
+
+    // Optional fields (like email) are skipped entirely when left
+    // blank — they only need to pass validation if the guest actually
+    // typed something in.
+    if (rule.optional && isEmpty) return;
+
+    if (isEmpty) {
       const wrap = el.closest('.form-input-wrap');
       wrap.classList.add('field-invalid');
       let errorEl = wrap.parentElement.querySelector('.field-error-msg');
@@ -2306,9 +2312,9 @@ function goToRsvpConfirmStep() {
         errorEl.className = 'field-error-msg';
         wrap.insertAdjacentElement('afterend', errorEl);
       }
-      errorEl.textContent = RSVP_VALIDATORS[id].msg;
+      errorEl.textContent = rule.msg;
     }
-    if (!isValid || el.value.trim() === '') {
+    if (!isValid || isEmpty) {
       allValid = false;
       if (!firstInvalidWrap) firstInvalidWrap = el.closest('.form-input-wrap');
     }
