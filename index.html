@@ -762,9 +762,7 @@ body.dashboard-active #dashboard-view{display:block !important;}
 }
 .dash-toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(200%);opacity:0;visibility:hidden;pointer-events:none;background:var(--navy);color:#fff;padding:13px 24px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 12px 32px rgba(0,0,0,0.3);z-index:99999;transition:transform 0.3s ease,opacity 0.3s ease,visibility 0.3s;border:1px solid rgba(201,168,76,0.3);}
 .dash-toast.show{transform:translateX(-50%) translateY(0);opacity:1;visibility:visible;pointer-events:auto;}
-body.role-marketing .dash-checkin-btn,body.role-marketing .dash-checkin-undo,body.role-marketing .dash-row-action,body.role-marketing #followup-modal-send-btn,body.role-marketing #followup-modal-file-input,body.role-marketing .followup-compose-btn,body.role-marketing .dash-noshow-btn,body.role-marketing .dash-noshow-undo,body.role-marketing #edit-guest-save-btn,body.role-marketing .dash-approve-btn,body.role-marketing .dash-approve-undo,body.role-marketing #approve-modal-send-btn,body.role-marketing #approve-modal-file-input,body.role-marketing .dash-btn-gold,body.role-marketing #add-guest-save-btn,body.role-marketing #postevent-send-btn{opacity:0.3;pointer-events:none;filter:grayscale(1);}
 body.role-usher .dash-row-action-delete{opacity:0.3;pointer-events:none;filter:grayscale(1);}
-.dash-marketing-notice{background:rgba(59,130,246,0.12);border-bottom:1px solid rgba(59,130,246,0.25);padding:8px 24px;font-size:12px;color:rgba(30,30,30,0.7);text-align:center;letter-spacing:0.03em;}
 .dash-sync-error-banner{background:#a4453e;color:#fff;padding:12px 24px;font-size:13px;text-align:center;font-weight:600;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;}
 .dash-sync-error-banner button{background:rgba(255,255,255,0.2);border:1.5px solid rgba(255,255,255,0.5);color:#fff;padding:6px 16px;border-radius:100px;font-size:12px;font-weight:700;cursor:pointer;}
 .dash-sync-error-banner button:hover{background:rgba(255,255,255,0.3);}
@@ -2875,18 +2873,7 @@ function enterLegacyDashboard() {
     if(subtitle) subtitle.textContent = `Panyathip British International School · Logged in as ${_currentUser.name}`;
   }
 
-  if(_currentUser && _currentUser.role === 'marketing') {
-    document.body.classList.add('role-marketing');
-    document.body.classList.remove('role-usher');
-    if(!document.getElementById('dash-marketing-notice')) {
-      const notice = document.createElement('div');
-      notice.id = 'dash-marketing-notice';
-      notice.className = 'dash-marketing-notice';
-      notice.textContent = '👁 Marketing view — read-only access. Check-in actions are disabled for this role.';
-      const dbView = document.getElementById('dashboard-view');
-      dbView.insertBefore(notice, dbView.firstChild);
-    }
-  } else if(_currentUser && _currentUser.role === 'usher') {
+  if(_currentUser && _currentUser.role === 'usher') {
     document.body.classList.add('role-usher');
     document.body.classList.remove('role-marketing');
     const oldNotice = document.getElementById('dash-marketing-notice');
@@ -2894,6 +2881,8 @@ function enterLegacyDashboard() {
   } else {
     document.body.classList.remove('role-marketing');
     document.body.classList.remove('role-usher');
+    const oldNotice = document.getElementById('dash-marketing-notice');
+    if (oldNotice) oldNotice.remove();
   }
 
   showDashSkeletons();
