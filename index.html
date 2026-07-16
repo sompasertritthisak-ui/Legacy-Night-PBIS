@@ -477,6 +477,9 @@ body.dashboard-active #dashboard-view{display:block !important;}
 .dash-user-role{font-size:9.5px;padding:1px 7px;border-radius:100px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;}
 .dash-btn{background:rgba(201,168,76,0.15);border:1px solid rgba(201,168,76,0.3);color:var(--gold-light);padding:8px 16px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;letter-spacing:0.03em;font-family:'DM Sans',sans-serif;}
 .dash-btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold-light));border:none;color:var(--deep);padding:8px 16px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:0.02em;font-family:'DM Sans',sans-serif;}
+.dash-btn-small{background:var(--white);border:1.5px solid var(--gray);color:var(--gray-mid);padding:8px 14px;border-radius:100px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:border-color 0.2s ease,color 0.2s ease;}
+.dash-btn-small:hover{border-color:var(--gold);}
+.dash-btn-small-active{background:var(--navy);border-color:var(--navy);color:var(--gold-light);}
 .dash-btn-gold:hover{filter:brightness(1.06);}
 .dash-party-pill{display:inline-flex;align-items:center;gap:4px;background:rgba(59,130,246,0.12);color:#2563eb;border:1px solid rgba(59,130,246,0.3);padding:2px 9px;border-radius:100px;font-size:11.5px;font-weight:700;}
 .dash-btn:hover{background:rgba(201,168,76,0.25);}
@@ -605,6 +608,12 @@ body.dashboard-active #dashboard-view{display:block !important;}
 .approve-qr-preview{display:flex;align-items:center;gap:16px;padding:16px;border:1.5px dashed var(--gray);border-radius:10px;margin-bottom:20px;background:var(--cream);}
 .approve-qr-preview canvas{width:90px;height:90px;background:#fff;border-radius:6px;flex-shrink:0;border:1px solid var(--gray);}
 #approve-qr-list{display:flex;flex-direction:column;gap:10px;margin-bottom:20px;}
+.wa-qr-person-card{border:1.5px solid var(--gray);border-radius:14px;padding:16px;margin-bottom:16px;background:var(--cream);}
+.wa-qr-person-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;}
+.wa-qr-person-header strong{font-size:15px;color:var(--navy);}
+.wa-qr-person-status{font-size:11.5px;font-weight:600;color:var(--gray-mid);}
+.wa-qr-preview-img{display:none;width:100%;max-width:280px;margin:0 auto 14px;border-radius:10px;box-shadow:0 8px 24px rgba(10,40,24,0.18);}
+.wa-qr-person-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
 .approve-qr-hint{font-size:12px;color:var(--gray-mid);line-height:1.5;}
 .qr-scanner-modal{max-width:420px;}
 .qr-scanner-viewport{position:relative;width:100%;aspect-ratio:1;background:#000;border-radius:12px;overflow:hidden;margin-bottom:16px;}
@@ -1231,6 +1240,9 @@ body.role-usher .dash-row-action-delete{opacity:0.3;pointer-events:none;filter:g
     <button class="dash-tab" onclick="switchDashTab('vip',this)" id="dtab-vip">
       ⭐ VIP <span class="dash-tab-count" id="vip-tab-count">0</span>
     </button>
+    <button class="dash-tab" onclick="switchDashTab('qrgen',this)" id="dtab-qrgen">
+      📱 QR Generator <span class="dash-tab-count" id="qrgen-tab-count">0</span>
+    </button>
     <button class="dash-tab" onclick="switchDashTab('followup',this)" id="dtab-followup">
       <svg class="dash-tab-icon" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg> Follow Up
     </button>
@@ -1252,6 +1264,7 @@ body.role-usher .dash-row-action-delete{opacity:0.3;pointer-events:none;filter:g
     <div id="dash-tab-content-checkin" style="display:none;"><!-- populated by JS --></div>
     <div id="dash-tab-content-overdue" style="display:none;"><!-- populated by JS --></div>
     <div id="dash-tab-content-vip" style="display:none;"><!-- populated by JS --></div>
+    <div id="dash-tab-content-qrgen" style="display:none;"><!-- populated by JS --></div>
     <div id="dash-tab-content-followup" style="display:none;"><!-- populated by JS --></div>
     <div id="dash-tab-content-tables" style="display:none;"><!-- populated by JS --></div>
     <div id="dash-tab-content-activitylog" style="display:none;"><!-- populated by JS --></div>
@@ -1483,6 +1496,25 @@ body.role-usher .dash-row-action-delete{opacity:0.3;pointer-events:none;filter:g
       <div class="edit-guest-actions">
         <button class="edit-guest-cancel" onclick="closeApproveModal()">Cancel</button>
         <button class="form-submit" id="approve-modal-send-btn" onclick="submitApproveGuest()" disabled>🎫 Approve &amp; Send Ticket</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- WHATSAPP QR TICKET MODAL -->
+<div class="modal-backdrop notranslate" translate="no" id="wa-qr-modal-backdrop" onclick="if(event.target===this)closeWhatsAppQrModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <button class="modal-close" aria-label="Close" onclick="closeWhatsAppQrModal()">✕</button>
+      <h2>📱 WhatsApp Ticket</h2>
+      <p class="followup-modal-recipient" id="wa-qr-modal-recipient">To: —</p>
+    </div>
+    <div class="edit-guest-body">
+      <input type="hidden" id="wa-qr-modal-ts">
+      <div class="followup-warn">Download each person's ticket image below, then open WhatsApp and attach it manually — browsers don't allow auto-attaching images to a chat. Once you've actually sent it, click "Mark as Sent" so the dashboard reflects it.</div>
+      <div id="wa-qr-person-list"></div>
+      <div class="edit-guest-actions">
+        <button class="edit-guest-cancel" onclick="closeWhatsAppQrModal()">Close</button>
       </div>
     </div>
   </div>
@@ -3032,7 +3064,7 @@ async function loadDashboardData() {
   const renderSteps = [
     ['Overview', renderOverviewTab], ['Guest List', renderGuestListTab],
     ['Approvals', renderApprovalsTab], ['Check-In', renderCheckInTab],
-    ['Overdue', renderOverdueTab], ['VIP', renderVipTab], ['Tables', renderTablesTab],
+    ['Overdue', renderOverdueTab], ['VIP', renderVipTab], ['QR Generator', renderQrGeneratorTab], ['Tables', renderTablesTab],
   ];
   const failures = [];
   renderSteps.forEach(function(step) {
@@ -3055,13 +3087,14 @@ async function loadDashboardData() {
 function switchDashTab(tab, btn) {
   document.querySelectorAll('.dash-tab').forEach(t => t.classList.remove('active'));
   btn.classList.add('active');
-  ['overview','guestlist','approvals','checkin','overdue','vip','followup','tables','activitylog','postevent'].forEach(t => {
+  ['overview','guestlist','approvals','checkin','overdue','vip','qrgen','followup','tables','activitylog','postevent'].forEach(t => {
     const el = document.getElementById('dash-tab-content-' + t);
     if(el) el.style.display = (t === tab) ? 'block' : 'none';
   });
   if (tab === 'followup') renderFollowUpTab();
   if (tab === 'overdue') renderOverdueTab();
   if (tab === 'vip') renderVipTab();
+  if (tab === 'qrgen') renderQrGeneratorTab();
   if (tab === 'approvals') renderApprovalsTab();
   if (tab === 'tables') renderTablesTab();
   if (tab === 'activitylog') loadActivityLog();
@@ -3485,6 +3518,67 @@ function renderVipTab() {
       <div class="dash-table-wrap">
         <table class="dash-table">
           <thead><tr><th>Guest Name</th><th>Table</th><th>Main Course</th><th>Check-In</th><th>Ticket Status</th><th></th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+let _qrGenShowAll = false;
+
+function toggleQrGenFilter(showAll) {
+  _qrGenShowAll = showAll;
+  renderQrGeneratorTab();
+}
+
+function renderQrGeneratorTab() {
+  const el = document.getElementById('dash-tab-content-qrgen');
+  const guests = _dashGuestsCache;
+  const noEmailGuests = guests.filter(g => !g.email || !g.email.trim());
+  const countEl = document.getElementById('qrgen-tab-count');
+  if (countEl) countEl.textContent = noEmailGuests.length;
+
+  const shown = _qrGenShowAll ? guests : noEmailGuests;
+
+  const filterBar = `
+    <div class="dash-panel" style="margin-bottom:16px;">
+      <p style="margin:0 0 4px;font-size:14px;color:var(--navy);font-weight:600;">📱 Generate a ticket QR to send by hand via WhatsApp</p>
+      <p style="margin:0;font-size:12.5px;color:var(--gray-mid);line-height:1.6;">For guests who left the email field blank, use this to generate a branded ticket image with their unique check-in QR code — download it and send it through the guest's WhatsApp number. Scanning it checks them in exactly like an emailed ticket.</p>
+      <div style="margin-top:14px;display:flex;gap:8px;">
+        <button class="dash-btn-small ${!_qrGenShowAll ? 'dash-btn-small-active' : ''}" onclick="toggleQrGenFilter(false)">No Email Only (${noEmailGuests.length})</button>
+        <button class="dash-btn-small ${_qrGenShowAll ? 'dash-btn-small-active' : ''}" onclick="toggleQrGenFilter(true)">All Guests (${guests.length})</button>
+      </div>
+    </div>`;
+
+  if (!shown.length) {
+    el.innerHTML = filterBar + `<div class="dash-panel"><div class="dash-empty">${_qrGenShowAll ? 'No RSVPs yet.' : '🎉 Every guest has an email on file — nobody needs a WhatsApp ticket right now.'}</div></div>`;
+    return;
+  }
+
+  const rows = shown.slice().reverse().map(g => {
+    const fullName = `${g.fname||''} ${g.lname||''}`.trim() || 'Guest';
+    const hasEmail = !!(g.email && g.email.trim());
+    const additional = parseAdditionalGuestsDetail(g);
+    const partySize = 1 + additional.length;
+    const readyLabel = g.approved
+      ? '<span style="color:#2d9e5f;font-weight:600;font-size:12px;">✓ Ticket Issued</span>'
+      : '<span style="color:var(--gray-mid);font-size:12px;">Not yet issued</span>';
+    return `
+    <tr>
+      <td style="font-weight:600;color:var(--navy);">${fullName}${partySize>1?` <span class="dash-party-pill">👥 ${partySize}</span>`:''}</td>
+      <td>${g.phone ? `<a href="tel:${g.phone}" style="color:var(--navy);text-decoration:none;">${g.phone}</a>` : '—'}</td>
+      <td>${hasEmail ? `<span style="color:#2d9e5f;">✓ ${g.email}</span>` : '<span style="color:#c0392b;font-weight:600;">No email on file</span>'}</td>
+      <td>${readyLabel}</td>
+      <td><button class="dash-btn-gold" style="padding:8px 14px;font-size:12.5px;" onclick="openWhatsAppQrModal('${g.ts}')">Generate QR</button></td>
+    </tr>`;
+  }).join('');
+
+  el.innerHTML = filterBar + `
+    <div class="dash-panel">
+      <div class="dash-panel-title">📱 WhatsApp QR Tickets <span>${shown.length}</span></div>
+      <div class="dash-table-wrap">
+        <table class="dash-table">
+          <thead><tr><th>Guest Name</th><th>Phone</th><th>Email</th><th>Status</th><th></th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
       </div>
@@ -3930,6 +4024,7 @@ const MODAL_CLOSE_FNS = {
   'add-guest-backdrop': closeAddGuestModal,
   'followup-modal-backdrop': closeFollowUpModal,
   'approve-modal-backdrop': closeApproveModal,
+  'wa-qr-modal-backdrop': closeWhatsAppQrModal,
   'qr-scanner-backdrop': closeQRScanner,
   'guest-detail-backdrop': closeGuestDetailModal,
   'danger-confirm-backdrop': closeDangerConfirm,
@@ -4498,6 +4593,239 @@ function blobToBase64(blob) {
     reader.onload = () => resolve(reader.result.split(',')[1]);
     reader.onerror = reject;
     reader.readAsDataURL(blob);
+  });
+}
+
+/* ── WhatsApp QR ticket generator (for guests with no email on file) ──
+   Builds the same check-in QR payload used by the email-approval
+   flow, but renders it as a standalone branded ticket image (canvas)
+   that staff can download and send by hand through WhatsApp, since
+   browsers won't let a page auto-attach an image to a chat. */
+function openWhatsAppQrModal(ts) {
+  const guest = _dashGuestsCache.find(g => g.ts === ts);
+  if (!guest) return;
+  const fullName = `${guest.fname||''} ${guest.lname||''}`.trim() || 'Guest';
+  document.getElementById('wa-qr-modal-ts').value = ts;
+  document.getElementById('wa-qr-modal-recipient').textContent =
+    'To: ' + fullName + (guest.phone ? ' (' + guest.phone + ')' : ' — no phone on file');
+
+  const additional = parseAdditionalGuestsDetail(guest);
+  const people = [{ idx: 0, name: fullName }].concat(
+    additional.map(function(g, i) { return { idx: i + 1, name: g.name }; })
+  );
+
+  const listEl = document.getElementById('wa-qr-person-list');
+  listEl.innerHTML = '';
+  people.forEach(function(person) {
+    const safeName = person.name.replace(/'/g, "\\'");
+    const card = document.createElement('div');
+    card.className = 'wa-qr-person-card';
+    card.innerHTML =
+      '<div class="wa-qr-person-header">' +
+        '<strong>' + person.name + '</strong>' +
+        '<span class="wa-qr-person-status" id="wa-qr-status-' + person.idx + '">' + (guest.approved ? '✓ Ticket Issued' : 'Not yet issued') + '</span>' +
+      '</div>' +
+      '<canvas id="wa-qr-canvas-' + person.idx + '" width="600" height="1060" style="display:none;"></canvas>' +
+      '<img id="wa-qr-preview-' + person.idx + '" class="wa-qr-preview-img" alt="Ticket preview for ' + person.name + '">' +
+      '<div class="wa-qr-person-actions">' +
+        '<button class="dash-btn-gold" onclick="downloadWhatsAppTicket(\'' + person.idx + '\',\'' + safeName + '\')">⬇ Download Image</button>' +
+        '<button class="dash-btn-small" onclick="openWhatsAppChatForTicket(\'' + (guest.phone||'') + '\',\'' + safeName + '\')">💬 Open WhatsApp Chat</button>' +
+        '<button class="dash-btn-small" onclick="markQrSentManually(\'' + ts + '\',\'' + safeName + '\')">✓ Mark as Sent</button>' +
+      '</div>';
+    listEl.appendChild(card);
+    generateWhatsAppTicketImage(ts, person.idx, person.name, guest.table_number);
+  });
+
+  document.getElementById('wa-qr-modal-backdrop').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeWhatsAppQrModal() {
+  document.getElementById('wa-qr-modal-backdrop').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function roundRectPath(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function generateWhatsAppTicketImage(ts, idx, personName, tableNumber) {
+  ensureQRGenLibLoaded(function() {
+    try {
+      const canvas = document.getElementById('wa-qr-canvas-' + idx);
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const W = canvas.width, H = canvas.height;
+      const headerH = 260;
+
+      ctx.fillStyle = '#faf7f0';
+      ctx.fillRect(0, 0, W, H);
+
+      const headerGrad = ctx.createLinearGradient(0, 0, 0, headerH);
+      headerGrad.addColorStop(0, '#0a1810');
+      headerGrad.addColorStop(1, '#1a4a2a');
+      ctx.fillStyle = headerGrad;
+      ctx.fillRect(0, 0, W, headerH);
+
+      const goldGrad = ctx.createLinearGradient(0, 0, W, 0);
+      goldGrad.addColorStop(0, '#c9a84c');
+      goldGrad.addColorStop(0.5, '#e8c96e');
+      goldGrad.addColorStop(1, '#c9a84c');
+      ctx.fillStyle = goldGrad;
+      ctx.fillRect(0, headerH, W, 5);
+
+      const logoImg = new Image();
+      logoImg.onload = function() {
+        const logoSize = 90;
+        ctx.drawImage(logoImg, W / 2 - logoSize / 2, 26, logoSize, logoSize);
+
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#c9a84c';
+        ctx.font = '600 13px "DM Sans", Arial, sans-serif';
+        ctx.fillText('PANYATHIP BRITISH INTERNATIONAL SCHOOL', W / 2, 142);
+
+        ctx.fillStyle = '#e8c96e';
+        ctx.font = 'bold 32px Georgia, "Times New Roman", serif';
+        ctx.fillText('PBIS Legacy Night', W / 2, 182);
+
+        ctx.fillStyle = 'rgba(255,255,255,0.7)';
+        ctx.font = 'italic 14px Georgia, serif';
+        ctx.fillText('Celebrating 25 Years of Commitment to Excellence', W / 2, 210);
+
+        ctx.fillStyle = 'rgba(232,201,110,0.15)';
+        roundRectPath(ctx, W / 2 - 100, 224, 200, 26, 13);
+        ctx.fill();
+        ctx.fillStyle = '#e8c96e';
+        ctx.font = '700 11px "DM Sans", Arial, sans-serif';
+        ctx.fillText('🎫 YOUR TICKET IS READY', W / 2, 241);
+
+        const cardX = 36, cardY = headerH + 30, cardW = W - 72, cardH = 620;
+        ctx.fillStyle = '#0d3320';
+        roundRectPath(ctx, cardX, cardY, cardW, cardH, 18);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        roundRectPath(ctx, cardX + 3, cardY + 3, cardW - 6, cardH - 6, 16);
+        ctx.fill();
+
+        ctx.fillStyle = '#c9a84c';
+        ctx.font = '700 13px "DM Sans", Arial, sans-serif';
+        const firstName = (personName.split(' ')[0] || personName);
+        ctx.fillText(firstName + '\u2019s Entry Pass', W / 2, cardY + 38);
+
+        const payload = 'https://legacynight.pbis.edu.la/?ticket=1&ts=' + encodeURIComponent(ts) + '&idx=' + idx;
+        const qr = qrcode(0, 'M');
+        qr.addData(payload);
+        qr.make();
+        const moduleCount = qr.getModuleCount();
+        const qrSize = 380;
+        const qrX = W / 2 - qrSize / 2, qrY = cardY + 60;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(qrX, qrY, qrSize, qrSize);
+        const cellSize = qrSize / moduleCount;
+        ctx.fillStyle = '#0a2818';
+        for (let row = 0; row < moduleCount; row++) {
+          for (let col = 0; col < moduleCount; col++) {
+            if (qr.isDark(row, col)) {
+              ctx.fillRect(qrX + col * cellSize, qrY + row * cellSize, Math.ceil(cellSize), Math.ceil(cellSize));
+            }
+          }
+        }
+
+        ctx.fillStyle = '#0a2818';
+        ctx.font = '700 16px "DM Sans", Arial, sans-serif';
+        ctx.fillText('Present this QR code at the entrance', W / 2, qrY + qrSize + 34);
+        ctx.fillStyle = '#9a9080';
+        ctx.font = '13px "DM Sans", Arial, sans-serif';
+        ctx.fillText('Keep this image and show it at the door', W / 2, qrY + qrSize + 55);
+
+        let afterCardY = qrY + qrSize + 55;
+        if (tableNumber) {
+          ctx.fillStyle = '#c9a84c';
+          roundRectPath(ctx, W / 2 - 110, afterCardY + 18, 220, 42, 21);
+          ctx.fill();
+          ctx.fillStyle = '#0a2818';
+          ctx.font = '700 15px "DM Sans", Arial, sans-serif';
+          ctx.fillText('🪑 Your Seat: Table ' + tableNumber, W / 2, afterCardY + 45);
+        }
+
+        ctx.textAlign = 'left';
+        let detailY = cardY + cardH + 46;
+        [
+          ['Date', 'Friday, 25 September 2026'],
+          ['Time', '4:30 PM'],
+          ['Venue', 'Holiday Inn & Suites Vientiane'],
+        ].forEach(function(row) {
+          ctx.fillStyle = '#9a9080';
+          ctx.font = '700 10px "DM Sans", Arial, sans-serif';
+          ctx.fillText(row[0].toUpperCase(), cardX, detailY);
+          ctx.fillStyle = '#0a2818';
+          ctx.font = '700 16px "DM Sans", Arial, sans-serif';
+          ctx.fillText(row[1], cardX, detailY + 22);
+          detailY += 52;
+        });
+
+        const previewImg = document.getElementById('wa-qr-preview-' + idx);
+        if (previewImg) {
+          previewImg.src = canvas.toDataURL('image/png');
+          previewImg.style.display = 'block';
+        }
+      };
+      logoImg.onerror = function() {
+        showDashToast('⚠️ Could not load the school logo for the ticket image.');
+      };
+      logoImg.src = LOGO;
+    } catch (e) {
+      showDashToast('⚠️ Could not generate the ticket image for ' + personName + '.');
+    }
+  });
+}
+
+function downloadWhatsAppTicket(idx, personName) {
+  const canvas = document.getElementById('wa-qr-canvas-' + idx);
+  if (!canvas) return;
+  const link = document.createElement('a');
+  link.download = 'Legacy-Night-Ticket-' + personName.replace(/[^a-z0-9]/gi, '-') + '.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
+function openWhatsAppChatForTicket(phone, personName) {
+  if (!phone) { showDashToast('⚠️ No phone number on file for this guest.'); return; }
+  const digits = phone.replace(/[^0-9]/g, '');
+  const firstName = personName.split(' ')[0] || '';
+  const msg = encodeURIComponent(
+    'Hi ' + firstName + '! Here is your PBIS Legacy Night ticket with your entry QR code. ' +
+    'Please keep this image and show it at the door on the night. See you there!'
+  );
+  window.open('https://wa.me/' + digits + '?text=' + msg, '_blank');
+}
+
+// Marks the ticket as issued once staff have actually sent it —
+// reuses the same Approved/Approved At fields the email flow sets,
+// just without requiring (or sending) an email.
+function markQrSentManually(ts, personName) {
+  postToSheets({
+    action: 'approveGuestNoEmail', ts: ts, person_name: personName,
+    admin_key: ADMIN_ACTION_KEY, staff_name: _currentUser ? _currentUser.name : ''
+  }).then(function(result) {
+    if (result.status === 'error') {
+      showDashToast('⚠️ ' + (result.message || 'Could not mark as sent.'));
+      return;
+    }
+    const guest = _dashGuestsCache.find(g => g.ts === ts);
+    if (guest) { guest.approved = true; guest.approved_at = new Date().toISOString(); }
+    showDashToast('✓ Marked as sent for ' + personName);
+    renderQrGeneratorTab();
+    renderApprovalsTab();
+    renderGuestListTab();
+    renderOverviewTab();
+    closeWhatsAppQrModal();
   });
 }
 
