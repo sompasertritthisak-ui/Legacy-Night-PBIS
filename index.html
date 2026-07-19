@@ -1636,11 +1636,11 @@ body.role-usher .dash-row-action-delete{opacity:0.3;pointer-events:none;filter:g
 <script>
 const SHEETS_URL = "https://script.google.com/macros/s/AKfycbygyYMuWAU1U9uyDNsYBxJTmX4nT0QHzjXHz68VcS4RKvKdHmGQe106QLi2PD6SQ8wc4Q/exec";
 
-// Must match ADMIN_ACTION_KEY in code-legacy-night.gs exactly. Required
-// by the backend for admin-only actions (reading the guest list,
-// marking check-ins) — see the security note in that file for why
-// this is a meaningful (but not absolute) protection.
-const ADMIN_ACTION_KEY = '2UY57hi5GRdPDtjjpqa6FrDDtZsEkCbGJ1VxwVWzWjc';
+// Populated after a real login (see submitLogin) with a random,
+// server-issued session token — the backend looks this up to know
+// who's actually asking, rather than trusting anything sent from
+// here. There's no static secret baked into this file anymore.
+let _sessionToken = null;
 // Single source of truth for the event date/time — used by both the public
 // countdown timer and the admin dashboard's "Days Until Legacy Night" stat.
 // Change it here once and both stay in sync.
@@ -2403,6 +2403,29 @@ const MAX_RSVP_SUBMITS = 3;
 // success just because no error happened to be visible. Retries
 // automatically up to twice with a short pause before giving up, in
 // case of a brief connectivity blip (e.g. a crowded venue WiFi).
+// Login needs the server's actual response (the session token, name,
+// role) — unlike postToSheets below, which fires requests in
+// "no-cors" mode and can never read anything back (the browser makes
+// that response opaque on purpose; it isn't a bug, just the wrong
+// tool for this one job). This makes a normal, readable request
+// instead, only for the login step.
+function loginRequest(data) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(function() { controller.abort(); }, 12000);
+  return fetch(SHEETS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(data),
+    signal: controller.signal
+  }).then(function(res) {
+    clearTimeout(timeoutId);
+    return res.json();
+  }).catch(function(err) {
+    clearTimeout(timeoutId);
+    return { status: 'error', message: (err && err.message) || 'Could not reach the server.' };
+  });
+}
+
 function postToSheets(data, _attempt) {
   const attempt = _attempt || 0;
   return new Promise(function(resolve) {
@@ -2630,56 +2653,21 @@ function finishRsvpSuccess() {
 }
 
 /* ════════════════════════════════════════════════════════════════
-   ADMIN DASHBOARD — reuses the exact same staff directory, password
-   hashes, and login modal behavior as the Open Day dashboard, so
-   every admissions/marketing staff member logs in with the same
-   password they already use there. No new accounts to manage.
+   ADMIN DASHBOARD — login now calls the backend's real login action
+   (see submitLogin below) instead of checking passwords against a
+   hash list stored in this file. Staff names, roles, and password
+   hashes used to live right here, visible to anyone who viewed page
+   source — they now live only in the Apps Script backend, which the
+   browser has no way to read.
 ════════════════════════════════════════════════════════════════ */
-// PASSWORD_SALT is mixed into every password before hashing (see
-// sha256Salted below). This is a genuine improvement over the old
-// unsalted hashes copied from Open Day: those were hashed once with
-// no salt, and I never had access to the original plaintext passwords
-// behind them, so they couldn't be safely upgraded. These 17 are
-// brand-new passwords generated specifically for Legacy Night, so
-// they're salted from the start. Give each person their password from
-// the list you were given — changing PASSWORD_SALT or any hash below
-// without also updating the corresponding password will lock that
-// person out.
-const PASSWORD_SALT = '965448f37605e816fe6ab00e78aa1b06';
-
-const STAFF_DIRECTORY = [
-  // ── ADMISSIONS TEAM (full access) ──
-  { name:'Potter', role:'admissions', team:'Admissions', hash:'8c67a82caf0637e72c7aa6234e6d980b416adb4310e6b58031d8228da881ecad' },
-  { name:'Katty',  role:'admissions', team:'Admissions', hash:'843aa4b896188931559324897984c32651e8c96cd0f552433f9d78ef9267be0c' },
-  { name:'Rosa',   role:'admissions', team:'Admissions', hash:'33c888f94ae8b1a5b23d648c69c8e9ce3f24f16493783be292d1bfaf53010442' },
-  { name:'Anny',   role:'admissions', team:'Admissions', hash:'2acfc8c6dd799ac430d5d7049bbde8c5df70e74966d074312fe502074f3cca49' },
-  { name:'Vieng',  role:'admissions', team:'Admissions', hash:'109e5732c0b5c5dc30b405b9ea5b8b2b3d28b609c416e9426fc18af78c401d8c' },
-  { name:'Sarah',  role:'admissions', team:'Admissions', hash:'5f1acd4396fd382efa557f027e35566ad0b6f1f167f587623acfa53ecb1b838b' },
-  { name:'Nanfa',  role:'admissions', team:'Admissions', hash:'d2835648c295d2048accacb7ddcf77698221aace42a733a31e1b3c523dcee3cc' },
-  { name:'Ana',    role:'admissions', team:'Admissions', hash:'5cc108c8162c0ac6816ce7dab604331e66c745f0a3a6bcd7933ec33439fd257b' },
-  { name:'Anny (Phonethida)', role:'admissions', team:'Admissions', hash:'4d1934e7839c4ecf06938893b9049f3e53c34dacb1584e09717c92a4cc8ddd15' },
-  // ── MARKETING TEAM (view-only access) ──
-  { name:'Top',    role:'admissions',  team:'Marketing', hash:'b335d5536de6135d9b112aaa5a0982c92bdc99f35fda0e8b94e406fd50a68e32' },
-  { name:'Yos',    role:'marketing',  team:'Marketing', hash:'d2f5849a09b337214c7dcd8937e3c64108c1b04bf495fbfd69f591062497df63' },
-  { name:'Kop',    role:'admissions',  team:'Marketing', hash:'07c2b43d649dcd94753556db670ef7f0165052d5b167ba1bf6da97d6d64d4db1' },
-  { name:'Tobee',  role:'marketing',  team:'Marketing', hash:'9b69d91144cbad9b81742f23e50b3635d115603cf39e3660fa9a805fbe89d7a9' },
-  { name:'Simon',  role:'marketing',  team:'Marketing', hash:'1c431527c804ce55aa86f38f66f513d92ceebc729322aff463e410701bc9234a' },
-  // ── EVENTS TEAM (same full access as Admissions) ──
-  { name:'Mina',    role:'admissions', team:'Events Team', hash:'5dd5f91fc3b7af02bf542cf420671864dcbc62f545054ceedc75fb3e739a0be8' },
-  { name:'Richard', role:'admissions', team:'Events Team', hash:'04b6fdf85e226e12a0b2522b83411c0a35c0973529683677c4fd0be4e86bcd1e' },
-  // ── SECRETARY (same full access as Admissions — focus on VVIP guests) ──
-  { name:'Da', role:'admissions', team:'Secretary', hash:'a270ca5a8da214fba6dda75413a7a00d026919e20501d41fb92fd43f901523d4' },
-  // ── USHERS (same access as Events Team, but cannot delete guests) ──
-  // Placeholder names — rename to your actual ushers and re-generate
-  // passwords/hashes the same way (see project notes for the script).
-  { name:'Usher1', role:'usher', team:'Ushers', hash:'b03eee80e2d07eb14ee8e353758229afa4f34b46824cf7bbdbb7302fb008ab7a' },
-  { name:'Usher2', role:'usher', team:'Ushers', hash:'034588476d9c2e21fa8f593aa8e4a5b73d1491c4ec14da8bb5ff37f53a00680a' },
-];
 let _currentUser = null;
 
 // Only these staff members can VIP-star a guest or edit guest
 // details — everyone else can still view, check in, approve, etc.,
-// but these two actions are restricted regardless of role/team.
+// but these two actions are restricted regardless of role/team. This
+// list is for showing/hiding those buttons in the UI only — the
+// backend enforces the same restriction independently on its own, so
+// tampering with this client-side copy doesn't grant real access.
 const VIP_EDIT_ALLOWLIST = ['Da', 'Richard', 'Kop', 'Nanfa', 'Ana', 'Top'];
 
 function canEditOrVip() {
@@ -2706,13 +2694,6 @@ function getLockoutState() {
 }
 function setLockoutState(state) {
   try { localStorage.setItem('legacy_lockout', JSON.stringify(state)); } catch(e) {}
-}
-
-async function sha256(message) {
-  const msgBuffer = new TextEncoder().encode(message);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2,'0')).join('');
 }
 
 function openLoginModal() {
@@ -2771,22 +2752,28 @@ async function submitLogin() {
   btn.disabled = true;
   btn.textContent = 'Verifying…';
 
-  const entered_hash = await sha256(PASSWORD_SALT + pwd);
+  let result;
+  try {
+    result = await loginRequest({ action: 'login', password: pwd });
+  } catch (e) {
+    result = { status: 'error', message: 'Could not reach the server.' };
+  }
+
   btn.disabled = false;
   btn.textContent = '🔐 Access Dashboard';
 
-  const matched = STAFF_DIRECTORY.find(s => s.hash === entered_hash);
-
-  if(matched) {
-    _currentUser = { name: matched.name, role: matched.role, team: matched.team || (matched.role === 'marketing' ? 'Marketing' : 'Admissions') };
+  if(result.status === 'ok') {
+    _currentUser = { name: result.name, role: result.role, team: result.team };
+    _sessionToken = result.token;
     _loginAttempts = 0;
     setLockoutState({ strikes: 0, until: 0 }); // successful login clears lockout escalation
     _sessionExpiry = Date.now() + (SESSION_MINS * 60 * 1000);
-    try { sessionStorage.setItem('legacy_session', JSON.stringify({exp:_sessionExpiry,name:_currentUser.name,role:_currentUser.role,team:_currentUser.team})); } catch(e){}
+    try { sessionStorage.setItem('legacy_session', JSON.stringify({exp:_sessionExpiry,token:_sessionToken,name:_currentUser.name,role:_currentUser.role,team:_currentUser.team})); } catch(e){}
     closeLoginModal();
     enterLegacyDashboard();
   } else {
     _currentUser = null;
+    _sessionToken = null;
     _loginAttempts++;
     inp.value = '';
     inp.classList.add('error');
@@ -2928,6 +2915,7 @@ function dashLogout() {
   document.body.classList.remove('dashboard-active');
   document.body.classList.remove('role-marketing');
   _currentUser = null;
+  _sessionToken = null;
   stopAutoSync();
   exitDoorsMode();
   try { sessionStorage.removeItem('legacy_session'); } catch(e){}
@@ -2973,7 +2961,7 @@ function showDashSkeletons() {
 
 async function fetchDashboardGuests() {
   try {
-    const url = SHEETS_URL + '?action=getLegacyGuests&key=' + encodeURIComponent(ADMIN_ACTION_KEY) + '&_=' + Date.now();
+    const url = SHEETS_URL + '?action=getLegacyGuests&token=' + encodeURIComponent(_sessionToken) + '&_=' + Date.now();
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000);
     const res = await fetch(url, { method: 'GET', signal: controller.signal });
@@ -2987,12 +2975,29 @@ async function fetchDashboardGuests() {
         hideDashSyncErrorBanner();
         return true;
       }
+      if(j.status === 'error' && j.message === 'Unauthorized') {
+        handleExpiredSession();
+        return false;
+      }
     }
   } catch(e) { console.warn('Fetch failed:', e); }
   const el = document.getElementById('dash-sync-status');
   if(el) el.textContent = '● Sync Error';
   showDashSyncErrorBanner();
   return false;
+}
+
+// If the session token the server issued has expired or been
+// invalidated, don't keep silently failing every 12 seconds — log
+// the dashboard out cleanly and prompt a fresh login, same as if
+// they'd clicked "Log Out" themselves.
+let _handledExpiredSession = false;
+function handleExpiredSession() {
+  if (_handledExpiredSession) return;
+  _handledExpiredSession = true;
+  dashLogout();
+  showDashToast('⏱ Your session expired — please log in again.');
+  setTimeout(() => { openLoginModal(); _handledExpiredSession = false; }, 400);
 }
 
 // A tiny "● Sync Error" label in the topbar is easy to miss — this
@@ -3685,7 +3690,7 @@ function markGuestCheckedIn(ts, checkedIn, idx, personName) {
   renderOverdueTab();
   renderTablesTab();
 
-  const payload = { action: 'markCheckedIn', ts: ts, checked_in: checkedIn, idx: idx, admin_key: ADMIN_ACTION_KEY, staff_name: _currentUser ? _currentUser.name : '' };
+  const payload = { action: 'markCheckedIn', ts: ts, checked_in: checkedIn, idx: idx, session_token: _sessionToken, staff_name: _currentUser ? _currentUser.name : '' };
   if (clearingNoShow) payload.clear_no_show = true;
 
   postToSheets(payload).then((result) => {
@@ -3800,7 +3805,7 @@ function markGuestNoShow(ts, noShow) {
   renderOverdueTab();
   renderOverviewTab();
 
-  postToSheets({ action: 'markNoShow', ts: ts, no_show: noShow, admin_key: ADMIN_ACTION_KEY, staff_name: _currentUser ? _currentUser.name : '' }).then((result) => {
+  postToSheets({ action: 'markNoShow', ts: ts, no_show: noShow, session_token: _sessionToken, staff_name: _currentUser ? _currentUser.name : '' }).then((result) => {
     if (result.status === 'error') {
       Object.assign(guest, prevState);
       renderOverdueTab(); renderOverviewTab();
@@ -3916,7 +3921,7 @@ function enterMonitorMode() {
 
 async function pollForRecentCheckIn() {
   try {
-    const url = SHEETS_URL + '?action=getRecentCheckIn&key=' + encodeURIComponent(ADMIN_ACTION_KEY) + '&_=' + Date.now();
+    const url = SHEETS_URL + '?action=getRecentCheckIn&token=' + encodeURIComponent(_sessionToken) + '&_=' + Date.now();
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 8000);
     const res = await fetch(url, { method: 'GET', signal: controller.signal });
@@ -4119,7 +4124,7 @@ function toggleGuestVip(ts) {
 
   postToSheets({
     action: 'updateLegacyGuest', ts: ts, vvip: guest.vvip,
-    admin_key: ADMIN_ACTION_KEY, staff_name: _currentUser ? _currentUser.name : ''
+    session_token: _sessionToken, staff_name: _currentUser ? _currentUser.name : ''
   }).then((result) => {
     if (result.status === 'error') {
       guest.vvip = prevVip;
@@ -4288,7 +4293,7 @@ function saveEditGuest() {
   renderTablesTab();
   renderVipTab();
 
-  postToSheets(Object.assign({ action: 'updateLegacyGuest', ts: ts, admin_key: ADMIN_ACTION_KEY, staff_name: _currentUser ? _currentUser.name : '' }, updated)).then((result) => {
+  postToSheets(Object.assign({ action: 'updateLegacyGuest', ts: ts, session_token: _sessionToken, staff_name: _currentUser ? _currentUser.name : '' }, updated)).then((result) => {
     if (result.status === 'error') {
       Object.assign(guest, prevState);
       renderGuestListTab(); renderOverviewTab(); renderApprovalsTab(); renderCheckInTab(); renderOverdueTab(); renderTablesTab(); renderVipTab();
@@ -4362,7 +4367,7 @@ function performDeleteGuest(ts) {
   renderOverdueTab();
   renderTablesTab();
 
-  postToSheets({ action: 'deleteLegacyGuest', ts: ts, admin_key: ADMIN_ACTION_KEY, staff_name: _currentUser ? _currentUser.name : '', staff_role: _currentUser ? _currentUser.role : '' }).then((result) => {
+  postToSheets({ action: 'deleteLegacyGuest', ts: ts, session_token: _sessionToken, staff_name: _currentUser ? _currentUser.name : '', staff_role: _currentUser ? _currentUser.role : '' }).then((result) => {
     if (result.status === 'error') {
       _dashGuestsCache.splice(Math.min(guestIndex, _dashGuestsCache.length), 0, guestSnapshot);
       renderGuestListTab(); renderOverviewTab(); renderApprovalsTab(); renderCheckInTab(); renderOverdueTab(); renderTablesTab();
@@ -4801,7 +4806,7 @@ function openWhatsAppChatForTicket(phone, personName) {
 function markQrSentManually(ts, personName) {
   postToSheets({
     action: 'approveGuestNoEmail', ts: ts, person_name: personName,
-    admin_key: ADMIN_ACTION_KEY, staff_name: _currentUser ? _currentUser.name : ''
+    session_token: _sessionToken, staff_name: _currentUser ? _currentUser.name : ''
   }).then(function(result) {
     if (result.status === 'error') {
       showDashToast('⚠️ ' + (result.message || 'Could not mark as sent.'));
@@ -5194,7 +5199,7 @@ async function submitApproveGuest() {
       message: message,
       recipients: recipients,
       extra_files: extraFiles,
-      admin_key: ADMIN_ACTION_KEY,
+      session_token: _sessionToken,
       staff_name: _currentUser ? _currentUser.name : ''
     };
     const result = await postToSheets(payload);
@@ -5232,7 +5237,7 @@ function undoApproval(ts) {
   renderApprovalsTab();
   renderOverviewTab();
 
-  postToSheets({ action: 'approveGuest', ts: ts, approve: false, admin_key: ADMIN_ACTION_KEY, staff_name: _currentUser ? _currentUser.name : '' }).then((result) => {
+  postToSheets({ action: 'approveGuest', ts: ts, approve: false, session_token: _sessionToken, staff_name: _currentUser ? _currentUser.name : '' }).then((result) => {
     if (result.status === 'error') {
       Object.assign(guest, prevState);
       renderApprovalsTab(); renderOverviewTab();
@@ -5357,7 +5362,7 @@ function assignGuestTable(ts, tableNumber) {
   renderTablesTab();
   renderOverviewTab();
 
-  postToSheets({ action: 'assignTable', ts: ts, table_number: guest.table_number, admin_key: ADMIN_ACTION_KEY, staff_name: _currentUser ? _currentUser.name : '' }).then((result) => {
+  postToSheets({ action: 'assignTable', ts: ts, table_number: guest.table_number, session_token: _sessionToken, staff_name: _currentUser ? _currentUser.name : '' }).then((result) => {
     if (result.status === 'error') {
       guest.table_number = prevTable;
       renderTablesTab(); renderOverviewTab();
@@ -5375,7 +5380,7 @@ function unassignGuestTable(ts) {
   guest.table_number = '';
   renderTablesTab();
 
-  postToSheets({ action: 'assignTable', ts: ts, table_number: '', admin_key: ADMIN_ACTION_KEY, staff_name: _currentUser ? _currentUser.name : '' }).then((result) => {
+  postToSheets({ action: 'assignTable', ts: ts, table_number: '', session_token: _sessionToken, staff_name: _currentUser ? _currentUser.name : '' }).then((result) => {
     if (result.status === 'error') {
       guest.table_number = prevTable;
       renderTablesTab();
@@ -5411,7 +5416,7 @@ async function loadActivityLog() {
   el.innerHTML = `<div class="dash-panel"><div class="skeleton-line skeleton-line-md" style="margin-bottom:18px;"></div>${Array(6).fill('<div class="skeleton-row"></div>').join('')}</div>`;
 
   try {
-    const url = SHEETS_URL + '?action=getActivityLog&key=' + encodeURIComponent(ADMIN_ACTION_KEY) + '&_=' + Date.now();
+    const url = SHEETS_URL + '?action=getActivityLog&token=' + encodeURIComponent(_sessionToken) + '&_=' + Date.now();
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000);
     const res = await fetch(url, { method: 'GET', signal: controller.signal });
@@ -5545,7 +5550,7 @@ async function sendPostEventEmail(subject, message, audience, recipientCount) {
     subject: subject,
     message: message,
     audience: audience,
-    admin_key: ADMIN_ACTION_KEY,
+    session_token: _sessionToken,
     staff_name: _currentUser ? _currentUser.name : ''
   });
 
@@ -5714,7 +5719,7 @@ async function sendIndividualFollowUpEmail() {
       ts: ts,
       message: message,
       files: files,
-      admin_key: ADMIN_ACTION_KEY,
+      session_token: _sessionToken,
       staff_name: _currentUser ? _currentUser.name : ''
     };
     const result = await postToSheets(payload);
