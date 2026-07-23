@@ -613,6 +613,8 @@ body.dashboard-active #dashboard-view{display:block !important;}
 .qr-scanner-result{min-height:64px;display:flex;align-items:center;justify-content:center;text-align:center;}
 .qr-scanner-status{font-size:13px;color:var(--gray-mid);}
 .qr-scanner-success{background:rgba(45,158,95,0.1);border:1.5px solid #2d9e5f;border-radius:10px;padding:14px;width:100%;color:#1a7a45;font-weight:700;font-size:14px;}
+.qr-scanner-result-seat{display:block;margin-top:6px;font-size:20px;font-weight:800;letter-spacing:0.02em;}
+.qr-scanner-result-noseat{display:block;margin-top:6px;font-size:12px;font-weight:600;opacity:0.75;}
 .qr-scanner-error{background:rgba(192,80,77,0.1);border:1.5px solid #c0504d;border-radius:10px;padding:14px;width:100%;color:#a03c3a;font-weight:600;font-size:13.5px;}
 .qr-scanner-warn{background:rgba(232,201,110,0.15);border:1.5px solid var(--gold);border-radius:10px;padding:14px;width:100%;color:#8a6a26;font-weight:600;font-size:13.5px;}
 .activity-list{display:flex;flex-direction:column;gap:2px;}
@@ -4885,10 +4887,13 @@ function parseTicketQRPayload(data) {
   return null;
 }
 
+let _qrScanResultToken = 0;
+
 function handleQRScanResult(data) {
   const parsed = parseTicketQRPayload(data);
   const resultEl = document.getElementById('qr-scanner-result');
   if (!resultEl) return;
+  const myToken = ++_qrScanResultToken;
 
   if (!parsed) {
     resultEl.innerHTML = '<div class="qr-scanner-error">⚠️ This QR code isn\'t a recognized Legacy Night ticket.</div>';
@@ -4904,14 +4909,17 @@ function handleQRScanResult(data) {
       const personName = resolvePersonName(guest, idx);
       const checkins = parseIndividualCheckins(guest);
       const alreadyIn = !!(checkins[idx] && checkins[idx].checked_in);
+      const seatHtml = guest.table_number
+        ? `<span class="qr-scanner-result-seat">🪑 Table ${guest.table_number}${guest.seat_number ? ' · Seat ' + guest.seat_number : ''}</span>`
+        : `<span class="qr-scanner-result-noseat">No table assigned yet</span>`;
 
       if (alreadyIn) {
         const atIso = checkins[idx].checked_in_at;
         const atTime = atIso ? new Date(atIso).toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'}) : '';
-        resultEl.innerHTML = `<div class="qr-scanner-warn">ℹ️ ${personName} is already checked in${atTime ? ' (' + atTime + ')' : ''}.</div>`;
+        resultEl.innerHTML = `<div class="qr-scanner-warn">ℹ️ ${personName} is already checked in${atTime ? ' (' + atTime + ')' : ''}.${seatHtml}</div>`;
         playScanFeedback('warning');
       } else {
-        resultEl.innerHTML = `<div class="qr-scanner-success">✓ ${personName} checked in!</div>`;
+        resultEl.innerHTML = `<div class="qr-scanner-success">✓ ${personName} checked in!${seatHtml}</div>`;
         playScanFeedback('success');
         markGuestCheckedIn(ts, true, idx, personName);
         updateDoorsCounter();
@@ -4919,14 +4927,22 @@ function handleQRScanResult(data) {
     }
   }
 
+  // Scanning itself only pauses briefly (so the same QR still in
+  // frame isn't scanned twice) — the door can keep moving through a
+  // queue of guests without waiting. The result MESSAGE, separately,
+  // stays on screen for a full 5 seconds so whoever's at the door has
+  // time to actually read the table/seat number, but a genuinely new
+  // scan in that window replaces it immediately rather than waiting.
   _qrScannerCooldown = true;
+  setTimeout(function() { _qrScannerCooldown = false; }, 1500);
+
   setTimeout(function() {
-    _qrScannerCooldown = false;
+    if (myToken !== _qrScanResultToken) return; // a newer scan already replaced this
     const stillOpen = document.getElementById('qr-scanner-backdrop').classList.contains('open');
     if (stillOpen && resultEl) {
       resultEl.innerHTML = '<p class="qr-scanner-status">Point the camera at the next guest\'s QR code…</p>';
     }
-  }, 2200);
+  }, 5000);
 }
 
 function closeQRScanner() {
