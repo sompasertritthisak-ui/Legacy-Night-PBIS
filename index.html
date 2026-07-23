@@ -285,8 +285,6 @@ footer a{color:var(--gold);text-decoration:none;}
 .rsvp-share-buttons{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;}
 .rsvp-share-btn{display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border-radius:100px;font-size:12.5px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;text-decoration:none;border:1.5px solid var(--gray);background:var(--white);color:var(--text);transition:background 0.2s ease,border-color 0.2s ease;}
 .rsvp-share-btn svg{width:15px;height:15px;flex-shrink:0;}
-.rsvp-share-whatsapp{border-color:#25D366;color:#1a7a45;}
-.rsvp-share-whatsapp:hover{background:rgba(37,211,102,0.08);}
 .rsvp-share-copy:hover{background:var(--cream);border-color:var(--gold);}
 .rsvp-share-copy.copied{background:rgba(45,158,95,0.1);border-color:#2d9e5f;color:#1a7a45;}
 @keyframes successFadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
@@ -640,8 +638,12 @@ body.dashboard-active #dashboard-view{display:block !important;}
 .table-card-fill{font-size:11.5px;color:var(--gray-mid);font-weight:600;}
 .table-card-bar{height:5px;background:var(--gray);border-radius:100px;overflow:hidden;margin-bottom:10px;}
 .table-card-bar-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-light));border-radius:100px;}
-.table-card-names{line-height:1.8;}
-.table-guest-chip{display:inline-flex;align-items:center;gap:5px;background:var(--cream);border:1px solid var(--gray);border-radius:100px;padding:3px 8px 3px 10px;font-size:11px;margin:2px 3px 2px 0;}
+.table-card-names{display:flex;flex-direction:column;}
+.table-guest-chip{display:flex;align-items:center;gap:6px;background:var(--cream);border:1px solid var(--gray);border-radius:8px;padding:5px 6px 5px 10px;font-size:11.5px;margin:3px 0;}
+.table-guest-chip-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--navy);font-weight:600;}
+.table-seat-input{width:56px;flex-shrink:0;border:1px solid var(--gray);border-radius:5px;padding:3px 6px;font-size:11px;font-family:'DM Sans',sans-serif;text-align:center;background:var(--white);color:var(--navy);}
+.table-seat-input:focus{outline:none;border-color:var(--gold);}
+.table-guest-chip button{flex-shrink:0;}
 .table-guest-chip button{background:none;border:none;color:#c0504d;cursor:pointer;font-size:11px;padding:0;line-height:1;}
 .table-assign-select{padding:7px 10px;border:1.5px solid var(--gray);border-radius:6px;font-size:12.5px;font-family:'DM Sans',sans-serif;background:var(--cream);}
 
@@ -1060,10 +1062,10 @@ body.role-usher .dash-row-action-delete{opacity:0.3;pointer-events:none;filter:g
             </div>
           </div>
           <div class="form-row">
-            <label>Organisation <span style="text-transform:none;">(if applicable)</span></label>
+            <label>Organisation *</label>
             <div class="form-input-wrap">
               <svg viewBox="0 0 24 24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="1"/><path d="M9 8h1M14 8h1M9 12h1M14 12h1M9 16h1M14 16h1"/></svg>
-              <input type="text" id="rsvp-organization" placeholder="e.g. company or institution name">
+              <input type="text" id="rsvp-organization" placeholder="e.g. company or institution name" required>
             </div>
           </div>
           <div class="form-row">
@@ -1117,10 +1119,6 @@ body.role-usher .dash-row-action-delete{opacity:0.3;pointer-events:none;filter:g
           <div class="rsvp-share">
             <p class="rsvp-share-label">Share that you're going</p>
             <div class="rsvp-share-buttons">
-              <a class="rsvp-share-btn rsvp-share-whatsapp" href="#" onclick="shareViaWhatsApp(event)">
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.148.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12.001 2C6.478 2 2 6.477 2 12c0 1.936.542 3.803 1.567 5.415L2 22l4.674-1.531A9.953 9.953 0 0 0 12.001 22C17.523 22 22 17.523 22 12S17.523 2 12.001 2zm0 18.152a8.13 8.13 0 0 1-4.144-1.13l-.297-.176-3.096.988.936-3.05-.194-.312a8.146 8.146 0 0 1-1.253-4.372c0-4.508 3.667-8.174 8.174-8.174 4.508 0 8.174 3.666 8.174 8.174 0 4.507-3.666 8.174-8.174 8.174z"/></svg>
-                WhatsApp
-              </a>
               <button type="button" class="rsvp-share-btn rsvp-share-copy" id="rsvp-share-copy-btn" onclick="copyShareLink(this)">
                 <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.07 0l2.83-2.83a5 5 0 0 0-7.07-7.07l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7.07 0L4.1 13.83a5 5 0 0 0 7.07 7.07l1.5-1.5"/></svg>
                 <span>Copy Link</span>
@@ -1978,15 +1976,6 @@ function updateAudioButtonUI(playing) {
   if (onIcon) onIcon.style.display = playing ? 'block' : 'none';
 }
 /* ── Post-RSVP share moment ── */
-function shareViaWhatsApp(e) {
-  e.preventDefault();
-  const fnameEl = document.getElementById('rsvp-fname');
-  const fname = fnameEl ? fnameEl.value.trim() : '';
-  const msg = (fname ? fname + ' here — ' : '') +
-    "I just confirmed my spot at PBIS Legacy Night, the 25th Anniversary Gala on 25 September 2026! 🎉 Join us: https://legacynight.pbis.edu.la/";
-  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
-}
-
 function copyShareLink(btn) {
   const url = 'https://legacynight.pbis.edu.la/';
   const restore = function() {
@@ -2137,6 +2126,7 @@ const RSVP_VALIDATORS = {
   'rsvp-lname': { test: v => v.trim().length >= 1, msg: 'Please enter your last name.' },
   'rsvp-email': { test: v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()), msg: 'Please enter a valid email address.', optional: true },
   'rsvp-phone': { test: v => v.trim().replace(/[^0-9]/g, '').length >= 6, msg: 'Please enter a valid phone number.' },
+  'rsvp-organization': { test: v => v.trim().length >= 1, msg: 'Please enter your organisation.' },
 };
 
 function validateRsvpField(id) {
@@ -5302,7 +5292,13 @@ function renderTablesTab() {
     const chips = guestsAtTable.map(function(g) {
       const fullName = `${g.fname||''} ${g.lname||''}`.trim() || 'Guest';
       const partyTag = g.guest_count > 1 ? ` (+${g.guest_count - 1})` : '';
-      return `<span class="table-guest-chip">${fullName}${partyTag}<button onclick="unassignGuestTable('${g.ts}')" title="Remove from table">✕</button></span>`;
+      const safeTs = g.ts.replace(/'/g, "\\'");
+      return `<span class="table-guest-chip">
+        <span class="table-guest-chip-name">${fullName}${partyTag}</span>
+        <input type="text" class="table-seat-input" placeholder="Seat #" value="${g.seat_number || ''}"
+          onchange="updateGuestSeat('${safeTs}', this.value)" title="Seat number(s) for this party">
+        <button onclick="unassignGuestTable('${g.ts}')" title="Remove from table">✕</button>
+      </span>`;
     }).join('');
     return `<div class="table-card ${isFull ? 'full' : ''}">
       <div class="table-card-header"><span class="table-card-num">Table ${num}</span><span class="table-card-fill">${seated}/${TABLE_CAPACITY}</span></div>
@@ -5347,7 +5343,7 @@ function renderTablesTab() {
     </div>
 
     <div class="dash-panel">
-      <div class="dash-panel-title">Seating Chart</div>
+      <div class="dash-panel-title">Seating Chart <span style="font-weight:400;font-size:11px;color:var(--gray-mid);text-transform:none;letter-spacing:0;">— click a seat number to set it</span></div>
       <div class="tables-grid">${tableCards}</div>
     </div>`;
 }
@@ -5373,16 +5369,40 @@ function assignGuestTable(ts, tableNumber) {
   });
 }
 
+// Sets the seat number(s) for a party already assigned to a table —
+// free text (e.g. "3" or "3-4") since a party can be more than one
+// person and staff may want to note seats however makes sense to
+// them, rather than being forced into a rigid single-number format.
+function updateGuestSeat(ts, seatValue) {
+  const guest = _dashGuestsCache.find(g => g.ts === ts);
+  if (!guest) return;
+  const prevSeat = guest.seat_number;
+  guest.seat_number = seatValue.trim();
+
+  postToSheets({ action: 'assignTable', ts: ts, table_number: guest.table_number, seat_number: guest.seat_number, session_token: _sessionToken, staff_name: _currentUser ? _currentUser.name : '' }).then((result) => {
+    if (result.status === 'error') {
+      guest.seat_number = prevSeat;
+      renderTablesTab();
+      showDashToast('⚠️ Could not save the seat number — check your connection and try again.');
+      return;
+    }
+    showDashToast(guest.seat_number ? `✓ Seat ${guest.seat_number} set for ${guest.fname}` : `↩ Seat number cleared for ${guest.fname}`);
+  });
+}
+
 function unassignGuestTable(ts) {
   const guest = _dashGuestsCache.find(g => g.ts === ts);
   if (!guest) return;
   const prevTable = guest.table_number;
+  const prevSeat = guest.seat_number;
   guest.table_number = '';
+  guest.seat_number = '';
   renderTablesTab();
 
-  postToSheets({ action: 'assignTable', ts: ts, table_number: '', session_token: _sessionToken, staff_name: _currentUser ? _currentUser.name : '' }).then((result) => {
+  postToSheets({ action: 'assignTable', ts: ts, table_number: '', seat_number: '', session_token: _sessionToken, staff_name: _currentUser ? _currentUser.name : '' }).then((result) => {
     if (result.status === 'error') {
       guest.table_number = prevTable;
+      guest.seat_number = prevSeat;
       renderTablesTab();
       showDashToast('⚠️ Could not save — check your connection and try again.');
       return;
