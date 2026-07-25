@@ -760,6 +760,8 @@ body.dashboard-active #dashboard-view{display:block !important;}
 .dash-toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(200%);opacity:0;visibility:hidden;pointer-events:none;background:var(--navy);color:#fff;padding:13px 24px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 12px 32px rgba(0,0,0,0.3);z-index:99999;transition:transform 0.3s ease,opacity 0.3s ease,visibility 0.3s;border:1px solid rgba(201,168,76,0.3);}
 .dash-toast.show{transform:translateX(-50%) translateY(0);opacity:1;visibility:visible;pointer-events:auto;}
 body.role-usher .dash-row-action-delete{opacity:0.3;pointer-events:none;filter:grayscale(1);}
+body.role-usher .dash-tabs,body.role-usher .dash-main{display:none !important;}
+body.role-usher .dash-btn-doors{display:none;}
 .dash-sync-error-banner{background:#a4453e;color:#fff;padding:12px 24px;font-size:13px;text-align:center;font-weight:600;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;}
 .dash-sync-error-banner button{background:rgba(255,255,255,0.2);border:1.5px solid rgba(255,255,255,0.5);color:#fff;padding:6px 16px;border-radius:100px;font-size:12px;font-weight:700;cursor:pointer;}
 .dash-sync-error-banner button:hover{background:rgba(255,255,255,0.3);}
@@ -2833,8 +2835,18 @@ function enterLegacyDashboard() {
   loadDashboardData();
   startAutoSync();
 
+  // Ushers are only ever here to scan guests in at the door — they
+  // don't need (or get) the guest list, seating chart, approvals,
+  // etc. Table/seat number already surfaces right on the scan result
+  // itself, so there's nothing in the full dashboard they'd actually
+  // need. Straight into Doors Mode, and locked there (see
+  // exitDoorsMode) until they log out.
+  if (_currentUser && _currentUser.role === 'usher') {
+    enterDoorsMode();
+  }
+
   try {
-    if (!localStorage.getItem('legacy_help_seen')) {
+    if (!localStorage.getItem('legacy_help_seen') && _currentUser && _currentUser.role !== 'usher') {
       setTimeout(openHelpOverlay, 600);
       localStorage.setItem('legacy_help_seen', '1');
     }
@@ -4970,9 +4982,22 @@ function enterDoorsMode() {
   document.getElementById('doors-search').value = '';
   updateDoorsCounter();
   renderDoorsSearchResults();
+
+  const exitBtn = document.querySelector('.doors-exit-btn');
+  if (exitBtn) {
+    const isUsher = _currentUser && _currentUser.role === 'usher';
+    exitBtn.textContent = isUsher ? '🚪 Log Out' : '✕ Exit';
+  }
 }
 
 function exitDoorsMode() {
+  // Ushers only ever have Doors Mode — "Exit" for them means logging
+  // out entirely, not falling back to dashboard tabs they were never
+  // meant to see in the first place.
+  if (_currentUser && _currentUser.role === 'usher') {
+    dashLogout();
+    return;
+  }
   document.getElementById('doors-mode-view').classList.remove('active');
   document.body.style.overflow = '';
 }
