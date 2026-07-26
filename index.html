@@ -834,9 +834,6 @@ body.role-usher .dash-btn-doors{display:none;}
         <button type="button" class="lang-option" data-lang="ja" onclick="setLanguage('ja')">🇯🇵 日本語</button>
       </div>
     </div>
-    <button class="nav-admin-btn" onclick="openLoginModal()" title="Legacy Night Admin Dashboard" aria-label="Open admin dashboard login" type="button" id="nav-admin-btn">
-      <img id="nav-admin-logo" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="PBIS" class="js-logo" style="height:18px;width:18px;object-fit:contain;border-radius:50%;flex-shrink:0;">
-    </button>
     <div class="nav-more" id="navMore">
       <button class="nav-more-btn" onclick="toggleNavMore(event)" type="button" id="navMoreBtn" title="More options" aria-label="More options">
         <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="5" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="12" cy="19" r="1.4"/></svg>
@@ -852,8 +849,6 @@ body.role-usher .dash-btn-doors{display:none;}
           <button type="button" class="nav-more-lang-option" data-lang="ko" onclick="setLanguage('ko')">🇰🇷 KO</button>
           <button type="button" class="nav-more-lang-option" data-lang="ja" onclick="setLanguage('ja')">🇯🇵 JA</button>
         </div>
-        <div class="nav-more-divider"></div>
-        <button type="button" class="nav-more-admin-btn" onclick="openLoginModal()">🔐 Admin Dashboard</button>
       </div>
     </div>
     <button class="nav-cta" onclick="openRSVP()">RSVP Now</button>
@@ -1150,451 +1145,6 @@ body.role-usher .dash-btn-doors{display:none;}
 </div>
 
 </div> <!-- /#landing-view -->
-
-<!-- ── LOGIN MODAL (reused from Open Day: same staff, same passwords) ── -->
-<div class="login-modal-backdrop notranslate" translate="no" id="login-modal-backdrop" onclick="handleLoginBackdrop(event)">
-  <div class="login-modal" id="login-modal">
-    <div class="login-modal-header">
-      <div class="login-modal-logo">
-        <img id="login-modal-logo" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="PBIS Logo" class="js-logo">
-      </div>
-      <h2>Legacy Night Dashboard</h2>
-      <p>Panyathip British International School</p>
-    </div>
-    <div class="login-gold-bar"></div>
-    <div class="login-modal-body">
-      <div class="login-lockout-msg" id="login-lockout-msg">
-        🔒 Too many failed attempts. Please wait <span id="lockout-countdown">60</span> seconds.
-      </div>
-      <label for="login-pwd-input">Access Password</label>
-      <div class="login-pwd-wrap">
-        <input type="password" class="login-pwd-input" id="login-pwd-input"
-          placeholder="Enter your password"
-          onkeydown="if(event.key==='Enter')submitLogin()"
-          autocomplete="current-password">
-        <button class="login-eye-btn" onclick="togglePwdVisibility()" type="button" id="eye-btn">👁</button>
-      </div>
-      <p class="login-error-msg" id="login-error-msg">Incorrect password. Please try again.</p>
-      <p class="login-attempts" id="login-attempts-msg"></p>
-      <button class="login-submit-btn" onclick="submitLogin()" id="login-submit-btn">
-        🔐 Access Dashboard
-      </button>
-      <button class="login-cancel" onclick="closeLoginModal()">Cancel</button>
-    </div>
-  </div>
-</div>
-
-<!-- ── DASHBOARD VIEW ── -->
-<div id="dashboard-view" class="notranslate" translate="no">
-  <div class="dash-topbar">
-    <div class="dash-topbar-left">
-      <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="PBIS" class="js-logo">
-      <div class="dash-topbar-title">
-        <h1>Legacy Night — Admin Dashboard</h1>
-        <span id="dash-topbar-subtitle">Panyathip British International School</span>
-      </div>
-    </div>
-    <div class="dash-topbar-right" id="dash-topbar-right">
-      <span id="dash-sync-status" style="font-size:11px;color:rgba(255,255,255,0.5);"></span>
-      <button class="dash-btn" id="dash-resync-btn" onclick="loadDashboardData()">↻ Resync</button>
-      <button class="dash-btn" onclick="openHelpOverlay()" title="What does each tab do?">❓ Help</button>
-      <button class="dash-btn" onclick="openCommandPalette()" title="Search guests or jump to a tab (Ctrl/Cmd+K)">🔍 Search</button>
-      <button class="dash-btn dash-btn-doors" onclick="enterDoorsMode()">🚪 Doors Mode</button>
-      <button class="dash-btn" onclick="openReceptionMonitor()" title="Opens a full-screen 'Welcome' display for a screen at the door">📺 Open Monitor</button>
-      <button class="dash-btn-logout" onclick="dashLogout()">Log Out</button>
-    </div>
-  </div>
-
-  <div class="dash-tabs">
-    <button class="dash-tab active" onclick="switchDashTab('overview',this)" id="dtab-overview">
-      <svg class="dash-tab-icon" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M12 20V4M20 20v-7"/></svg> Overview
-    </button>
-    <button class="dash-tab" onclick="switchDashTab('guestlist',this)" id="dtab-guestlist">
-      <svg class="dash-tab-icon" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg> Guest List <span class="dash-tab-count" id="guestlist-tab-count">0</span>
-    </button>
-    <button class="dash-tab" onclick="switchDashTab('approvals',this)" id="dtab-approvals">
-      <svg class="dash-tab-icon" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4z"/><path d="M13 7v10" stroke-dasharray="2 2"/></svg> Approvals <span class="dash-tab-count" id="approvals-tab-count">0</span>
-    </button>
-    <button class="dash-tab" onclick="switchDashTab('checkin',this)" id="dtab-checkin">
-      <svg class="dash-tab-icon" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9"/></svg> Check-In <span class="dash-tab-count" id="checkin-tab-count">0</span>
-    </button>
-    <button class="dash-tab" onclick="switchDashTab('overdue',this)" id="dtab-overdue">
-      <svg class="dash-tab-icon" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg> Overdue <span class="dash-tab-count" id="overdue-tab-count">0</span>
-    </button>
-    <button class="dash-tab" onclick="switchDashTab('vip',this)" id="dtab-vip">
-      ⭐ VIP <span class="dash-tab-count" id="vip-tab-count">0</span>
-    </button>
-    <button class="dash-tab" onclick="switchDashTab('qrgen',this)" id="dtab-qrgen">
-      📱 QR Generator <span class="dash-tab-count" id="qrgen-tab-count">0</span>
-    </button>
-    <button class="dash-tab" onclick="switchDashTab('followup',this)" id="dtab-followup">
-      <svg class="dash-tab-icon" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg> Follow Up
-    </button>
-    <button class="dash-tab" onclick="switchDashTab('tables',this)" id="dtab-tables">
-      <svg class="dash-tab-icon" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><circle cx="4" cy="5" r="1.6"/><circle cx="20" cy="5" r="1.6"/><circle cx="4" cy="19" r="1.6"/><circle cx="20" cy="19" r="1.6"/></svg> Tables <span class="dash-tab-count" id="tables-tab-count">0</span>
-    </button>
-    <button class="dash-tab" onclick="switchDashTab('activitylog',this)" id="dtab-activitylog">
-      <svg class="dash-tab-icon" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2"/></svg> Activity Log
-    </button>
-    <button class="dash-tab" onclick="switchDashTab('postevent',this)" id="dtab-postevent">
-      <svg class="dash-tab-icon" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21c4-4 7-7.5 7-11a7 7 0 0 0-14 0c0 3.5 3 7 7 11z"/><circle cx="12" cy="10" r="2.4"/></svg> Post-Event
-    </button>
-  </div>
-
-  <div class="dash-main">
-    <div id="dash-tab-content-overview"><!-- populated by JS --></div>
-    <div id="dash-tab-content-guestlist" style="display:none;"><!-- populated by JS --></div>
-    <div id="dash-tab-content-approvals" style="display:none;"><!-- populated by JS --></div>
-    <div id="dash-tab-content-checkin" style="display:none;"><!-- populated by JS --></div>
-    <div id="dash-tab-content-overdue" style="display:none;"><!-- populated by JS --></div>
-    <div id="dash-tab-content-vip" style="display:none;"><!-- populated by JS --></div>
-    <div id="dash-tab-content-qrgen" style="display:none;"><!-- populated by JS --></div>
-    <div id="dash-tab-content-followup" style="display:none;"><!-- populated by JS --></div>
-    <div id="dash-tab-content-tables" style="display:none;"><!-- populated by JS --></div>
-    <div id="dash-tab-content-activitylog" style="display:none;"><!-- populated by JS --></div>
-    <div id="dash-tab-content-postevent" style="display:none;"><!-- populated by JS --></div>
-  </div>
-</div>
-
-<!-- EDIT GUEST MODAL -->
-<!-- GUEST DETAIL MODAL (read-only view) -->
-<!-- DANGER CONFIRM MODAL (type-to-confirm, for destructive actions) -->
-<div class="modal-backdrop notranslate" translate="no" id="danger-confirm-backdrop" onclick="if(event.target===this)closeDangerConfirm()">
-  <div class="modal" style="max-width:420px;">
-    <div class="modal-header" style="background:linear-gradient(135deg,#7a2e2b,#a4453e);">
-      <button class="modal-close" aria-label="Close" onclick="closeDangerConfirm()">✕</button>
-      <h2 id="danger-confirm-title" style="color:#fff;background:none;-webkit-text-fill-color:#fff;">Are you sure?</h2>
-      <p id="danger-confirm-sub">This can't be undone.</p>
-    </div>
-    <div class="edit-guest-body">
-      <p id="danger-confirm-message" style="font-size:13.5px;color:var(--text);margin-bottom:18px;line-height:1.6;"></p>
-      <label style="display:block;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--navy);margin-bottom:8px;">Type "<span id="danger-confirm-keyword"></span>" to confirm</label>
-      <input type="text" id="danger-confirm-input" oninput="checkDangerConfirmInput()" autocomplete="off" autocapitalize="off">
-      <div class="edit-guest-actions">
-        <button class="edit-guest-cancel" onclick="closeDangerConfirm()">Cancel</button>
-        <button class="form-submit" id="danger-confirm-btn" disabled style="background:linear-gradient(135deg,#7a2e2b,#a4453e);">Delete</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="modal-backdrop notranslate" translate="no" id="guest-detail-backdrop" onclick="if(event.target===this)closeGuestDetailModal()">
-  <div class="modal">
-    <div class="modal-header">
-      <button class="modal-close" aria-label="Close" onclick="closeGuestDetailModal()">✕</button>
-      <h2 id="guest-detail-name">Guest Details</h2>
-      <p id="guest-detail-subhead">—</p>
-    </div>
-    <div class="edit-guest-body" id="guest-detail-body"></div>
-  </div>
-</div>
-
-<div class="modal-backdrop notranslate" translate="no" id="edit-guest-backdrop" onclick="if(event.target===this)closeEditGuestModal()">
-  <div class="modal">
-    <div class="modal-header">
-      <button class="modal-close" aria-label="Close" onclick="closeEditGuestModal()">✕</button>
-      <h2>Edit Guest</h2>
-      <p>Changes save straight back to the sheet</p>
-    </div>
-    <div class="edit-guest-body">
-      <input type="hidden" id="edit-guest-ts">
-      <div class="form-row two">
-        <div>
-          <label>First Name *</label>
-          <input type="text" id="edit-fname" required>
-        </div>
-        <div>
-          <label>Last Name *</label>
-          <input type="text" id="edit-lname" required>
-        </div>
-      </div>
-      <div class="form-row">
-        <label>Email *</label>
-        <input type="email" id="edit-email" required>
-      </div>
-      <div class="form-row">
-        <label>Phone *</label>
-        <input type="tel" id="edit-phone" required>
-      </div>
-      <div class="form-row">
-        <label>Organization</label>
-        <input type="text" id="edit-organization">
-      </div>
-      <div class="form-row two">
-        <div>
-          <label>Party Size <span style="text-transform:none;">(incl. this guest, max 3)</span></label>
-          <input type="number" id="edit-guest-count" min="1" max="3" step="1">
-        </div>
-        <div>
-          <label>Additional Guest Names</label>
-          <input type="text" id="edit-additional-guests" placeholder="Comma-separated">
-        </div>
-      </div>
-      <div class="form-row two">
-        <div>
-          <label>Dietary Preferences</label>
-          <input type="text" id="edit-dietary-preferences" placeholder="e.g. Vegetarian, Halal">
-        </div>
-        <div>
-          <label>Dietary Restrictions</label>
-          <input type="text" id="edit-dietary-restrictions" placeholder="e.g. peanut allergy">
-        </div>
-      </div>
-      <div class="form-row">
-        <label>Seating Arrangement <span style="text-transform:none;">(table number — internal use only, not shown to the guest)</span></label>
-        <input type="number" id="edit-table-number" min="1" placeholder="e.g. 5">
-      </div>
-      <label class="rsvp-consent-box" for="edit-vvip-check" style="margin-bottom:16px;">
-        <input type="checkbox" id="edit-vvip-check">
-        <span>⭐ Mark as VIP — the Events Team gets an automatic email the moment this guest checks in via QR scan, including their table, dietary notes, and main course.</span>
-      </label>
-      <div class="form-row">
-        <label>Message</label>
-        <textarea id="edit-notes"></textarea>
-      </div>
-      <div class="edit-guest-actions">
-        <button class="edit-guest-cancel" onclick="closeEditGuestModal()">Cancel</button>
-        <button class="form-submit" id="edit-guest-save-btn" onclick="saveEditGuest()">Save Changes</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- MANUAL ADD GUEST MODAL (staff-entered RSVP — phone-ins, walk-ups, VVIPs) -->
-<div class="modal-backdrop notranslate" translate="no" id="add-guest-backdrop" onclick="if(event.target===this)closeAddGuestModal()">
-  <div class="modal">
-    <div class="modal-header">
-      <button class="modal-close" aria-label="Close" onclick="closeAddGuestModal()">✕</button>
-      <h2>Add Guest Manually</h2>
-      <p>For phone-ins, walk-ups, or VVIPs entered directly by staff</p>
-    </div>
-    <div class="edit-guest-body">
-      <div class="followup-warn">This creates a real RSVP exactly as if the guest had submitted the public form — they'll receive the same confirmation email, and the team notification email will go out too.</div>
-      <div class="form-row two">
-        <div>
-          <label>First Name *</label>
-          <input type="text" id="add-fname" required>
-        </div>
-        <div>
-          <label>Last Name *</label>
-          <input type="text" id="add-lname" required>
-        </div>
-      </div>
-      <div class="form-row">
-        <label>Email *</label>
-        <input type="email" id="add-email" required>
-      </div>
-      <div class="form-row">
-        <label>Phone *</label>
-        <input type="tel" id="add-phone" required>
-      </div>
-      <div class="form-row">
-        <label>Organization</label>
-        <input type="text" id="add-organization">
-      </div>
-      <div class="form-row two">
-        <div>
-          <label>Party Size <span style="text-transform:none;">(incl. this guest, max 3)</span></label>
-          <input type="number" id="add-guest-count" min="1" max="3" step="1" value="1">
-        </div>
-        <div>
-          <label>Additional Guest Names</label>
-          <input type="text" id="add-additional-guests" placeholder="Comma-separated">
-        </div>
-      </div>
-      <div class="form-row two">
-        <div>
-          <label>Dietary Preferences</label>
-          <input type="text" id="add-dietary-preferences" placeholder="e.g. Vegetarian, Halal">
-        </div>
-        <div>
-          <label>Dietary Restrictions</label>
-          <input type="text" id="add-dietary-restrictions" placeholder="e.g. peanut allergy">
-        </div>
-      </div>
-      <div class="form-row">
-        <label>Message <span style="text-transform:none;">(optional)</span></label>
-        <textarea id="add-notes"></textarea>
-      </div>
-      <div class="edit-guest-actions">
-        <button class="edit-guest-cancel" onclick="closeAddGuestModal()">Cancel</button>
-        <button class="form-submit" id="add-guest-save-btn" onclick="submitAddGuest()">➕ Add Guest</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- FOLLOW-UP SEND MODAL (per-guest) -->
-<div class="modal-backdrop notranslate" translate="no" id="followup-modal-backdrop" onclick="if(event.target===this)closeFollowUpModal()">
-  <div class="modal">
-    <div class="modal-header">
-      <button class="modal-close" aria-label="Close" onclick="closeFollowUpModal()">✕</button>
-      <h2>Send Follow-Up</h2>
-      <p class="followup-modal-recipient" id="followup-modal-recipient">To: —</p>
-    </div>
-    <div class="edit-guest-body">
-      <input type="hidden" id="followup-modal-ts">
-
-      <label style="display:block;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--navy);margin-bottom:8px;">Message</label>
-      <textarea class="followup-textarea" id="followup-modal-message" placeholder="e.g. Dear [Name], your personal invitation and event QR code are attached below…"></textarea>
-
-      <label style="display:block;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--navy);margin-bottom:8px;">Attachments <span style="text-transform:none;font-weight:400;color:var(--gray-mid);">(PDF, JPEG, or PNG — add as many as you need, e.g. an invitation card + this guest's unique QR code)</span></label>
-      <div class="followup-file-row">
-        <input type="file" id="followup-modal-file-input" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" multiple onchange="handleFollowUpFilesSelect(event)">
-      </div>
-      <div id="followup-modal-file-list"></div>
-
-      <div class="edit-guest-actions">
-        <button class="edit-guest-cancel" onclick="closeFollowUpModal()">Cancel</button>
-        <button class="form-submit" id="followup-modal-send-btn" onclick="sendIndividualFollowUpEmail()">📧 Send to This Guest</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- APPROVE & SEND TICKET MODAL -->
-<div class="modal-backdrop notranslate" translate="no" id="approve-modal-backdrop" onclick="if(event.target===this)closeApproveModal()">
-  <div class="modal">
-    <div class="modal-header">
-      <button class="modal-close" aria-label="Close" onclick="closeApproveModal()">✕</button>
-      <h2>Approve &amp; Send Ticket</h2>
-      <p class="followup-modal-recipient" id="approve-modal-recipient">To: —</p>
-    </div>
-    <div class="edit-guest-body">
-      <input type="hidden" id="approve-modal-ts">
-
-      <div class="followup-warn">Approving sends <strong id="approve-modal-recipient-count">1</strong> separate ticket email(s) to this guest's address — one per person in the party, each with their own name and unique QR code.</div>
-
-      <label style="display:block;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--navy);margin-bottom:8px;">Individual QR Codes <span style="text-transform:none;font-weight:400;color:var(--gray-mid);">(one per person, auto-generated)</span></label>
-      <div id="approve-qr-list"></div>
-
-      <label style="display:block;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--navy);margin-bottom:8px;">Message *</label>
-      <textarea class="followup-textarea" id="approve-modal-message" placeholder="Your Legacy Night Ticket" oninput="updateApproveButtonState()"></textarea>
-
-      <label style="display:block;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--navy);margin-bottom:8px;">Additional Attachments <span style="text-transform:none;font-weight:400;color:var(--gray-mid);">(optional — e.g. invitation card design, PDF/JPEG/PNG, included with every ticket email)</span></label>
-      <div class="followup-file-row">
-        <input type="file" id="approve-modal-file-input" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" multiple onchange="handleApproveFilesSelect(event)">
-      </div>
-      <div id="approve-modal-file-list"></div>
-
-      <div class="edit-guest-actions">
-        <button class="edit-guest-cancel" onclick="closeApproveModal()">Cancel</button>
-        <button class="form-submit" id="approve-modal-send-btn" onclick="submitApproveGuest()" disabled>🎫 Approve &amp; Send Ticket</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- WHATSAPP QR TICKET MODAL -->
-<div class="modal-backdrop notranslate" translate="no" id="wa-qr-modal-backdrop" onclick="if(event.target===this)closeWhatsAppQrModal()">
-  <div class="modal">
-    <div class="modal-header">
-      <button class="modal-close" aria-label="Close" onclick="closeWhatsAppQrModal()">✕</button>
-      <h2>📱 WhatsApp Ticket</h2>
-      <p class="followup-modal-recipient" id="wa-qr-modal-recipient">To: —</p>
-    </div>
-    <div class="edit-guest-body">
-      <input type="hidden" id="wa-qr-modal-ts">
-      <div class="followup-warn">Download each person's ticket image below, then open WhatsApp and attach it manually — browsers don't allow auto-attaching images to a chat. Once you've actually sent it, click "Mark as Sent" so the dashboard reflects it.</div>
-      <div id="wa-qr-person-list"></div>
-      <div class="edit-guest-actions">
-        <button class="edit-guest-cancel" onclick="closeWhatsAppQrModal()">Close</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- QR SCANNER MODAL (Check-In) -->
-<div class="modal-backdrop notranslate" translate="no" id="qr-scanner-backdrop" onclick="if(event.target===this)closeQRScanner()">
-  <div class="modal qr-scanner-modal">
-    <div class="modal-header">
-      <button class="modal-close" aria-label="Close" onclick="closeQRScanner()">✕</button>
-      <h2>Scan Guest QR Code</h2>
-      <p>Point the camera at a guest's ticket to check them in</p>
-    </div>
-    <div class="edit-guest-body">
-      <div class="qr-scanner-viewport">
-        <video id="qr-scanner-video" playsinline autoplay muted></video>
-        <div class="qr-scanner-frame"></div>
-      </div>
-      <div class="qr-scanner-result" id="qr-scanner-result"><p class="qr-scanner-status">Loading scanner…</p></div>
-    </div>
-  </div>
-</div>
-
-<!-- DOORS MODE — stripped-down, high-contrast, large-touch-target
-     view for whoever is stationed at the actual door on the night.
-     Just scanning + a name-search fallback, nothing else. -->
-<div id="doors-mode-view">
-  <div class="doors-header">
-    <div class="doors-header-left">
-      <span class="doors-title">🚪 Doors Mode</span>
-      <span class="doors-counter" id="doors-counter">0 / 0 checked in</span>
-    </div>
-    <button class="doors-exit-btn" onclick="exitDoorsMode()">✕ Exit</button>
-  </div>
-  <div class="doors-body">
-    <button class="doors-scan-btn" onclick="openQRScanner()">
-      <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3M19 14v2M14 19h2M19 19h2v2"/></svg>
-      <span>Scan QR Code</span>
-    </button>
-    <p class="doors-divider">or search by name</p>
-    <input type="text" class="doors-search" id="doors-search" placeholder="Type guest name…" oninput="renderDoorsSearchResults()" autocomplete="off">
-    <div class="doors-results" id="doors-results"></div>
-  </div>
-</div>
-
-<!-- COMMAND PALETTE (Ctrl/Cmd+K) — jump to any guest or tab instantly -->
-<div class="modal-backdrop notranslate" translate="no" id="cmdk-backdrop" onclick="if(event.target===this)closeCommandPalette()">
-  <div class="cmdk-panel">
-    <input type="text" id="cmdk-input" placeholder="Search guests or jump to a tab…" oninput="renderCommandPaletteResults()" autocomplete="off">
-    <div class="cmdk-results" id="cmdk-results"></div>
-    <div class="cmdk-hint">↑↓ navigate · Enter select · Esc close</div>
-  </div>
-</div>
-
-<!-- HELP OVERLAY — shown automatically on first login per browser,
-     re-openable anytime from the ❓ Help button -->
-<div class="modal-backdrop notranslate" translate="no" id="help-backdrop" onclick="if(event.target===this)closeHelpOverlay()">
-  <div class="modal" style="max-width:540px;">
-    <div class="modal-header">
-      <button class="modal-close" aria-label="Close" onclick="closeHelpOverlay()">✕</button>
-      <h2>Welcome to the Legacy Night Dashboard</h2>
-      <p>A quick guide to what each tab does</p>
-    </div>
-    <div class="edit-guest-body">
-      <div class="help-list">
-        <div class="help-row"><span class="help-icon">📊</span><div><b>Overview</b><p>Live stats, charts, and reports — including the catering sheet.</p></div></div>
-        <div class="help-row"><span class="help-icon">📋</span><div><b>Guest List</b><p>Every RSVP. Search, edit, delete, export, or add someone manually.</p></div></div>
-        <div class="help-row"><span class="help-icon">🎫</span><div><b>Approvals</b><p>Approve each guest and send their ticket — a unique QR code is generated automatically.</p></div></div>
-        <div class="help-row"><span class="help-icon">✅</span><div><b>Check-In</b><p>Day-of arrivals — scan a QR code or search by name.</p></div></div>
-        <div class="help-row"><span class="help-icon">⏰</span><div><b>Overdue</b><p>Mark guests who never arrived as a No-Show, after the event.</p></div></div>
-        <div class="help-row"><span class="help-icon">📧</span><div><b>Follow Up</b><p>Send a one-off message to an individual guest, with attachments.</p></div></div>
-        <div class="help-row"><span class="help-icon">🍽️</span><div><b>Tables</b><p>Assign guests to numbered tables for the seating chart.</p></div></div>
-        <div class="help-row"><span class="help-icon">🕐</span><div><b>Activity Log</b><p>Who did what, and when — every check-in, approval, and edit.</p></div></div>
-        <div class="help-row"><span class="help-icon">🚪</span><div><b>Doors Mode</b><p>A simplified, large-button view for whoever is at the door on the night.</p></div></div>
-        <div class="help-row"><span class="help-icon">🔍</span><div><b>Search</b><p>Press <kbd>Ctrl</kbd>/<kbd>Cmd</kbd> + <kbd>K</kbd> anytime to jump straight to a guest or tab.</p></div></div>
-      </div>
-      <button class="form-submit" onclick="closeHelpOverlay()">Got it</button>
-    </div>
-  </div>
-</div>
-
-<!-- RECEPTION MONITOR — a passive, full-screen "Welcome" display for
-     screens at the door. Opened via ?monitor=1 in the URL on however
-     many screens you want (each just polls independently, no login
-     needed since it's read-only). Shows "Welcome, [Name]" the moment
-     a QR scan checks someone in, then resets itself automatically. -->
-<div id="monitor-view">
-  <div id="monitor-content">
-    <div class="monitor-waiting">
-      <div class="monitor-crest"><img src="" alt="PBIS" class="js-logo"></div>
-      <h1>PBIS Legacy Night</h1>
-      <p>Please scan your ticket at the entrance</p>
-    </div>
-  </div>
-</div>
-
 <!-- TICKET VIEW — what a guest sees if they scan their own QR code
      out of curiosity with their phone's regular camera app. The QR
      now encodes a real URL specifically so this happens, rather than
@@ -1617,7 +1167,6 @@ body.role-usher .dash-btn-doors{display:none;}
   </div>
 </div>
 
-<div class="dash-toast" id="dash-toast"></div>
 
 <script>
 const SHEETS_URL = "https://script.google.com/macros/s/AKfycbygyYMuWAU1U9uyDNsYBxJTmX4nT0QHzjXHz68VcS4RKvKdHmGQe106QLi2PD6SQ8wc4Q/exec";
@@ -1668,15 +1217,18 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // Build a light starfield
+  // Build a light starfield (hero-only — guarded since this shared
+  // script also runs on admin.html, which has no hero section)
   const field = document.getElementById('starfield');
-  for (let i = 0; i < 60; i++) {
-    const s = document.createElement('span');
-    s.style.left = Math.random() * 100 + '%';
-    s.style.top = Math.random() * 100 + '%';
-    s.style.animationDelay = (Math.random() * 4) + 's';
-    s.style.opacity = (0.2 + Math.random() * 0.6).toString();
-    field.appendChild(s);
+  if (field) {
+    for (let i = 0; i < 60; i++) {
+      const s = document.createElement('span');
+      s.style.left = Math.random() * 100 + '%';
+      s.style.top = Math.random() * 100 + '%';
+      s.style.animationDelay = (Math.random() * 4) + 's';
+      s.style.opacity = (0.2 + Math.random() * 0.6).toString();
+      field.appendChild(s);
+    }
   }
 
   // Scroll-triggered parallax: the starfield and sun-glare drift
@@ -3883,7 +3435,9 @@ function openReceptionMonitor() {
 }
 
 function enterMonitorMode() {
-  document.getElementById('monitor-view').classList.add('active');
+  const el = document.getElementById('monitor-view');
+  if (!el) return; // monitor view only exists on admin.html
+  el.classList.add('active');
   pollForRecentCheckIn();
   _monitorPollInterval = setInterval(pollForRecentCheckIn, 2500);
 }
