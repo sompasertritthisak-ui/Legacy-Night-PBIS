@@ -515,6 +515,8 @@ body.dashboard-active #dashboard-view{display:block !important;}
 .dash-table tbody tr:hover{background:var(--cream);}
 .dash-badge{display:inline-block;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:600;color:#fff;}
 .dash-search-row{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
+.dash-sort-select{flex:0 0 auto;padding:10px 14px;border:1.5px solid var(--gray);border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;background:var(--white);color:var(--navy);cursor:pointer;}
+.dash-sort-select:focus{outline:none;border-color:var(--gold);}
 .dash-search-row input,.dash-search-row select{padding:10px 14px;border:1.5px solid var(--gray);border-radius:8px;font-size:16px;font-family:'DM Sans',sans-serif;background:var(--cream);}
 .dash-search-row input{flex:1;min-width:200px;}
 .dash-search-row input:focus,.dash-search-row select:focus{outline:none;border-color:var(--gold);background:var(--white);}
@@ -681,6 +683,7 @@ body.dashboard-active #dashboard-view{display:block !important;}
 .doors-header-left{display:flex;flex-direction:column;gap:4px;}
 .doors-title{font-family:'Cinzel',serif;font-weight:700;color:var(--gold-light);font-size:18px;}
 .doors-counter{color:rgba(255,255,255,0.7);font-size:14px;font-weight:600;}
+.pending-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(232,201,110,0.18);border:1px solid rgba(232,201,110,0.5);color:#e8c96e;font-size:11px;font-weight:700;padding:4px 10px;border-radius:100px;white-space:nowrap;margin-left:8px;}
 .doors-exit-btn{background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.3);color:#fff;padding:12px 22px;border-radius:100px;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;}
 .doors-exit-btn:hover{background:rgba(255,255,255,0.15);}
 .doors-body{flex:1;display:flex;flex-direction:column;align-items:center;padding:40px 24px 60px;max-width:520px;margin:0 auto;width:100%;}
@@ -761,8 +764,23 @@ body.dashboard-active #dashboard-view{display:block !important;}
 .dash-toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(200%);opacity:0;visibility:hidden;pointer-events:none;background:var(--navy);color:#fff;padding:13px 24px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 12px 32px rgba(0,0,0,0.3);z-index:99999;transition:transform 0.3s ease,opacity 0.3s ease,visibility 0.3s;border:1px solid rgba(201,168,76,0.3);}
 .dash-toast.show{transform:translateX(-50%) translateY(0);opacity:1;visibility:visible;pointer-events:auto;}
 body.role-usher .dash-row-action-delete{opacity:0.3;pointer-events:none;filter:grayscale(1);}
-body.role-usher .dash-tabs,body.role-usher .dash-main{display:none !important;}
-body.role-usher .dash-btn-doors{display:none;}
+/* Ushers get exactly two tabs: Check-In (so they can manually check in
+   guests who can't manage a QR code) and Tables (so they can look up
+   where someone is seated). Everything else is hidden. */
+body.role-usher #dtab-overview,
+body.role-usher #dtab-guestlist,
+body.role-usher #dtab-approvals,
+body.role-usher #dtab-overdue,
+body.role-usher #dtab-vip,
+body.role-usher #dtab-qrgen,
+body.role-usher #dtab-followup,
+body.role-usher #dtab-activitylog,
+body.role-usher #dtab-postevent{display:none !important;}
+/* Seating is view-only for ushers — they can see a guest's table and
+   seat, but not change it. */
+body.role-usher .table-seat-input{pointer-events:none;background:transparent;border-color:transparent;color:var(--gray-mid);}
+body.role-usher .table-guest-chip button{display:none;}
+body.role-usher .table-assign-select{pointer-events:none;opacity:0.45;}
 .dash-sync-error-banner{background:#a4453e;color:#fff;padding:12px 24px;font-size:13px;text-align:center;font-weight:600;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;}
 .dash-sync-error-banner button{background:rgba(255,255,255,0.2);border:1.5px solid rgba(255,255,255,0.5);color:#fff;padding:6px 16px;border-radius:100px;font-size:12px;font-weight:700;cursor:pointer;}
 .dash-sync-error-banner button:hover{background:rgba(255,255,255,0.3);}
@@ -857,6 +875,7 @@ body.role-usher .dash-btn-doors{display:none;}
     </div>
     <div class="dash-topbar-right" id="dash-topbar-right">
       <span id="dash-sync-status" style="font-size:11px;color:rgba(255,255,255,0.5);"></span>
+      <span id="pending-sync-badge" class="pending-badge" style="display:none;"></span>
       <button class="dash-btn" id="dash-resync-btn" onclick="loadDashboardData()">↻ Resync</button>
       <button class="dash-btn" onclick="openHelpOverlay()" title="What does each tab do?">❓ Help</button>
       <button class="dash-btn" onclick="openCommandPalette()" title="Search guests or jump to a tab (Ctrl/Cmd+K)">🔍 Search</button>
@@ -1147,6 +1166,25 @@ body.role-usher .dash-btn-doors{display:none;}
   </div>
 </div>
 
+<!-- MANUAL CHECK-IN CONFIRMATION MODAL -->
+<div class="modal-backdrop notranslate" translate="no" id="confirm-checkin-backdrop" onclick="if(event.target===this)closeConfirmCheckIn()">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-header">
+      <button class="modal-close" aria-label="Close" onclick="closeConfirmCheckIn()">✕</button>
+      <h2 id="confirm-checkin-title">Confirm Check-In</h2>
+    </div>
+    <div class="edit-guest-body">
+      <p style="margin:0 0 6px;font-size:13px;color:var(--gray-mid);" id="confirm-checkin-lead">You're about to check in:</p>
+      <p style="margin:0 0 4px;font-size:20px;font-weight:700;color:var(--navy);" id="confirm-checkin-name">—</p>
+      <p style="margin:0 0 22px;font-size:14px;font-weight:600;color:var(--gold);" id="confirm-checkin-seat"></p>
+      <div class="edit-guest-actions">
+        <button class="edit-guest-cancel" onclick="closeConfirmCheckIn()">Cancel</button>
+        <button class="dash-btn-gold" id="confirm-checkin-confirm-btn" onclick="executeConfirmedCheckIn()">✓ Yes, Check In</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- WHATSAPP QR TICKET MODAL -->
 <div class="modal-backdrop notranslate" translate="no" id="wa-qr-modal-backdrop" onclick="if(event.target===this)closeWhatsAppQrModal()">
   <div class="modal">
@@ -1192,6 +1230,7 @@ body.role-usher .dash-btn-doors{display:none;}
     <div class="doors-header-left">
       <span class="doors-title">🚪 Doors Mode</span>
       <span class="doors-counter" id="doors-counter">0 / 0 checked in</span>
+      <span id="doors-pending-badge" class="pending-badge" style="display:none;"></span>
     </div>
     <button class="doors-exit-btn" onclick="exitDoorsMode()">✕ Exit</button>
   </div>
@@ -2286,7 +2325,46 @@ let _loginAttempts = 0;
 let _lockedUntil = 0;
 let _lockoutTimer = null;
 let _sessionExpiry = 0;
-const SESSION_MINS = 120;
+// Sessions are long-lived by design (see SESSION_TTL_MS in code.gs) —
+// staff shouldn't be retyping a passcode all evening because their
+// phone screen locked. The server is the real authority on expiry;
+// this local copy just avoids showing the dashboard when we already
+// know the session is stale.
+const SESSION_DAYS = 14;
+
+// A stable per-browser id so the server can rate-limit ONE misbehaving
+// device rather than locking every staff member out at once.
+function getDeviceId() {
+  try {
+    let id = localStorage.getItem('legacy_device_id');
+    if (!id) {
+      id = 'd' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+      localStorage.setItem('legacy_device_id', id);
+    }
+    return id;
+  } catch (e) {
+    return 'nostorage';
+  }
+}
+
+// Restores a saved session on page load. Uses localStorage (not
+// sessionStorage) so closing the tab or restarting the browser
+// mid-event doesn't force a fresh login.
+function restoreSavedSession() {
+  try {
+    const raw = localStorage.getItem('legacy_session');
+    if (!raw) return false;
+    const s = JSON.parse(raw);
+    if (!s.exp || Date.now() >= s.exp || !s.token) {
+      localStorage.removeItem('legacy_session');
+      return false;
+    }
+    _sessionToken  = s.token;
+    _sessionExpiry = s.exp;
+    _currentUser   = { name: s.name, role: s.role, team: s.team };
+    return true;
+  } catch (e) { return false; }
+}
 
 function getLockoutState() {
   try {
@@ -2357,7 +2435,7 @@ async function submitLogin() {
 
   let result;
   try {
-    result = await loginRequest({ action: 'login', password: pwd });
+    result = await loginRequest({ action: 'login', password: pwd, device_id: getDeviceId() });
   } catch (e) {
     result = { status: 'error', message: 'Could not reach the server.' };
   }
@@ -2370,8 +2448,8 @@ async function submitLogin() {
     _sessionToken = result.token;
     _loginAttempts = 0;
     setLockoutState({ strikes: 0, until: 0 }); // successful login clears lockout escalation
-    _sessionExpiry = Date.now() + (SESSION_MINS * 60 * 1000);
-    try { sessionStorage.setItem('legacy_session', JSON.stringify({exp:_sessionExpiry,token:_sessionToken,name:_currentUser.name,role:_currentUser.role,team:_currentUser.team})); } catch(e){}
+    _sessionExpiry = result.expires_at || (Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);
+    try { localStorage.setItem('legacy_session', JSON.stringify({exp:_sessionExpiry,token:_sessionToken,name:_currentUser.name,role:_currentUser.role,team:_currentUser.team})); } catch(e){}
     closeLoginModal();
     enterLegacyDashboard();
   } else {
@@ -2382,8 +2460,19 @@ async function submitLogin() {
     inp.classList.add('error');
     setTimeout(() => inp.classList.remove('error'), 500);
     document.getElementById('login-error-msg').classList.add('show');
+
+    // The SERVER decides whether this device is locked out — the
+    // browser-side counter below is only a nicety, since anyone could
+    // clear it. When the server says we're locked, honour its timing
+    // exactly rather than running a separate local countdown.
+    if (result.locked && result.retry_after) {
+      _lockedUntil = Date.now() + (result.retry_after * 1000);
+      setLockoutState({ strikes: 0, until: _lockedUntil });
+      _loginAttempts = 0;
+      resumeLockoutCountdown();
+      return;
+    }
     updateAttemptsMsg();
-    if(_loginAttempts >= MAX_ATTEMPTS) triggerLockout();
   }
 }
 
@@ -2479,13 +2568,19 @@ function enterLegacyDashboard() {
   loadDashboardData();
   startAutoSync();
 
-  // Ushers are only ever here to scan guests in at the door — they
-  // don't need (or get) the guest list, seating chart, approvals,
-  // etc. Table/seat number already surfaces right on the scan result
-  // itself, so there's nothing in the full dashboard they'd actually
-  // need. Straight into Doors Mode, and locked there (see
-  // exitDoorsMode) until they log out.
+  // Pick up any check-ins that were still unsaved when this device
+  // last had the dashboard open (slow server, dropped WiFi, or the
+  // tab being closed mid-save) and keep retrying them.
+  loadCheckInQueue();
+
+  // Ushers work the door: they scan QR codes (Doors Mode) and check
+  // in guests who can't manage a QR code themselves (Check-In tab),
+  // and can look up where someone is seated (Tables tab, view-only).
+  // Everything else stays hidden. Their default landing tab is
+  // Check-In rather than Overview, since Overview is hidden for them.
   if (_currentUser && _currentUser.role === 'usher') {
+    const checkinTabBtn = document.getElementById('dtab-checkin');
+    if (checkinTabBtn) switchDashTab('checkin', checkinTabBtn);
     enterDoorsMode();
   }
 
@@ -2496,13 +2591,13 @@ function enterLegacyDashboard() {
     }
   } catch (e) {}
 
-  setTimeout(() => {
-    if(document.body.classList.contains('dashboard-active')) {
-      dashLogout();
-      _sessionExpiry = 0;
-      showDashToast('⏱ Session expired — please log in again');
-    }
-  }, SESSION_MINS * 60 * 1000);
+  // NOTE: there used to be a hard 2-hour timer here that logged staff
+  // out regardless of whether they were actively using the dashboard.
+  // That's exactly what made people retype their passcode all evening.
+  // Expiry is now owned by the server, slides forward on every action,
+  // and is measured in days — so an in-use dashboard stays logged in.
+  // If a session really has expired, fetchDashboardGuests() catches
+  // the Unauthorized response and prompts a fresh login cleanly.
 }
 
 // Automatically resyncs guest data every 90 seconds while the dashboard
@@ -2525,13 +2620,19 @@ function stopAutoSync() {
 }
 
 function dashLogout() {
+  // Let the server drop the session too, so the token can't be reused
+  // if it was captured. Fire-and-forget — logging out locally must not
+  // depend on the network succeeding.
+  if (_sessionToken) {
+    try { postToSheets({ action: 'logout', session_token: _sessionToken }); } catch (e) {}
+  }
   document.body.classList.remove('dashboard-active');
   document.body.classList.remove('role-marketing');
   _currentUser = null;
   _sessionToken = null;
   stopAutoSync();
   exitDoorsMode();
-  try { sessionStorage.removeItem('legacy_session'); } catch(e){}
+  try { localStorage.removeItem('legacy_session'); } catch(e){}
   const badge = document.getElementById('dash-user-badge');
   if(badge) badge.remove();
   const notice = document.getElementById('dash-marketing-notice');
@@ -2978,6 +3079,16 @@ function openCateringSheet() {
 
 /* ── GUEST LIST TAB ── */
 let _guestSearchTerm = '';
+// Guest list sort order. 'newest' preserves the original behaviour
+// (most recent RSVP first); 'az'/'za' sort alphabetically by the
+// guest's full name, which is what you want when you're looking
+// someone up by name rather than browsing recent activity.
+let _guestSortMode = 'newest';
+
+function setGuestSort(mode) {
+  _guestSortMode = mode;
+  renderGuestListTab();
+}
 
 function renderGuestListTab() {
   const el = document.getElementById('dash-tab-content-guestlist');
@@ -2995,7 +3106,20 @@ function renderGuestListTab() {
   const totalHeadcount = guests.reduce((sum, g) => sum + (g.guest_count || 1), 0);
 
   const canManage = canEditOrVip();
-  const rows = filtered.slice().reverse().map(g => {
+  const sorted = filtered.slice();
+  if (_guestSortMode === 'az' || _guestSortMode === 'za') {
+    sorted.sort(function(a, b) {
+      const nameA = ((a.fname||'') + ' ' + (a.lname||'')).trim().toLowerCase();
+      const nameB = ((b.fname||'') + ' ' + (b.lname||'')).trim().toLowerCase();
+      // localeCompare so accented names sort where people expect
+      const cmp = nameA.localeCompare(nameB);
+      return _guestSortMode === 'az' ? cmp : -cmp;
+    });
+  } else {
+    sorted.reverse(); // newest RSVP first (original default)
+  }
+
+  const rows = sorted.map(g => {
     const count = g.guest_count || 1;
     const partyTitle = count > 1 && g.additional_guests ? ` title="With: ${g.additional_guests.replace(/"/g,'')}"` : '';
     const hasDietary = g.dietary_preferences || g.dietary_restrictions;
@@ -3034,6 +3158,11 @@ function renderGuestListTab() {
       </div>
       <div class="dash-search-row">
         <input type="text" placeholder="Search by name or email…" value="${_guestSearchTerm}" oninput="_guestSearchTerm=this.value;renderGuestListTab();">
+        <select class="dash-sort-select" onchange="setGuestSort(this.value)" title="Sort guest list">
+          <option value="newest" ${_guestSortMode === 'newest' ? 'selected' : ''}>Newest first</option>
+          <option value="az" ${_guestSortMode === 'az' ? 'selected' : ''}>Name A → Z</option>
+          <option value="za" ${_guestSortMode === 'za' ? 'selected' : ''}>Name Z → A</option>
+        </select>
       </div>
       <div class="dash-table-wrap">
         <table class="dash-table">
@@ -3226,8 +3355,8 @@ function renderCheckInTab() {
   const rows = filtered.slice().reverse().map(p => {
     const tid = (p.ts + '_' + p.idx).replace(/[^a-zA-Z0-9]/g,'');
     const action = p.checked_in
-      ? `<span class="dash-arrived-pill">✓ Arrived</span> <button class="dash-checkin-undo" onclick="markGuestCheckedIn('${p.ts}',false,${p.idx},'${p.name.replace(/'/g,"\\'")}')">Undo</button>`
-      : `<button class="dash-checkin-btn" onclick="markGuestCheckedIn('${p.ts}',true,${p.idx},'${p.name.replace(/'/g,"\\'")}')">Check In</button>`;
+      ? `<span class="dash-arrived-pill">✓ Arrived</span> <button class="dash-checkin-undo" onclick="confirmManualCheckIn('${p.ts}',false,${p.idx},'${p.name.replace(/'/g,"\\'")}')">Undo</button>`
+      : `<button class="dash-checkin-btn" onclick="confirmManualCheckIn('${p.ts}',true,${p.idx},'${p.name.replace(/'/g,"\\'")}')">Check In</button>`;
     return `<tr id="checkin-row-${tid}">
       <td style="font-weight:600;color:var(--navy);white-space:nowrap;">${p.name}${!p.isPrimary ? ' <span style="color:var(--gray-mid);font-weight:400;font-size:11.5px;">(guest)</span>' : ''}</td>
       <td>${p.table ? 'Table ' + p.table : '<span style="color:var(--gray-mid);">—</span>'}</td>
@@ -3274,6 +3403,175 @@ function resolvePersonName(guest, idx) {
   return (person && person.name) ? person.name : `${guest.fname||''} ${guest.lname||''}`.trim() + ' (guest ' + idx + ')';
 }
 
+/* ── Manual check-in confirmation ──────────────────────────────────
+   Manual check-ins go through a confirmation step so a mis-tap on a
+   crowded phone screen doesn't mark the wrong guest as arrived. QR
+   scans deliberately skip this — the scan itself is the confirmation,
+   and adding a tap there would slow the door queue down.            */
+let _pendingCheckIn = null;
+
+function confirmManualCheckIn(ts, checkedIn, idx, personName) {
+  const guest = _dashGuestsCache.find(g => g.ts === ts);
+  _pendingCheckIn = { ts: ts, checkedIn: checkedIn, idx: idx, personName: personName };
+
+  document.getElementById('confirm-checkin-title').textContent = checkedIn ? 'Confirm Check-In' : 'Undo Check-In?';
+  document.getElementById('confirm-checkin-lead').textContent = checkedIn
+    ? "You're about to check in:"
+    : "You're about to undo the check-in for:";
+  document.getElementById('confirm-checkin-name').textContent = personName;
+
+  const seatEl = document.getElementById('confirm-checkin-seat');
+  if (checkedIn && guest && guest.table_number) {
+    seatEl.textContent = '🪑 Table ' + guest.table_number + (guest.seat_number ? ' · Seat ' + guest.seat_number : '');
+  } else {
+    seatEl.textContent = '';
+  }
+
+  const btn = document.getElementById('confirm-checkin-confirm-btn');
+  btn.textContent = checkedIn ? '✓ Yes, Check In' : '↩ Yes, Undo';
+
+  document.getElementById('confirm-checkin-backdrop').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeConfirmCheckIn() {
+  document.getElementById('confirm-checkin-backdrop').classList.remove('open');
+  document.body.style.overflow = '';
+  _pendingCheckIn = null;
+}
+
+function executeConfirmedCheckIn() {
+  if (!_pendingCheckIn) return;
+  const p = _pendingCheckIn;
+  closeConfirmCheckIn();
+  markGuestCheckedIn(p.ts, p.checkedIn, p.idx, p.personName);
+  if (document.getElementById('doors-mode-view').classList.contains('active')) {
+    updateDoorsCounter();
+    renderDoorsSearchResults();
+  }
+}
+
+/* ── RESILIENT CHECK-IN QUEUE ──────────────────────────────────────
+   On the night, the two things that actually go wrong are a slow
+   Apps Script (everyone scanning at once) and patchy venue WiFi.
+
+   The old behaviour on failure was to roll the check-in back and tell
+   staff to try again. That's the worst possible response: the guest
+   is standing right there and has definitely arrived, so throwing the
+   record away means either they walk in unrecorded or staff re-scan
+   and add even more load to an already-struggling server.
+
+   Instead, a failed check-in KEEPS its optimistic state and goes into
+   this queue, which retries in the background with backoff. The queue
+   is persisted to sessionStorage, so even a browser refresh or an
+   accidental tab close doesn't lose anyone. Re-sending a check-in is
+   harmless — the backend treats it as idempotent (checking someone in
+   twice is a no-op and won't re-send their welcome email), which is
+   what makes automatic retry safe here.                            */
+const CHECKIN_QUEUE_KEY = 'legacy_pending_checkins';
+let _checkInQueue = [];
+let _queueRetryTimer = null;
+let _queueRetrying = false;
+
+function loadCheckInQueue() {
+  try {
+    const raw = sessionStorage.getItem(CHECKIN_QUEUE_KEY);
+    _checkInQueue = raw ? JSON.parse(raw) : [];
+  } catch (e) { _checkInQueue = []; }
+  updatePendingIndicator();
+  if (_checkInQueue.length) scheduleQueueRetry(2000);
+}
+
+// If the device drops off the venue WiFi and comes back, don't wait
+// out the backoff — try again straight away.
+window.addEventListener('online', function() {
+  if (_checkInQueue.length) {
+    if (_queueRetryTimer) { clearTimeout(_queueRetryTimer); _queueRetryTimer = null; }
+    scheduleQueueRetry(500);
+  }
+});
+
+function persistCheckInQueue() {
+  try { sessionStorage.setItem(CHECKIN_QUEUE_KEY, JSON.stringify(_checkInQueue)); } catch (e) {}
+}
+
+function enqueueCheckIn(payload, personName) {
+  // Collapse any earlier queued entry for the same person — only the
+  // latest intended state matters (e.g. check-in then undo).
+  _checkInQueue = _checkInQueue.filter(function(q) {
+    return !(q.payload.ts === payload.ts && q.payload.idx === payload.idx);
+  });
+  _checkInQueue.push({ payload: payload, personName: personName, attempts: 0, queuedAt: Date.now() });
+  persistCheckInQueue();
+  updatePendingIndicator();
+  scheduleQueueRetry(3000);
+}
+
+function scheduleQueueRetry(delayMs) {
+  if (_queueRetryTimer) return;
+  _queueRetryTimer = setTimeout(function() {
+    _queueRetryTimer = null;
+    flushCheckInQueue();
+  }, delayMs);
+}
+
+async function flushCheckInQueue() {
+  if (_queueRetrying || !_checkInQueue.length) return;
+  if (!_sessionToken) { scheduleQueueRetry(5000); return; } // logged out — wait
+  _queueRetrying = true;
+
+  // One at a time, oldest first, so we never pile more concurrent
+  // load onto a server that's already struggling.
+  const item = _checkInQueue[0];
+  item.attempts++;
+  item.payload.session_token = _sessionToken; // token may have been refreshed
+
+  let result;
+  try {
+    result = await postToSheets(item.payload);
+  } catch (e) {
+    result = { status: 'error', message: 'Network error' };
+  }
+
+  if (result && result.status !== 'error') {
+    _checkInQueue.shift();
+    persistCheckInQueue();
+    updatePendingIndicator();
+    if (!_checkInQueue.length) {
+      showDashToast('✓ All pending check-ins saved');
+    }
+  } else if (item.attempts >= 12) {
+    // Give up on this one after a long series of failures, but make it
+    // loud rather than silent — staff need to know to record it manually.
+    _checkInQueue.shift();
+    persistCheckInQueue();
+    updatePendingIndicator();
+    showDashToast('⚠️ Could not save check-in for ' + item.personName + ' after repeated attempts — please note it manually.');
+  }
+
+  _queueRetrying = false;
+  if (_checkInQueue.length) {
+    // Backoff grows with attempts, capped, so a long outage doesn't
+    // hammer the server but recovery is still quick once it returns.
+    const backoff = Math.min(2000 * Math.pow(1.6, Math.min(item.attempts, 6)), 30000);
+    scheduleQueueRetry(backoff);
+  }
+}
+
+function updatePendingIndicator() {
+  const n = _checkInQueue.length;
+  ['pending-sync-badge', 'doors-pending-badge'].forEach(function(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (n > 0) {
+      el.textContent = '⏳ ' + n + ' pending';
+      el.style.display = 'inline-flex';
+    } else {
+      el.style.display = 'none';
+    }
+  });
+}
+
 function markGuestCheckedIn(ts, checkedIn, idx, personName) {
   const guest = _dashGuestsCache.find(g => g.ts === ts);
   if(!guest) return;
@@ -3308,9 +3606,24 @@ function markGuestCheckedIn(ts, checkedIn, idx, personName) {
 
   postToSheets(payload).then((result) => {
     if (result.status === 'error') {
-      Object.assign(guest, prevState);
-      renderCheckInTab(); renderOverviewTab(); renderGuestListTab(); renderOverdueTab(); renderTablesTab();
-      showDashToast('⚠️ Could not save — check your connection and try again.');
+      const msg = String(result.message || '');
+      // A definitive rejection (bad session, guest genuinely gone,
+      // role not permitted) means retrying will never work — roll back
+      // so the dashboard doesn't show something untrue.
+      const isDefinitive = /unauthorized|not found|cannot|permission|only specific/i.test(msg);
+
+      if (isDefinitive) {
+        Object.assign(guest, prevState);
+        renderCheckInTab(); renderOverviewTab(); renderGuestListTab(); renderOverdueTab(); renderTablesTab();
+        showDashToast('⚠️ ' + (msg || 'Could not save.'));
+        return;
+      }
+
+      // Otherwise it's a slow/busy server or a flaky connection. The
+      // guest IS here — keep the check-in on screen and retry in the
+      // background rather than losing it.
+      enqueueCheckIn(payload, personName);
+      showDashToast('⏳ ' + personName + ' checked in — saving in background…');
       return;
     }
     showDashToast(checkedIn ? `✓ ${personName} checked in` : `↩ Check-in undone for ${personName}`);
@@ -3634,6 +3947,7 @@ const MODAL_CLOSE_FNS = {
   'followup-modal-backdrop': closeFollowUpModal,
   'approve-modal-backdrop': closeApproveModal,
   'wa-qr-modal-backdrop': closeWhatsAppQrModal,
+  'confirm-checkin-backdrop': closeConfirmCheckIn,
   'qr-scanner-backdrop': closeQRScanner,
   'guest-detail-backdrop': closeGuestDetailModal,
   'danger-confirm-backdrop': closeDangerConfirm,
@@ -4630,20 +4944,10 @@ function enterDoorsMode() {
   renderDoorsSearchResults();
 
   const exitBtn = document.querySelector('.doors-exit-btn');
-  if (exitBtn) {
-    const isUsher = _currentUser && _currentUser.role === 'usher';
-    exitBtn.textContent = isUsher ? '🚪 Log Out' : '✕ Exit';
-  }
+  if (exitBtn) exitBtn.textContent = '✕ Exit';
 }
 
 function exitDoorsMode() {
-  // Ushers only ever have Doors Mode — "Exit" for them means logging
-  // out entirely, not falling back to dashboard tabs they were never
-  // meant to see in the first place.
-  if (_currentUser && _currentUser.role === 'usher') {
-    dashLogout();
-    return;
-  }
   document.getElementById('doors-mode-view').classList.remove('active');
   document.body.style.overflow = '';
 }
@@ -4696,9 +5000,9 @@ function renderDoorsSearchResults() {
 }
 
 function doorsCheckIn(ts, idx, name) {
-  markGuestCheckedIn(ts, true, idx, name);
-  updateDoorsCounter();
-  renderDoorsSearchResults();
+  // Manual search-and-tap in Doors Mode gets the same confirmation
+  // step as the Check-In tab — it's the same misclick risk.
+  confirmManualCheckIn(ts, true, idx, name);
 }
 
 function openApproveModal(ts) {
@@ -5418,7 +5722,18 @@ async function sendIndividualFollowUpEmail() {
 </script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  setTimeout(openLoginModal, 50);
+  // If there's still a valid saved session, go straight back into the
+  // dashboard — staff who lock their phone, close the tab, or reopen
+  // the link mid-event shouldn't have to log in again. If the server
+  // has since expired the session, the first data sync will get an
+  // Unauthorized response and prompt a clean re-login.
+  setTimeout(function() {
+    if (restoreSavedSession()) {
+      enterLegacyDashboard();
+    } else {
+      openLoginModal();
+    }
+  }, 50);
 });
 </script>
 
