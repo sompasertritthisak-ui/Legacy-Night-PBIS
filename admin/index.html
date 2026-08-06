@@ -678,11 +678,17 @@ body.dashboard-active #dashboard-view{display:block !important;}
 .monitor-welcome .monitor-check svg{width:52px;height:52px;stroke:#fff;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;}
 .monitor-welcome h1{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:clamp(24px,3vw,36px);color:rgba(255,255,255,0.7);margin:0 0 8px;}
 .monitor-welcome h2{font-family:'Cinzel',serif;font-weight:700;font-size:clamp(40px,7vw,84px);background-image:linear-gradient(100deg,#8a6a26 0%,var(--gold) 20%,var(--gold-light) 38%,var(--gold) 55%,#8a6a26 72%,var(--gold) 88%,#8a6a26 100%);background-size:220% auto;background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin:0;animation:goldShimmer 7s linear infinite;}
+.monitor-seat{margin:22px 0 0;font-family:'DM Sans',sans-serif;font-size:clamp(20px,3vw,34px);font-weight:700;color:var(--gold-light);letter-spacing:0.02em;}
 #doors-mode-view.active{display:flex;}
 .doors-header{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid rgba(201,168,76,0.25);flex-wrap:wrap;gap:12px;}
 .doors-header-left{display:flex;flex-direction:column;gap:4px;}
 .doors-title{font-family:'Cinzel',serif;font-weight:700;color:var(--gold-light);font-size:18px;}
 .doors-counter{color:rgba(255,255,255,0.7);font-size:14px;font-weight:600;}
+.doors-lane-picker{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
+.doors-lane-label{font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);font-weight:700;}
+.doors-lane-btns{display:flex;gap:8px;}
+.doors-lane-btns button{width:44px;height:44px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.7);font-size:17px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all 0.2s ease;}
+.doors-lane-btns button.active{background:linear-gradient(135deg,var(--gold),var(--gold-light));border-color:var(--gold-light);color:var(--deep);}
 .pending-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(232,201,110,0.18);border:1px solid rgba(232,201,110,0.5);color:#e8c96e;font-size:11px;font-weight:700;padding:4px 10px;border-radius:100px;white-space:nowrap;margin-left:8px;}
 .doors-exit-btn{background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.3);color:#fff;padding:12px 22px;border-radius:100px;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;}
 .doors-exit-btn:hover{background:rgba(255,255,255,0.15);}
@@ -880,7 +886,7 @@ body.role-usher .table-assign-select{pointer-events:none;opacity:0.45;}
       <button class="dash-btn" onclick="openHelpOverlay()" title="What does each tab do?">❓ Help</button>
       <button class="dash-btn" onclick="openCommandPalette()" title="Search guests or jump to a tab (Ctrl/Cmd+K)">🔍 Search</button>
       <button class="dash-btn dash-btn-doors" onclick="enterDoorsMode()">🚪 Doors Mode</button>
-      <button class="dash-btn" onclick="openReceptionMonitor()" title="Opens a full-screen 'Welcome' display for a screen at the door">📺 Open Monitor</button>
+      <button class="dash-btn" onclick="chooseMonitorLane()" title="Opens a full-screen 'Welcome' display for a screen at the door">📺 Open Monitor</button>
       <button class="dash-btn-logout" onclick="dashLogout()">Log Out</button>
     </div>
   </div>
@@ -1235,6 +1241,14 @@ body.role-usher .table-assign-select{pointer-events:none;opacity:0.45;}
     <button class="doors-exit-btn" onclick="exitDoorsMode()">✕ Exit</button>
   </div>
   <div class="doors-body">
+    <div class="doors-lane-picker">
+      <span class="doors-lane-label">Reception lane</span>
+      <div class="doors-lane-btns" id="doors-lane-btns">
+        <button type="button" onclick="setDoorsLane(1)">1</button>
+        <button type="button" onclick="setDoorsLane(2)">2</button>
+        <button type="button" onclick="setDoorsLane(3)">3</button>
+      </div>
+    </div>
     <button class="doors-scan-btn" onclick="openQRScanner()">
       <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3M19 14v2M14 19h2M19 19h2v2"/></svg>
       <span>Scan QR Code</span>
@@ -1287,6 +1301,7 @@ body.role-usher .table-assign-select{pointer-events:none;opacity:0.45;}
      needed since it's read-only). Shows "Welcome, [Name]" the moment
      a QR scan checks someone in, then resets itself automatically. -->
 <div id="monitor-view">
+  <div id="monitor-lane-badge" style="display:none;position:absolute;top:18px;right:24px;z-index:5;font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(232,201,110,0.65);font-weight:700;"></div>
   <div id="monitor-content">
     <div class="monitor-waiting">
       <div class="monitor-crest"><img src="" alt="PBIS" class="js-logo"></div>
@@ -3572,6 +3587,40 @@ function updatePendingIndicator() {
   });
 }
 
+/* ── RECEPTION LANE ────────────────────────────────────────────────
+   Which physical queue this device is working. It's a per-device
+   setting rather than a role or a separate login, because the lane a
+   staff member stands at changes night to night and doesn't affect
+   what they're allowed to do — so there's nothing extra to administer,
+   and they can switch lanes mid-event if a queue backs up.
+
+   Check-ins are tagged with this so each lane's monitor can show only
+   its own arrivals.                                                 */
+let _doorsLane = 1;
+
+function setDoorsLane(n) {
+  _doorsLane = n;
+  try { localStorage.setItem('legacy_doors_lane', String(n)); } catch (e) {}
+  renderDoorsLaneButtons();
+  showDashToast('Lane ' + n + ' selected');
+}
+
+function loadDoorsLane() {
+  try {
+    const saved = parseInt(localStorage.getItem('legacy_doors_lane'), 10);
+    if (saved >= 1 && saved <= 3) _doorsLane = saved;
+  } catch (e) {}
+  renderDoorsLaneButtons();
+}
+
+function renderDoorsLaneButtons() {
+  const wrap = document.getElementById('doors-lane-btns');
+  if (!wrap) return;
+  Array.from(wrap.querySelectorAll('button')).forEach(function(b, i) {
+    b.classList.toggle('active', (i + 1) === _doorsLane);
+  });
+}
+
 function markGuestCheckedIn(ts, checkedIn, idx, personName) {
   const guest = _dashGuestsCache.find(g => g.ts === ts);
   if(!guest) return;
@@ -3601,7 +3650,7 @@ function markGuestCheckedIn(ts, checkedIn, idx, personName) {
   renderOverdueTab();
   renderTablesTab();
 
-  const payload = { action: 'markCheckedIn', ts: ts, checked_in: checkedIn, idx: idx, session_token: _sessionToken, staff_name: _currentUser ? _currentUser.name : '' };
+  const payload = { action: 'markCheckedIn', ts: ts, checked_in: checkedIn, idx: idx, lane: _doorsLane, session_token: _sessionToken, staff_name: _currentUser ? _currentUser.name : '' };
   if (clearingNoShow) payload.clear_no_show = true;
 
   postToSheets(payload).then((result) => {
@@ -3830,51 +3879,121 @@ function closeGuestDetailModal() {
 let _monitorPollInterval = null;
 let _monitorLastSeenAt = 0;
 let _monitorResetTimeout = null;
+let _monitorLane = 'all';        // 'all' or 1/2/3
+let _monitorQueue = [];          // arrivals waiting to be shown
+let _monitorShowing = false;
 
 // Opens the reception monitor in a new tab — this is what you'd run
-// on however many screens/TVs you want at the door. Each one polls
-// independently, no login needed since it's read-only.
-function openReceptionMonitor() {
+// on however many screens/TVs you want at the door.
+//   ?monitor=1          → shows arrivals from every lane
+//   ?monitor=1&lane=2   → shows only lane 2's arrivals
+// With one screen, use "all". With a screen beside each queue, give
+// each one its own lane so guests see their name on the display in
+// front of them rather than a shared list.
+function openReceptionMonitor(lane) {
   const base = window.location.origin + window.location.pathname;
-  window.open(base + '?monitor=1', '_blank');
+  const q = '?monitor=1' + (lane && lane !== 'all' ? '&lane=' + lane : '');
+  window.open(base + q, '_blank');
+}
+
+// Asks which lane this screen is for before opening it. One shared
+// screen → "All lanes". A screen beside each queue → pick that lane.
+function chooseMonitorLane() {
+  const ans = prompt(
+    'Which reception lane is this screen for?\n\n' +
+    'Enter 1, 2 or 3 for a screen beside that queue,\n' +
+    'or leave blank / type "all" for a single shared screen.',
+    'all'
+  );
+  if (ans === null) return; // cancelled
+  const v = String(ans).trim().toLowerCase();
+  openReceptionMonitor(/^[1-9]$/.test(v) ? v : 'all');
 }
 
 function enterMonitorMode() {
   const el = document.getElementById('monitor-view');
   if (!el) return; // monitor view only exists on admin.html
+  try {
+    const p = new URLSearchParams(window.location.search);
+    const l = p.get('lane');
+    if (l && /^[1-9]$/.test(l)) _monitorLane = l;
+  } catch (e) {}
+
   el.classList.add('active');
+  const badge = document.getElementById('monitor-lane-badge');
+  if (badge) {
+    badge.textContent = _monitorLane === 'all' ? 'All lanes' : 'Lane ' + _monitorLane;
+    badge.style.display = 'block';
+  }
+  // Start from "now" so opening a monitor mid-event doesn't replay
+  // everyone who already walked in.
+  _monitorLastSeenAt = Date.now();
   pollForRecentCheckIn();
   _monitorPollInterval = setInterval(pollForRecentCheckIn, 2500);
 }
 
 async function pollForRecentCheckIn() {
   try {
-    const url = SHEETS_URL + '?action=getRecentCheckIn&token=' + encodeURIComponent(_sessionToken) + '&_=' + Date.now();
+    const url = SHEETS_URL + '?action=getRecentCheckIn'
+      + '&token=' + encodeURIComponent(_sessionToken)
+      + '&lane=' + encodeURIComponent(_monitorLane)
+      + '&since=' + _monitorLastSeenAt
+      + '&_=' + Date.now();
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 8000);
     const res = await fetch(url, { method: 'GET', signal: controller.signal });
     clearTimeout(timeoutId);
     const j = await res.json();
-    if (j.status === 'ok' && j.checkin && j.checkin.at > _monitorLastSeenAt) {
-      _monitorLastSeenAt = j.checkin.at;
-      showMonitorWelcome(j.checkin.name);
+    if (j.status === 'ok' && Array.isArray(j.checkins) && j.checkins.length) {
+      j.checkins.forEach(function(c) {
+        if (c.at > _monitorLastSeenAt) _monitorLastSeenAt = c.at;
+        _monitorQueue.push(c);
+      });
+      // If several people arrive at once, don't let the backlog grow
+      // into a long parade of stale names — keep it current.
+      if (_monitorQueue.length > 8) _monitorQueue = _monitorQueue.slice(-8);
+      drainMonitorQueue();
     }
   } catch (e) {
-    // Silent — the monitor just keeps showing whatever it last showed
-    // and tries again on the next poll. No one's watching a console.
+    // Silent — the monitor keeps showing whatever it last showed and
+    // retries on the next poll. No one's watching a console.
   }
 }
 
-function showMonitorWelcome(name) {
+// Shows queued arrivals one after another, so two guests checking in
+// seconds apart both get their moment on screen instead of the second
+// one instantly replacing the first.
+function drainMonitorQueue() {
+  if (_monitorShowing || !_monitorQueue.length) return;
+  const next = _monitorQueue.shift();
+  _monitorShowing = true;
+  // Shorter dwell when people are backed up, so the display keeps pace
+  // with the door instead of falling further behind.
+  const dwell = _monitorQueue.length >= 3 ? 2600 : (_monitorQueue.length >= 1 ? 3800 : 6000);
+  showMonitorWelcome(next.name, next.table, next.seat, dwell);
+}
+
+function showMonitorWelcome(name, table, seat, dwell) {
   if (_monitorResetTimeout) clearTimeout(_monitorResetTimeout);
   const el = document.getElementById('monitor-content');
+  const seatLine = table
+    ? `<p class="monitor-seat">Table ${table}${seat ? ' &middot; Seat ' + seat : ''}</p>`
+    : '';
   el.innerHTML = `
     <div class="monitor-welcome">
       <div class="monitor-check"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></div>
       <h1>Welcome,</h1>
       <h2>${name}</h2>
+      ${seatLine}
     </div>`;
-  _monitorResetTimeout = setTimeout(resetMonitorToWaiting, 6000);
+  _monitorResetTimeout = setTimeout(function() {
+    _monitorShowing = false;
+    if (_monitorQueue.length) {
+      drainMonitorQueue();      // straight on to the next guest
+    } else {
+      resetMonitorToWaiting();
+    }
+  }, dwell || 6000);
 }
 
 function resetMonitorToWaiting() {
@@ -4940,6 +5059,7 @@ function enterDoorsMode() {
   document.getElementById('doors-mode-view').classList.add('active');
   document.body.style.overflow = 'hidden';
   document.getElementById('doors-search').value = '';
+  loadDoorsLane();
   updateDoorsCounter();
   renderDoorsSearchResults();
 
