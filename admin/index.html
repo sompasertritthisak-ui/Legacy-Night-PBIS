@@ -689,6 +689,16 @@ body.dashboard-active #dashboard-view{display:block !important;}
 .doors-lane-btns{display:flex;gap:8px;}
 .doors-lane-btns button{width:44px;height:44px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.7);font-size:17px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all 0.2s ease;}
 .doors-lane-btns button.active{background:linear-gradient(135deg,var(--gold),var(--gold-light));border-color:var(--gold-light);color:var(--deep);}
+.app-dialog-choices{display:none;flex-direction:column;gap:10px;margin:18px 0 4px;}
+.app-dialog-choices.show{display:flex;}
+.app-dialog-choice{display:flex;align-items:center;gap:14px;width:100%;padding:14px 16px;border:1.5px solid var(--gray);border-radius:12px;background:var(--white);cursor:pointer;text-align:left;font-family:'DM Sans',sans-serif;transition:border-color 0.18s ease,transform 0.18s ease,box-shadow 0.18s ease;}
+.app-dialog-choice:hover{border-color:var(--gold);transform:translateY(-2px);box-shadow:0 8px 20px rgba(201,168,76,0.18);}
+.app-dialog-choice-badge{flex-shrink:0;width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg,var(--navy),var(--deep));color:var(--gold-light);display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:800;}
+.app-dialog-choice-badge.all{background:linear-gradient(135deg,var(--gold),var(--gold-light));color:var(--deep);font-size:15px;}
+.app-dialog-choice-text{display:flex;flex-direction:column;gap:2px;min-width:0;}
+.app-dialog-choice-title{font-size:14.5px;font-weight:700;color:var(--navy);}
+.app-dialog-choice-sub{font-size:12px;color:var(--gray-mid);line-height:1.45;}
+.dash-btn-danger{background:linear-gradient(135deg,#a4453e,#c0504d);border:none;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;}
 .pending-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(232,201,110,0.18);border:1px solid rgba(232,201,110,0.5);color:#e8c96e;font-size:11px;font-weight:700;padding:4px 10px;border-radius:100px;white-space:nowrap;margin-left:8px;}
 .doors-exit-btn{background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.3);color:#fff;padding:12px 22px;border-radius:100px;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;}
 .doors-exit-btn:hover{background:rgba(255,255,255,0.15);}
@@ -1203,6 +1213,25 @@ body.role-manager .dash-btn-doors{display:none !important;}
       <div class="edit-guest-actions">
         <button class="edit-guest-cancel" onclick="closeApproveModal()">Cancel</button>
         <button class="form-submit" id="approve-modal-send-btn" onclick="submitApproveGuest()" disabled>🎫 Approve &amp; Send Ticket</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- APP DIALOG — branded replacement for browser prompt/confirm/alert -->
+<div class="modal-backdrop notranslate" translate="no" id="app-dialog-backdrop" onclick="if(event.target===this)closeAppDialog(null)">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-header">
+      <button class="modal-close" aria-label="Close" onclick="closeAppDialog(null)">✕</button>
+      <h2 id="app-dialog-title">Confirm</h2>
+    </div>
+    <div class="edit-guest-body">
+      <p id="app-dialog-message" style="margin:0 0 4px;font-size:14px;color:var(--text);line-height:1.7;"></p>
+      <p id="app-dialog-sub" style="margin:10px 0 0;font-size:12.5px;color:var(--gray-mid);line-height:1.6;"></p>
+      <div id="app-dialog-choices" class="app-dialog-choices"></div>
+      <div class="edit-guest-actions" id="app-dialog-actions">
+        <button class="edit-guest-cancel" id="app-dialog-cancel" onclick="closeAppDialog(null)">Cancel</button>
+        <button class="dash-btn-gold" id="app-dialog-confirm">Confirm</button>
       </div>
     </div>
   </div>
@@ -3342,7 +3371,14 @@ function toggleSelectAllGuests(checked) {
 function exportGuestListCSV(selectedOnly) {
   const allGuests = _dashGuestsCache;
   const guests = selectedOnly ? allGuests.filter(g => _selectedGuestTs.has(g.ts)) : allGuests;
-  if(!guests.length) { alert(selectedOnly ? 'No guests selected.' : 'No guests to export yet.'); return; }
+  if(!guests.length) {
+    appAlert({
+      title: 'Nothing to Export',
+      message: selectedOnly ? 'No guests are selected.' : 'There are no guests to export yet.',
+      sub: selectedOnly ? 'Tick the checkbox beside one or more guests first.' : '',
+    });
+    return;
+  }
   const headers = ['First Name','Last Name','Email','Phone','Organization','Guest Count','Additional Guests','Dietary Preferences','Dietary Restrictions','Checked In','RSVP Date'];
   const rows = guests.map(g => [
     g.fname||'', g.lname||'', g.email||'', g.phone||'',
@@ -3896,7 +3932,7 @@ function renderOverdueTab() {
     </div>`;
 }
 
-function markGuestNoShow(ts, noShow) {
+async function markGuestNoShow(ts, noShow) {
   const guest = _dashGuestsCache.find(g => g.ts === ts);
   if (!guest) return;
 
@@ -3906,7 +3942,13 @@ function markGuestNoShow(ts, noShow) {
   }
 
   if (noShow) {
-    const ok = confirm(`Mark ${guest.fname || 'this guest'} ${guest.lname || ''} as a No-Show?\n\nThis records that they RSVP'd but never arrived. If they're checked in later, this clears automatically.`);
+    const ok = await appConfirm({
+      title: 'Mark as No-Show?',
+      message: `Mark <strong>${guest.fname || 'this guest'} ${guest.lname || ''}</strong> as a no-show?`,
+      sub: "This records that they RSVP'd but never arrived. If they check in later, it clears automatically.",
+      confirmLabel: 'Mark No-Show',
+      danger: true,
+    });
     if (!ok) return;
   }
 
@@ -4032,18 +4074,100 @@ function openReceptionMonitor(lane) {
   window.open(base + q, '_blank');
 }
 
+/* ── APP DIALOG ────────────────────────────────────────────────────
+   A branded stand-in for the browser's prompt/confirm/alert. Those
+   are jarring next to everything else, can't show any context, and on
+   some phones look like a scam warning — not what you want a staff
+   member reading mid-shift with a queue in front of them.
+
+   Three shapes, all promise-based so call sites read naturally:
+     appConfirm({...})  → resolves true / false
+     appAlert({...})    → resolves when dismissed
+     appChoose({...})   → resolves with the chosen value, or null   */
+let _appDialogResolve = null;
+
+function closeAppDialog(value) {
+  const bd = document.getElementById('app-dialog-backdrop');
+  if (bd) bd.classList.remove('open');
+  document.body.style.overflow = '';
+  const r = _appDialogResolve;
+  _appDialogResolve = null;
+  if (r) r(value);
+}
+
+function openAppDialog(opts) {
+  return new Promise(function(resolve) {
+    // If one dialog is somehow already open, settle it first so we
+    // never leave a caller hanging forever.
+    if (_appDialogResolve) { const prev = _appDialogResolve; _appDialogResolve = null; prev(null); }
+    _appDialogResolve = resolve;
+
+    document.getElementById('app-dialog-title').textContent = opts.title || 'Confirm';
+    document.getElementById('app-dialog-message').innerHTML = opts.message || '';
+    const sub = document.getElementById('app-dialog-sub');
+    sub.innerHTML = opts.sub || '';
+    sub.style.display = opts.sub ? 'block' : 'none';
+
+    const choicesEl = document.getElementById('app-dialog-choices');
+    const actionsEl = document.getElementById('app-dialog-actions');
+    const cancelBtn = document.getElementById('app-dialog-cancel');
+    const confirmBtn = document.getElementById('app-dialog-confirm');
+    choicesEl.innerHTML = '';
+
+    if (opts.choices && opts.choices.length) {
+      choicesEl.classList.add('show');
+      opts.choices.forEach(function(ch) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'app-dialog-choice';
+        b.innerHTML =
+          '<span class="app-dialog-choice-badge' + (ch.wide ? ' all' : '') + '">' + ch.badge + '</span>' +
+          '<span class="app-dialog-choice-text">' +
+            '<span class="app-dialog-choice-title">' + ch.title + '</span>' +
+            (ch.sub ? '<span class="app-dialog-choice-sub">' + ch.sub + '</span>' : '') +
+          '</span>';
+        b.onclick = function() { closeAppDialog(ch.value); };
+        choicesEl.appendChild(b);
+      });
+      actionsEl.style.display = 'flex';
+      confirmBtn.style.display = 'none';
+      cancelBtn.textContent = 'Cancel';
+    } else {
+      choicesEl.classList.remove('show');
+      actionsEl.style.display = 'flex';
+      confirmBtn.style.display = opts.alertOnly ? 'none' : 'inline-flex';
+      confirmBtn.textContent = opts.confirmLabel || 'Confirm';
+      confirmBtn.className = opts.danger ? 'dash-btn-danger' : 'dash-btn-gold';
+      confirmBtn.onclick = function() { closeAppDialog(true); };
+      cancelBtn.textContent = opts.alertOnly ? 'Close' : (opts.cancelLabel || 'Cancel');
+    }
+
+    document.getElementById('app-dialog-backdrop').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  });
+}
+
+function appConfirm(opts) { return openAppDialog(opts).then(function(v) { return v === true; }); }
+function appAlert(opts)   { return openAppDialog(Object.assign({ alertOnly: true }, opts)); }
+function appChoose(opts)  { return openAppDialog(opts); }
+
 // Asks which lane this screen is for before opening it. One shared
 // screen → "All lanes". A screen beside each queue → pick that lane.
 function chooseMonitorLane() {
-  const ans = prompt(
-    'Which reception lane is this screen for?\n\n' +
-    'Enter 1, 2 or 3 for a screen beside that queue,\n' +
-    'or leave blank / type "all" for a single shared screen.',
-    'all'
-  );
-  if (ans === null) return; // cancelled
-  const v = String(ans).trim().toLowerCase();
-  openReceptionMonitor(/^[1-9]$/.test(v) ? v : 'all');
+  appChoose({
+    title: '📺 Open Reception Monitor',
+    message: 'Which screen is this for?',
+    sub: 'Pick a lane if the screen sits beside that queue, so guests see their own name. Choose “All lanes” for a single shared display.',
+    choices: [
+      { badge: 'ALL', wide: true, value: 'all', title: 'All lanes',
+        sub: 'One shared screen — shows every arrival in order' },
+      { badge: '1', value: '1', title: 'Lane 1', sub: 'Only guests checked in on lane 1' },
+      { badge: '2', value: '2', title: 'Lane 2', sub: 'Only guests checked in on lane 2' },
+      { badge: '3', value: '3', title: 'Lane 3', sub: 'Only guests checked in on lane 3' },
+    ],
+  }).then(function(v) {
+    if (v) openReceptionMonitor(v);
+  });
 }
 
 function enterMonitorMode() {
@@ -4203,6 +4327,7 @@ const MODAL_CLOSE_FNS = {
   'approve-modal-backdrop': closeApproveModal,
   'wa-qr-modal-backdrop': closeWhatsAppQrModal,
   'confirm-checkin-backdrop': closeConfirmCheckIn,
+  'app-dialog-backdrop': function() { closeAppDialog(null); },
   'qr-scanner-backdrop': closeQRScanner,
   'guest-detail-backdrop': closeGuestDetailModal,
   'danger-confirm-backdrop': closeDangerConfirm,
@@ -5373,7 +5498,14 @@ async function submitApproveGuest() {
   const confirmMsg = `Send ${partyCount} separate ticket email${partyCount === 1 ? '' : 's'} to ${guest.email}?\n\n` +
     `One per person (${_approveRecipients.map(r => r.name).join(', ')}), each with their own QR code` +
     `${extraCount ? ' plus ' + extraCount + ' shared attachment' + (extraCount === 1 ? '' : 's') : ''}. This can't be undone once sent.`;
-  const ok = confirm(confirmMsg);
+  const ok = await appConfirm({
+    title: 'Send Tickets?',
+    message: `Send <strong>${partyCount} separate ticket email${partyCount === 1 ? '' : 's'}</strong> to ${guest.email}?`,
+    sub: `One per person (${_approveRecipients.map(r => r.name).join(', ')}), each with their own QR code`
+       + `${extraCount ? ' plus ' + extraCount + ' shared attachment' + (extraCount === 1 ? '' : 's') : ''}.`
+       + " This can't be undone once sent.",
+    confirmLabel: '🎫 Send Tickets',
+  });
   if (!ok) return;
 
   const btn = document.getElementById('approve-modal-send-btn');
@@ -5427,10 +5559,16 @@ async function submitApproveGuest() {
   }
 }
 
-function undoApproval(ts) {
+async function undoApproval(ts) {
   const guest = _dashGuestsCache.find(g => g.ts === ts);
   if (!guest) return;
-  const ok = confirm(`Undo approval for ${guest.fname || 'this guest'} ${guest.lname || ''}?\n\nThis only clears their approved status here — it does NOT unsend the ticket email already delivered.`);
+  const ok = await appConfirm({
+    title: 'Undo Approval?',
+    message: `Undo approval for <strong>${guest.fname || 'this guest'} ${guest.lname || ''}</strong>?`,
+    sub: 'This only clears their approved status here — it does <strong>not</strong> unsend the ticket email already delivered.',
+    confirmLabel: 'Undo Approval',
+    danger: true,
+  });
   if (!ok) return;
 
   const prevState = { approved: guest.approved, approved_at: guest.approved_at };
@@ -5934,7 +6072,12 @@ async function sendIndividualFollowUpEmail() {
   if (!message) { showDashToast('⚠️ Write a message before sending.'); return; }
 
   const fullName = `${guest.fname||''} ${guest.lname||''}`.trim() || 'Guest';
-  const ok = confirm(`Send this email to ${fullName} (${guest.email}) now?\n\n${_followUpFiles.length} attachment${_followUpFiles.length===1?'':'s'} will be included. This can't be undone once sent.`);
+  const ok = await appConfirm({
+    title: 'Send Email?',
+    message: `Send this email to <strong>${fullName}</strong> (${guest.email}) now?`,
+    sub: `${_followUpFiles.length} attachment${_followUpFiles.length===1?'':'s'} will be included. This can't be undone once sent.`,
+    confirmLabel: '📧 Send Now',
+  });
   if (!ok) return;
 
   const btn = document.getElementById('followup-modal-send-btn');
