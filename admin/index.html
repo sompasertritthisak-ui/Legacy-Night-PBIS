@@ -787,6 +787,42 @@ body.role-usher #dtab-postevent{display:none !important;}
 body.role-usher .table-seat-input{pointer-events:none;background:transparent;border-color:transparent;color:var(--gray-mid);}
 body.role-usher .table-guest-chip button{display:none;}
 body.role-usher .table-assign-select{pointer-events:none;opacity:0.45;}
+
+/* ── MANAGEMENT (read-only oversight) ──────────────────────────────
+   Managers see the numbers, the guest list, VIP arrivals, seating and
+   the staff activity log — but every control that would change a
+   guest record is removed. Tabs that exist purely to perform actions
+   (approvals, check-in, QR issuing, email sending) are hidden
+   outright, since an empty read-only version of them is just noise.
+   The backend enforces the same restriction independently. */
+body.role-manager #dtab-approvals,
+body.role-manager #dtab-checkin,
+body.role-manager #dtab-qrgen,
+body.role-manager #dtab-followup,
+body.role-manager #dtab-postevent{display:none !important;}
+
+body.role-manager .dash-checkin-btn,
+body.role-manager .dash-checkin-undo,
+body.role-manager .dash-noshow-btn,
+body.role-manager .dash-noshow-undo,
+body.role-manager .dash-approve-btn,
+body.role-manager .dash-approve-undo,
+body.role-manager .dash-row-action,
+body.role-manager .dash-row-action-delete,
+body.role-manager .dash-btn-gold,
+body.role-manager .followup-compose-btn,
+body.role-manager #edit-guest-save-btn,
+body.role-manager #add-guest-save-btn,
+body.role-manager .table-guest-chip button,
+body.role-manager .vip-star-btn{display:none !important;}
+
+body.role-manager .table-seat-input,
+body.role-manager .table-assign-select{pointer-events:none;background:transparent;border-color:transparent;color:var(--gray-mid);}
+
+/* Doors Mode is an action surface — managers don't get it at all */
+body.role-manager .dash-btn-doors{display:none !important;}
+
+.dash-manager-notice{background:rgba(45,158,95,0.12);border-bottom:1px solid rgba(45,158,95,0.28);padding:8px 24px;font-size:12px;color:rgba(30,30,30,0.75);text-align:center;letter-spacing:0.03em;}
 .dash-sync-error-banner{background:#a4453e;color:#fff;padding:12px 24px;font-size:13px;text-align:center;font-weight:600;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;}
 .dash-sync-error-banner button{background:rgba(255,255,255,0.2);border:1.5px solid rgba(255,255,255,0.5);color:#fff;padding:6px 16px;border-radius:100px;font-size:12px;font-weight:700;cursor:pointer;}
 .dash-sync-error-banner button:hover{background:rgba(255,255,255,0.3);}
@@ -2567,16 +2603,22 @@ function enterLegacyDashboard() {
     if(subtitle) subtitle.textContent = `Panyathip British International School · Logged in as ${_currentUser.name}`;
   }
 
-  if(_currentUser && _currentUser.role === 'usher') {
+  document.body.classList.remove('role-usher', 'role-manager', 'role-marketing');
+  const oldNotice = document.getElementById('dash-marketing-notice');
+  if (oldNotice) oldNotice.remove();
+
+  if (_currentUser && _currentUser.role === 'usher') {
     document.body.classList.add('role-usher');
-    document.body.classList.remove('role-marketing');
-    const oldNotice = document.getElementById('dash-marketing-notice');
-    if (oldNotice) oldNotice.remove();
-  } else {
-    document.body.classList.remove('role-marketing');
-    document.body.classList.remove('role-usher');
-    const oldNotice = document.getElementById('dash-marketing-notice');
-    if (oldNotice) oldNotice.remove();
+  } else if (_currentUser && _currentUser.role === 'manager') {
+    document.body.classList.add('role-manager');
+    if (!document.getElementById('dash-marketing-notice')) {
+      const notice = document.createElement('div');
+      notice.id = 'dash-marketing-notice';
+      notice.className = 'dash-manager-notice';
+      notice.textContent = '👁 Management view — live figures and guest information, view-only. Guest records cannot be changed from this account.';
+      const dbView = document.getElementById('dashboard-view');
+      if (dbView) dbView.insertBefore(notice, dbView.firstChild);
+    }
   }
 
   showDashSkeletons();
@@ -2889,6 +2931,99 @@ function svgTrendChart(points, width, height) {
 }
 
 /* ── OVERVIEW TAB — key stats + RSVP analytics ── */
+/* ── EXECUTIVE SUMMARY ─────────────────────────────────────────────
+   The figures a senior leader actually needs at a glance, which the
+   existing stat cards didn't cover: real headcount (not RSVP count —
+   parties matter), catering split for the venue, VIP arrivals, and
+   seating progress. Shown to everyone; it's the core of what the
+   management view exists for.                                      */
+function buildExecutiveSummary(guests) {
+  try {
+    const headcount = guests.reduce((s, g) => s + (parseInt(g.guest_count, 10) || 1), 0);
+    const capacity = (typeof VENUE_CAPACITY !== 'undefined') ? VENUE_CAPACITY : 300;
+    const capPct = capacity ? Math.round((headcount / capacity) * 100) : 0;
+
+    // Individual arrivals, counting each person in a party separately
+    let arrivedPeople = 0;
+    guests.forEach(g => {
+      try {
+        const ci = JSON.parse(g.individual_checkins || '{}');
+        arrivedPeople += Object.keys(ci).filter(k => ci[k] && ci[k].checked_in).length;
+      } catch (e) { if (g.checked_in) arrivedPeople += 1; }
+    });
+    const arrivedPct = headcount ? Math.round((arrivedPeople / headcount) * 100) : 0;
+
+    // Catering split — what the venue needs to know
+    const meals = { Meat: 0, Fish: 0, Vegetarian: 0, Unspecified: 0 };
+    guests.forEach(g => {
+      const bump = k => { meals[k] = (meals[k] || 0) + 1; };
+      const norm = v => {
+        const s = String(v || '').toLowerCase();
+        if (s.includes('beef') || s.includes('wagyu') || s.includes('meat')) return 'Meat';
+        if (s.includes('barramundi') || s.includes('fish') || s.includes('seafood')) return 'Fish';
+        if (s.includes('mushroom') || s.includes('veg')) return 'Vegetarian';
+        return 'Unspecified';
+      };
+      bump(norm(g.course_main));
+      try {
+        (JSON.parse(g.additional_guests_detail || '[]') || []).forEach(a => bump(norm(a.main_course)));
+      } catch (e) {}
+    });
+
+    const vips = guests.filter(g => g.vvip);
+    const vipsArrived = vips.filter(g => g.checked_in).length;
+    const seated = guests.filter(g => g.table_number).length;
+    const approved = guests.filter(g => g.approved).length;
+
+    const bar = (pct, color) =>
+      `<div style="height:8px;border-radius:6px;background:var(--gray);overflow:hidden;margin-top:8px;">
+         <div style="height:100%;width:${Math.min(100, pct)}%;background:${color};border-radius:6px;"></div></div>`;
+
+    return `
+    <div class="dash-panel" style="margin-top:18px;">
+      <div class="dash-panel-title">Executive Summary</div>
+      <div class="dash-stats-row">
+        <div class="dash-stat-card">
+          <div class="dash-stat-value">${headcount}</div>
+          <div class="dash-stat-label">Expected Attendees</div>
+          <div style="font-size:11px;color:var(--gray-mid);margin-top:4px;">${capPct}% of ${capacity} capacity</div>
+          ${bar(capPct, 'linear-gradient(90deg,var(--gold),var(--gold-light))')}
+        </div>
+        <div class="dash-stat-card">
+          <div class="dash-stat-value">${arrivedPeople}</div>
+          <div class="dash-stat-label">People Arrived</div>
+          <div style="font-size:11px;color:var(--gray-mid);margin-top:4px;">${arrivedPct}% of expected</div>
+          ${bar(arrivedPct, 'linear-gradient(90deg,#2d9e5f,#4bc07d)')}
+        </div>
+        <div class="dash-stat-card">
+          <div class="dash-stat-value">${vipsArrived} / ${vips.length}</div>
+          <div class="dash-stat-label">⭐ VIPs Arrived</div>
+          <div style="font-size:11px;color:var(--gray-mid);margin-top:4px;">${vips.length - vipsArrived} still expected</div>
+        </div>
+        <div class="dash-stat-card">
+          <div class="dash-stat-value">${seated} / ${guests.length}</div>
+          <div class="dash-stat-label">Parties Seated</div>
+          <div style="font-size:11px;color:var(--gray-mid);margin-top:4px;">${guests.length - seated} without a table</div>
+        </div>
+        <div class="dash-stat-card">
+          <div class="dash-stat-value">${approved}</div>
+          <div class="dash-stat-label">Tickets Issued</div>
+          <div style="font-size:11px;color:var(--gray-mid);margin-top:4px;">${guests.length - approved} awaiting</div>
+        </div>
+      </div>
+      <div class="dash-panel-title" style="margin-top:20px;">Catering Numbers <span style="font-weight:400;font-size:11px;color:var(--gray-mid);text-transform:none;letter-spacing:0;">— per person, including additional guests</span></div>
+      <div class="dash-stats-row">
+        <div class="dash-stat-card"><div class="dash-stat-value">${meals.Meat}</div><div class="dash-stat-label">🥩 Wagyu Beef</div></div>
+        <div class="dash-stat-card"><div class="dash-stat-value">${meals.Fish}</div><div class="dash-stat-label">🐟 Barramundi</div></div>
+        <div class="dash-stat-card"><div class="dash-stat-value">${meals.Vegetarian}</div><div class="dash-stat-label">🌱 Mushrooms</div></div>
+        <div class="dash-stat-card"><div class="dash-stat-value">${meals.Unspecified}</div><div class="dash-stat-label">Not Yet Chosen</div></div>
+      </div>
+    </div>`;
+  } catch (e) {
+    return '';
+  }
+}
+
 function renderOverviewTab() {
   const el = document.getElementById('dash-tab-content-overview');
   const guests = _dashGuestsCache;
@@ -2937,7 +3072,8 @@ function renderOverviewTab() {
         <div class="dash-stat-card"><div class="dash-stat-value">${withEmailCount}</div><div class="dash-stat-label">Guests With Email</div></div>
         <div class="dash-stat-card"><div class="dash-stat-value">${followUpSent}</div><div class="dash-stat-label">Follow-Ups Sent</div></div>
         <div class="dash-stat-card"><div class="dash-stat-value">${avgPerDay}</div><div class="dash-stat-label">Avg RSVPs / Day</div></div>
-      </div>`;
+      </div>
+      ${buildExecutiveSummary(guests)}`;
   } catch (e) {
     console.error('Overview: capacity/stats section failed:', e);
     statsHTML = `<div class="dash-panel"><div class="dash-empty">Could not compute summary stats.</div></div>`;
