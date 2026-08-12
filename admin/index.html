@@ -699,6 +699,22 @@ body.dashboard-active #dashboard-view{display:block !important;}
 .app-dialog-choice-title{font-size:14.5px;font-weight:700;color:var(--navy);}
 .app-dialog-choice-sub{font-size:12px;color:var(--gray-mid);line-height:1.45;}
 .dash-btn-danger{background:linear-gradient(135deg,#a4453e,#c0504d);border:none;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.edit-section-divider{display:flex;align-items:center;gap:12px;margin:22px 0 14px;}
+.edit-section-divider::before,.edit-section-divider::after{content:'';flex:1;height:1px;background:var(--gray);}
+.edit-section-divider span{font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--gray-mid);font-weight:700;white-space:nowrap;}
+.edit-guest-row{border:1.5px solid var(--gray);border-radius:12px;padding:14px;margin-bottom:12px;background:var(--cream);position:relative;}
+.edit-guest-row-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.edit-guest-row-head strong{font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);}
+.edit-guest-row-remove{background:none;border:none;color:var(--gray-mid);font-size:16px;cursor:pointer;line-height:1;padding:2px 6px;border-radius:6px;}
+.edit-guest-row-remove:hover{background:rgba(192,80,77,0.12);color:#a03c3a;}
+.edit-add-guest-btn{width:100%;padding:12px;border:1.5px dashed var(--gray);border-radius:10px;background:transparent;color:var(--gray-mid);font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:border-color 0.2s ease,color 0.2s ease;}
+.edit-add-guest-btn:hover{border-color:var(--gold);color:var(--gold);}
+.edit-guest-empty{font-size:12.5px;color:var(--gray-mid);text-align:center;padding:10px 0 4px;font-style:italic;}
+.guest-sub-row td{background:rgba(201,168,76,0.05);font-size:12.5px;color:var(--gray-mid);}
+.guest-sub-name{padding-left:40px !important;position:relative;color:var(--navy);font-weight:600;}
+.guest-sub-name::before{content:'↳';position:absolute;left:20px;top:50%;transform:translateY(-50%);color:var(--gold);font-weight:400;}
+.dash-table tbody tr.clickable-row{cursor:pointer;}
+.dash-table tbody tr.clickable-row:hover{background:rgba(201,168,76,0.07);}
 .backup-list{display:flex;flex-direction:column;gap:6px;}
 .backup-row{display:flex;justify-content:space-between;align-items:center;padding:9px 14px;background:var(--cream);border:1px solid var(--gray);border-radius:8px;font-size:12.5px;color:var(--navy);}
 .backup-row span:last-child{color:var(--gray-mid);font-size:11.5px;}
@@ -1045,40 +1061,41 @@ body.role-manager .dash-btn-doors{display:none !important;}
         </div>
       </div>
       <div class="form-row">
-        <label>Email *</label>
-        <input type="email" id="edit-email" required>
+        <label>Email <span style="text-transform:none;">(optional)</span></label>
+        <input type="email" id="edit-email" placeholder="Leave blank if none on file">
       </div>
       <div class="form-row">
         <label>Phone *</label>
         <input type="tel" id="edit-phone" required>
       </div>
       <div class="form-row">
-        <label>Organization</label>
-        <input type="text" id="edit-organization">
-      </div>
-      <div class="form-row two">
-        <div>
-          <label>Party Size <span style="text-transform:none;">(incl. this guest, max 3)</span></label>
-          <input type="number" id="edit-guest-count" min="1" max="3" step="1">
-        </div>
-        <div>
-          <label>Additional Guest Names</label>
-          <input type="text" id="edit-additional-guests" placeholder="Comma-separated">
-        </div>
-      </div>
-      <div class="form-row two">
-        <div>
-          <label>Dietary Preferences</label>
-          <input type="text" id="edit-dietary-preferences" placeholder="e.g. Vegetarian, Halal">
-        </div>
-        <div>
-          <label>Dietary Restrictions</label>
-          <input type="text" id="edit-dietary-restrictions" placeholder="e.g. peanut allergy">
-        </div>
+        <label>Organisation *</label>
+        <input type="text" id="edit-organization" required>
       </div>
       <div class="form-row">
-        <label>Seating Arrangement <span style="text-transform:none;">(table number — internal use only, not shown to the guest)</span></label>
-        <input type="number" id="edit-table-number" min="1" placeholder="e.g. 5">
+        <label>Main Course</label>
+        <select id="edit-course-main">
+          <option value="">Not chosen yet</option>
+          <option value="Australian Wagyu Beef (Meat)">Australian Wagyu Beef (Meat)</option>
+          <option value="Pan Seared Barramundi (Fish)">Pan Seared Barramundi (Fish)</option>
+          <option value="Pan Seared Mushrooms (Vegetarian)">Pan Seared Mushrooms (Vegetarian)</option>
+        </select>
+      </div>
+
+      <div class="edit-section-divider"><span>Additional Guests</span></div>
+      <div id="edit-additional-list"></div>
+      <button type="button" class="edit-add-guest-btn" id="edit-add-guest-btn" onclick="addEditGuestRow()">+ Add Guest</button>
+
+      <div class="edit-section-divider"><span>Internal — not shown to the guest</span></div>
+      <div class="form-row two">
+        <div>
+          <label>Table Number</label>
+          <input type="number" id="edit-table-number" min="1" placeholder="e.g. 5">
+        </div>
+        <div>
+          <label>Seat Number(s)</label>
+          <input type="text" id="edit-seat-number" placeholder="e.g. 3 or 3-4">
+        </div>
       </div>
       <label class="rsvp-consent-box" for="edit-vvip-check" style="margin-bottom:16px;">
         <input type="checkbox" id="edit-vvip-check">
@@ -3283,8 +3300,13 @@ function renderGuestListTab() {
   }
 
   const filtered = guests.filter(g => {
-    return !_guestSearchTerm ||
-      (g.fname+' '+g.lname+' '+g.email).toLowerCase().includes(_guestSearchTerm.toLowerCase());
+    if (!_guestSearchTerm) return true;
+    // Search companions' names too — staff often only have the name of
+    // the person standing in front of them, who may be the "+1" rather
+    // than whoever filled in the RSVP.
+    const companionNames = parseAdditionalGuestsDetail(g).map(function(a) { return a.name || ''; }).join(' ');
+    const haystack = (g.fname + ' ' + g.lname + ' ' + (g.email || '') + ' ' + (g.organization || '') + ' ' + companionNames).toLowerCase();
+    return haystack.includes(_guestSearchTerm.toLowerCase());
   });
   const totalHeadcount = guests.reduce((sum, g) => sum + (g.guest_count || 1), 0);
 
@@ -3313,10 +3335,35 @@ function renderGuestListTab() {
     const editBtn = canManage
       ? `<button class="dash-row-action" onclick="openEditGuestModal('${g.ts}')" title="Edit" aria-label="Edit guest">✏️</button>`
       : '';
+    // Companions from the RSVP get their own indented row, so every
+    // person actually attending is visible in the list — not hidden
+    // behind a "party of 2" pill that you have to hover to read.
+    const companions = parseAdditionalGuestsDetail(g);
+    const checkins = parseIndividualCheckins(g);
+    const subRows = companions.map(function(a, i) {
+      const idx = i + 1;
+      const inYet = !!(checkins[idx] && checkins[idx].checked_in);
+      return `
+      <tr class="guest-sub-row">
+        <td></td>
+        <td class="guest-sub-name">${a.name || 'Guest ' + idx}</td>
+        <td colspan="2" style="font-size:12px;">${a.main_course || '<span style="opacity:0.5;">No meal chosen</span>'}</td>
+        <td style="font-size:12px;">${a.message ? '💬 ' + a.message : ''}</td>
+        <td style="font-size:11.5px;opacity:0.7;">guest of ${g.fname || ''}</td>
+        <td>${inYet ? '<span class="dash-arrived-pill">✓ Arrived</span>' : '<span style="color:var(--gray-mid);font-size:12px;">Not yet</span>'}</td>
+        <td></td>
+      </tr>`;
+    }).join('');
+
+    // Clicking anywhere on the row opens the guest — the pencil is
+    // still there for editing, but you no longer have to hit a small
+    // icon just to look someone up.
+    const rowOpen = canManage ? `openEditGuestModal('${g.ts}')` : `openGuestDetailModal('${g.ts}')`;
+
     return `
-    <tr>
+    <tr class="clickable-row" onclick="if(!event.target.closest('button,input,a'))${rowOpen}" title="${canManage ? 'Click to edit this guest' : 'Click to view details'}">
       <td><input type="checkbox" class="guest-select-checkbox" data-ts="${g.ts}" ${isChecked} onchange="toggleGuestSelect('${g.ts}',this.checked)"></td>
-      <td style="font-weight:600;color:var(--navy);white-space:nowrap;">${vipStar} <span style="cursor:pointer;" onclick="openGuestDetailModal('${g.ts}')">${g.fname||'—'} ${g.lname||''}</span>${g.status === 'Waitlisted' ? ' <span class="dash-waitlist-pill">⏳ Waitlisted</span>' : ''}</td>
+      <td style="font-weight:600;color:var(--navy);white-space:nowrap;">${vipStar} ${g.fname||'—'} ${g.lname||''}${g.status === 'Waitlisted' ? ' <span class="dash-waitlist-pill">⏳ Waitlisted</span>' : ''}</td>
       <td><a href="tel:${g.phone}" style="color:var(--navy);text-decoration:none;">${g.phone||'—'}</a></td>
       <td><a href="mailto:${g.email}" style="color:var(--gold);text-decoration:none;font-size:12px;">${g.email||'—'}</a></td>
       <td>${g.organization||'—'}</td>
@@ -3327,7 +3374,7 @@ function renderGuestListTab() {
         ${editBtn}
         <button class="dash-row-action dash-row-action-delete" onclick="confirmDeleteGuest('${g.ts}')" title="Delete" aria-label="Delete guest">🗑️</button>
       </td>
-    </tr>`;
+    </tr>${subRows}`;
   }).join('');
 
   const selectedCount = _selectedGuestTs.size;
@@ -4449,6 +4496,82 @@ function toggleGuestVip(ts) {
   });
 }
 
+/* ── ADDITIONAL GUESTS IN THE EDIT MODAL ───────────────────────────
+   The RSVP form captures each additional guest as a structured record
+   — first name, last name, their own main course, their own message.
+   The edit modal used to flatten all that into one comma-separated
+   text box, which meant opening and saving a guest silently destroyed
+   their companions' meal choices. These rows mirror the public form
+   exactly, so what staff see here matches what the guest filled in. */
+const EDIT_COURSE_OPTIONS = [
+  ['', 'Not chosen yet'],
+  ['Australian Wagyu Beef (Meat)', 'Australian Wagyu Beef (Meat)'],
+  ['Pan Seared Barramundi (Fish)', 'Pan Seared Barramundi (Fish)'],
+  ['Pan Seared Mushrooms (Vegetarian)', 'Pan Seared Mushrooms (Vegetarian)'],
+];
+const MAX_EDIT_ADDITIONAL = 2;
+
+function editGuestRowHTML(idx, g) {
+  const opts = EDIT_COURSE_OPTIONS.map(function(o) {
+    return '<option value="' + o[0] + '"' + ((g.main_course || '') === o[0] ? ' selected' : '') + '>' + o[1] + '</option>';
+  }).join('');
+  return '<div class="edit-guest-row" data-idx="' + idx + '">' +
+    '<div class="edit-guest-row-head"><strong>Guest ' + (idx + 1) + '</strong>' +
+      '<button type="button" class="edit-guest-row-remove" onclick="removeEditGuestRow(' + idx + ')" title="Remove this guest">✕</button></div>' +
+    '<div class="form-row two">' +
+      '<div><label>First Name</label><input type="text" class="eg-fname" value="' + escAttr(g.fname || '') + '"></div>' +
+      '<div><label>Last Name</label><input type="text" class="eg-lname" value="' + escAttr(g.lname || '') + '"></div>' +
+    '</div>' +
+    '<div class="form-row"><label>Main Course</label><select class="eg-course">' + opts + '</select></div>' +
+    '<div class="form-row"><label>Message</label><input type="text" class="eg-message" value="' + escAttr(g.message || '') + '" placeholder="Anything we should know"></div>' +
+  '</div>';
+}
+
+function escAttr(s) {
+  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+let _editAdditional = [];
+
+function renderEditAdditional() {
+  const el = document.getElementById('edit-additional-list');
+  if (!el) return;
+  el.innerHTML = _editAdditional.length
+    ? _editAdditional.map(function(g, i) { return editGuestRowHTML(i, g); }).join('')
+    : '<p class="edit-guest-empty">No additional guests — this is a party of one.</p>';
+  const btn = document.getElementById('edit-add-guest-btn');
+  if (btn) btn.style.display = _editAdditional.length >= MAX_EDIT_ADDITIONAL ? 'none' : 'block';
+}
+
+// Reads whatever is currently typed into the rows, so nothing is lost
+// when a row is added or removed mid-edit.
+function collectEditAdditional() {
+  const rows = Array.from(document.querySelectorAll('#edit-additional-list .edit-guest-row'));
+  return rows.map(function(r) {
+    const fn = (r.querySelector('.eg-fname').value || '').trim();
+    const ln = (r.querySelector('.eg-lname').value || '').trim();
+    return {
+      fname: fn, lname: ln,
+      name: (fn + ' ' + ln).trim(),
+      main_course: r.querySelector('.eg-course').value,
+      message: (r.querySelector('.eg-message').value || '').trim(),
+    };
+  });
+}
+
+function addEditGuestRow() {
+  _editAdditional = collectEditAdditional();
+  if (_editAdditional.length >= MAX_EDIT_ADDITIONAL) return;
+  _editAdditional.push({ fname: '', lname: '', name: '', main_course: '', message: '' });
+  renderEditAdditional();
+}
+
+function removeEditGuestRow(idx) {
+  _editAdditional = collectEditAdditional();
+  _editAdditional.splice(idx, 1);
+  renderEditAdditional();
+}
+
 function openEditGuestModal(ts) {
   if (!canEditOrVip()) { showDashToast('⚠️ Only specific staff can edit guest details.'); return; }
   const guest = _dashGuestsCache.find(g => g.ts === ts);
@@ -4460,13 +4583,23 @@ function openEditGuestModal(ts) {
   document.getElementById('edit-email').value = guest.email || '';
   document.getElementById('edit-phone').value = guest.phone || '';
   document.getElementById('edit-organization').value = guest.organization || '';
-  document.getElementById('edit-guest-count').value = guest.guest_count || 1;
-  document.getElementById('edit-additional-guests').value = guest.additional_guests || '';
-  document.getElementById('edit-dietary-preferences').value = guest.dietary_preferences || '';
-  document.getElementById('edit-dietary-restrictions').value = guest.dietary_restrictions || '';
+  document.getElementById('edit-course-main').value = guest.course_main || '';
   document.getElementById('edit-vvip-check').checked = !!guest.vvip;
   document.getElementById('edit-table-number').value = guest.table_number || '';
+  document.getElementById('edit-seat-number').value = guest.seat_number || '';
   document.getElementById('edit-notes').value = guest.notes || '';
+
+  _editAdditional = parseAdditionalGuestsDetail(guest).map(function(g) {
+    const parts = String(g.name || '').trim().split(/\s+/);
+    return {
+      fname: g.fname || parts[0] || '',
+      lname: g.lname || parts.slice(1).join(' ') || '',
+      name: g.name || '',
+      main_course: g.main_course || '',
+      message: g.message || '',
+    };
+  });
+  renderEditAdditional();
 
   document.getElementById('edit-guest-backdrop').classList.add('open');
   document.body.style.overflow = 'hidden';
@@ -4577,20 +4710,41 @@ function saveEditGuest() {
   const email = get('edit-email').trim();
   const phone = get('edit-phone').trim();
 
-  if (!fname || !lname || !email || !phone) {
-    showDashToast('⚠️ First name, last name, email, and phone are required.');
+  const organization = get('edit-organization').trim();
+  // Email is optional here, matching the public form — plenty of
+  // guests have no address on file and get their ticket by WhatsApp.
+  if (!fname || !lname || !phone || !organization) {
+    showDashToast('⚠️ First name, last name, phone and organisation are required.');
     return;
   }
 
+  // Only keep additional guests who actually have a name typed in —
+  // an empty row someone added and abandoned shouldn't become a guest.
+  const additional = collectEditAdditional().filter(function(g) { return g.name; });
+  const courseMain = get('edit-course-main');
+
+  // Dietary preference is derived from the main course, exactly as the
+  // public form does it, so the catering figures stay consistent no
+  // matter whether a record came from a guest or from staff editing.
+  const dietFromCourse = function(course) {
+    const s = String(course || '').toLowerCase();
+    if (s.indexOf('beef') !== -1 || s.indexOf('wagyu') !== -1) return 'Meat';
+    if (s.indexOf('barramundi') !== -1 || s.indexOf('fish') !== -1) return 'Fish';
+    if (s.indexOf('mushroom') !== -1 || s.indexOf('veg') !== -1) return 'Vegetarian';
+    return '';
+  };
+
   const updated = {
     fname, lname, email, phone,
-    organization: get('edit-organization').trim(),
-    guest_count: Math.max(1, Math.min(3, parseInt(get('edit-guest-count'), 10) || 1)),
-    additional_guests: get('edit-additional-guests').trim(),
-    dietary_preferences: get('edit-dietary-preferences').trim(),
-    dietary_restrictions: get('edit-dietary-restrictions').trim(),
+    organization: organization,
+    course_main: courseMain,
+    dietary_preferences: dietFromCourse(courseMain),
+    guest_count: 1 + additional.length,
+    additional_guests: additional.map(function(g) { return g.name; }).join(', '),
+    additional_guests_detail: JSON.stringify(additional),
     vvip: document.getElementById('edit-vvip-check').checked,
     table_number: get('edit-table-number').trim(),
+    seat_number:  get('edit-seat-number').trim(),
     notes:        get('edit-notes').trim(),
   };
 
