@@ -219,6 +219,20 @@ footer a{color:var(--gold);text-decoration:none;}
 .final-cta{background:linear-gradient(135deg,var(--navy),var(--deep));text-align:center;padding:100px 24px;position:relative;overflow:hidden;}
 .final-cta::before{content:'';position:absolute;inset:0;pointer-events:none;opacity:0.05;mix-blend-mode:overlay;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");background-size:120px 120px;z-index:0;}
 .final-cta > *{position:relative;z-index:1;}
+/* The deadline is an instruction, not a venue fact — so it spans the
+   full width beneath the four detail cards rather than becoming a
+   lonely fifth tile wrapping onto its own row. */
+.detail-card-deadline{grid-column:1 / -1;border-color:rgba(232,201,110,0.55);background:rgba(232,201,110,0.09);display:flex;align-items:center;justify-content:center;gap:18px;flex-wrap:wrap;padding:22px 26px;text-align:left;}
+.detail-card-deadline .detail-icon{margin:0;font-size:26px;}
+.detail-card-deadline h4{margin:0;}
+.detail-card-deadline p{margin:0;font-size:19px;font-weight:700;}
+.detail-card-deadline span{margin:0;}
+.detail-card-deadline .deadline-text{display:flex;flex-direction:column;gap:3px;}
+.rsvp-deadline-banner{display:flex;align-items:center;gap:10px;background:rgba(232,201,110,0.14);border:1px solid rgba(201,168,76,0.4);border-radius:10px;padding:11px 14px;margin-bottom:18px;font-size:12.5px;color:#8a6a26;line-height:1.5;}
+.rsvp-deadline-banner strong{color:#6d5320;}
+.rsvp-closed-box{text-align:center;padding:26px 22px;}
+.rsvp-closed-box h3{font-family:'Cinzel',serif;font-size:22px;color:var(--navy);margin:0 0 10px;}
+.rsvp-closed-box p{font-size:14px;color:var(--gray-mid);line-height:1.7;margin:0 0 6px;}
 .final-cta h2{font-family:'Cinzel',serif;font-weight:700;letter-spacing:0.01em;font-size:clamp(28px,4.4vw,46px);margin-bottom:40px;color:var(--gold-light);background-image:linear-gradient(100deg,#8a6a26 0%,#e8c96e 20%,#fff6d6 36%,#f5e2a0 50%,#c9a84c 64%,#e8c96e 80%,#8a6a26 100%);background-size:220% auto;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:goldShimmer 6s linear infinite;text-shadow:0 0 40px rgba(45,158,95,0.25);}
 .final-cta p{color:rgba(255,255,255,0.6);font-size:15px;margin-bottom:36px;}
 
@@ -874,7 +888,7 @@ body.role-usher .dash-btn-doors{display:none;}
     <div class="hero-meta-item">📍 <b>Holiday Inn & Suites Vientiane</b></div>
   </div>
   <button class="hero-cta" onclick="openRSVP()">RSVP Now</button>
-  <p class="hero-note">Kindly RSVP so we can prepare a seat for you.</p>
+  <p class="hero-note">Kindly RSVP by <strong>1 September 2026</strong> so we can prepare a seat for you.</p>
   <div class="hero-scroll"><span>Scroll</span><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
 </section>
 <div class="section-wave-standalone section-wave-cream"><svg viewBox="0 0 1440 60" preserveAspectRatio="none"><path d="M0,32 C360,60 1080,0 1440,28 L1440,60 L0,60 Z"/></svg></div>
@@ -956,6 +970,14 @@ body.role-usher .dash-btn-doors{display:none;}
         <p>Formal / Traditional Dress</p>
         <span>An evening to remember</span>
       </div>
+      <div class="detail-card detail-card-deadline">
+        <div class="detail-icon">✉️</div>
+        <div class="deadline-text">
+          <h4>Kindly RSVP By</h4>
+          <p>Tuesday, 1 September 2026</p>
+          <span>So we can confirm catering and seating for you</span>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -1023,6 +1045,10 @@ body.role-usher .dash-btn-doors{display:none;}
     <div class="modal-body">
       <form id="rsvp-form" onsubmit="return false;">
         <div id="rsvp-step-1">
+          <div class="rsvp-deadline-banner">
+            <span style="font-size:16px;">✉️</span>
+            <span>Please RSVP by <strong>Tuesday, 1 September 2026</strong> so we can confirm catering and seating.</span>
+          </div>
           <div class="form-row two">
             <div>
               <label>First Name *</label>
@@ -1176,6 +1202,12 @@ const SHEETS_URL = "https://script.google.com/macros/s/AKfycbygyYMuWAU1U9uyDNsYB
 // who's actually asking, rather than trusting anything sent from
 // here. There's no static secret baked into this file anymore.
 let _sessionToken = null;
+// RSVP deadline — one place, used by every mention on the page so
+// they can never drift apart. RSVP_DEADLINE_TS is end-of-day so the
+// 1st itself still counts as on time.
+const RSVP_DEADLINE_TEXT = 'Tuesday, 1 September 2026';
+const RSVP_DEADLINE_SHORT = '1 September 2026';
+const RSVP_DEADLINE_TS = new Date('2026-09-01T23:59:59+07:00').getTime();
 // Single source of truth for the event date/time — used by both the public
 // countdown timer and the admin dashboard's "Days Until Legacy Night" stat.
 // Change it here once and both stay in sync.
