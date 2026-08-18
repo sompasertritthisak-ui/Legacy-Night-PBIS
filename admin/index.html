@@ -896,6 +896,19 @@ body.role-manager .dash-btn-doors{display:none !important;}
   .wa-float-btn{width:54px;height:54px;}
   .wa-panel{width:240px;}
 }
+
+/* ── Site signature ── */
+.site-signature{background:var(--deep);text-align:center;padding:34px 24px 40px;border-top:1px solid rgba(201,168,76,0.18);}
+.site-signature p{color:rgba(255,255,255,0.5);font-size:12.5px;line-height:1.8;margin:0;}
+.site-signature .sig-credit{color:rgba(255,255,255,0.72);font-size:13px;font-weight:600;margin-bottom:8px;}
+.site-signature .sig-credit strong{color:var(--gold-light);font-weight:700;}
+.site-signature .sig-help{margin-top:12px;font-size:12.5px;color:rgba(255,255,255,0.5);}
+.site-signature a{color:var(--gold);text-decoration:none;border-bottom:1px solid rgba(201,168,76,0.35);}
+.site-signature a:hover{color:var(--gold-light);border-color:var(--gold-light);}
+.site-signature .sig-sep{color:rgba(201,168,76,0.4);margin:0 8px;}
+@media (max-width:600px){
+  .site-signature .sig-sep{display:block;height:0;overflow:hidden;margin:4px 0;}
+}
 </style>
 </head>
 <body>
@@ -1005,6 +1018,16 @@ body.role-manager .dash-btn-doors{display:none !important;}
     <div id="dash-tab-content-activitylog" style="display:none;"><!-- populated by JS --></div>
     <div id="dash-tab-content-postevent" style="display:none;"><!-- populated by JS --></div>
   </div>
+<div class="site-signature">
+  <p class="sig-credit">Created by <strong>Sompasert Ritthisak (Top)</strong></p>
+  <p>© 2026 Panyathip British International School · <a href="https://pbis.edu.la" target="_blank" rel="noopener">pbis.edu.la</a></p>
+  <p class="sig-help">
+    Questions or need help?
+    <a href="mailto:sompasert.ritthisak@pbis.edu.la">sompasert.ritthisak@pbis.edu.la</a>
+    <span class="sig-sep">·</span>
+    WhatsApp <a href="https://wa.me/85677489869" target="_blank" rel="noopener">77 489 869</a>
+  </p>
+</div>
 </div>
 
 
@@ -3255,7 +3278,8 @@ function openCateringSheet() {
       .restrictions td:last-child{text-align:left;font-weight:normal;color:#a03c3a;}
       .empty{color:#999;font-style:italic;padding:10px 0;}
       @media print{body{margin:0;padding:20px;}}
-    </style></head>
+    
+</style></head>
     <body>
       <h1>PBIS Legacy Night — Catering &amp; Kitchen Sheet</h1>
       <p class="meta">Generated ${generatedAt} · Friday, 25 September 2026 · Holiday Inn &amp; Suites Vientiane</p>
