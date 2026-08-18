@@ -51,6 +51,20 @@ img{max-width:100%;height:auto;}
 .starfield{position:absolute;inset:0;overflow:hidden;pointer-events:none;}
 .starfield span{position:absolute;width:2px;height:2px;background:var(--gold-light);border-radius:50%;opacity:0.5;animation:twinkle 4s ease-in-out infinite;}
 @keyframes twinkle{0%,100%{opacity:0.15;}50%{opacity:0.85;}}
+/* ── RSVP sending state ── */
+.rsvp-sending-wrap{text-align:center;padding:44px 24px 40px;}
+.rsvp-sending-ring{width:64px;height:64px;margin:0 auto 26px;position:relative;}
+.rsvp-sending-ring span{position:absolute;inset:0;border-radius:50%;border:3px solid rgba(201,168,76,0.22);border-top-color:var(--gold);animation:rsvpSpin 0.9s linear infinite;}
+@keyframes rsvpSpin{to{transform:rotate(360deg);}}
+.rsvp-sending-title{font-family:'Cinzel',serif;font-size:22px;font-weight:700;color:var(--navy);margin:0 0 8px;}
+.rsvp-sending-sub{font-size:14px;color:var(--gray-mid);margin:0 0 24px;min-height:20px;transition:opacity 0.25s ease;}
+.rsvp-sending-bar{height:6px;border-radius:100px;background:rgba(201,168,76,0.16);overflow:hidden;max-width:280px;margin:0 auto;}
+.rsvp-sending-bar-fill{height:100%;width:0%;border-radius:100px;background:linear-gradient(90deg,var(--gold),var(--gold-light));transition:width 0.4s cubic-bezier(.4,0,.2,1);}
+@media (prefers-reduced-motion:reduce){
+  .rsvp-sending-ring span{animation:none;border-top-color:var(--gold);}
+  .rsvp-sending-bar-fill{transition:none;}
+}
+
 
 /* ── NAV ── */
 .nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(5,15,10,0.85);backdrop-filter:blur(10px);border-bottom:1px solid rgba(201,168,76,0.2);padding:14px 32px;display:flex;align-items:center;justify-content:space-between;}
@@ -1139,6 +1153,17 @@ body.role-usher .dash-btn-doors{display:none;}
           <button type="button" class="form-submit" id="rsvp-submit-btn" onclick="handleRSVPSubmit(event)" disabled>RSVP Now</button>
           <button type="button" class="form-back-link" onclick="backToRsvpFormStep()">← Back to edit my details</button>
         </div>
+        <!-- Shown while the RSVP is being saved. Without it the guest
+             sees a frozen button and no sign anything is happening. -->
+        <div id="rsvp-step-sending" style="display:none;">
+          <div class="rsvp-sending-wrap">
+            <div class="rsvp-sending-ring"><span></span></div>
+            <h3 class="rsvp-sending-title">Confirming your place…</h3>
+            <p class="rsvp-sending-sub" id="rsvp-sending-sub">Saving your details</p>
+            <div class="rsvp-sending-bar"><div class="rsvp-sending-bar-fill" id="rsvp-sending-bar-fill"></div></div>
+          </div>
+        </div>
+
         <div id="rsvp-step-success" style="display:none;">
           <div class="rsvp-success-burst" id="rsvp-success-burst"></div>
           <div class="rsvp-success-check">
@@ -1646,6 +1671,10 @@ function showRsvpStep(step) {
   document.getElementById('rsvp-step-2').style.display = step === 2 ? 'block' : 'none';
   const successEl = document.getElementById('rsvp-step-success');
   if (successEl) successEl.style.display = step === 'success' ? 'block' : 'none';
+  // The sending state is driven separately, but hide it here too so it
+  // can never be left on screen if the guest navigates mid-submit.
+  const sendingEl = document.getElementById('rsvp-step-sending');
+  if (sendingEl) sendingEl.style.display = 'none';
 
   const step1El = document.getElementById('rsvp-progress-step-1');
   const step2El = document.getElementById('rsvp-progress-step-2');
@@ -1989,6 +2018,58 @@ function loginRequest(data) {
   });
 }
 
+/* ── RSVP SUBMISSION (verified) ────────────────────────────────────
+   postToSheets() below sends with mode:'no-cors', which makes the
+   server's reply unreadable — so it reports success whenever the
+   request merely LEAVES the device. For most actions that's fine.
+
+   For an RSVP it is not. If the server rejects the submission (for
+   example the write lock times out during a burst), the guest would be
+   shown "You're Confirmed" for a booking that was never saved, and
+   nobody would ever know. That is the one failure this system must not
+   have.
+
+   So the RSVP is sent as a normal readable request and the server's
+   actual answer is checked. The login flow already reads replies from
+   this same endpoint, so this is a proven path.
+
+   If the reply genuinely can't be read (a browser or network quirk
+   rather than a server error), we retry, and only then fall back to
+   the optimistic path. A guest wrongly asked to retry is a small
+   annoyance; a guest wrongly told they're confirmed is a missing seat
+   on the night — and duplicate submissions are already caught server
+   side, so erring toward "ask again" is the safe direction.        */
+function submitRsvp(data, _attempt) {
+  const attempt = _attempt || 0;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(function() { controller.abort(); }, 20000);
+
+  return fetch(SHEETS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(data),
+    signal: controller.signal
+  }).then(function(res) {
+    clearTimeout(timeoutId);
+    return res.json();
+  }).then(function(json) {
+    // The server explicitly said no — surface it, never retry blindly,
+    // and never show a confirmation.
+    if (json && json.status === 'error') {
+      return { status: 'error', message: json.message || 'Could not save your RSVP.' };
+    }
+    return { status: 'ok' };
+  }).catch(function(err) {
+    clearTimeout(timeoutId);
+    if (attempt < 2) {
+      return new Promise(function(resolve) {
+        setTimeout(function() { resolve(submitRsvp(data, attempt + 1)); }, 1500);
+      });
+    }
+    return { status: 'error', message: (err && err.message) || 'Could not reach the server.' };
+  });
+}
+
 function postToSheets(data, _attempt) {
   const attempt = _attempt || 0;
   return new Promise(function(resolve) {
@@ -2189,16 +2270,90 @@ function handleRSVPSubmit(e) {
 
   btn.disabled = true;
   btn.textContent = 'Confirming…';
+  showRsvpSending();
 
-  postToSheets(guest).then((result) => {
+  submitRsvp(guest).then((result) => {
     if (result.status === 'error') {
+      hideRsvpSending();
       btn.disabled = false;
       btn.textContent = 'RSVP Now';
       showDashToast('⚠️ Could not reach the server — please check your connection and try again.');
       return;
     }
-    celebrateRsvpSuccess(guest.fname);
+    finishRsvpSendingThen(function() { celebrateRsvpSuccess(guest.fname); });
   });
+}
+
+/* ── RSVP SENDING STATE ────────────────────────────────────────────
+   Saving an RSVP takes a moment, and previously the guest just saw a
+   disabled button with no sign of progress — which reads as "it's
+   broken" and invites a second submission.
+
+   The bar is honest about what it can know: it moves steadily while
+   waiting (it cannot know real progress, since the server reports
+   none), then jumps to 100% the instant the save actually confirms.
+   It deliberately never reaches 100% on its own, so it can't imply
+   the RSVP is saved before it truly is.                            */
+let _rsvpSendTimer = null;
+const RSVP_SEND_STAGES = [
+  [0,    'Saving your details'],
+  [1400, 'Reserving your seat'],
+  [3200, 'Almost there…'],
+  [6000, 'Still working — please keep this window open'],
+];
+
+function showRsvpSending() {
+  const step1 = document.getElementById('rsvp-step-1');
+  const step2 = document.getElementById('rsvp-step-2');
+  const sending = document.getElementById('rsvp-step-sending');
+  if (step1) step1.style.display = 'none';
+  if (step2) step2.style.display = 'none';
+  if (!sending) return;
+  sending.style.display = 'block';
+
+  const fill = document.getElementById('rsvp-sending-bar-fill');
+  const sub  = document.getElementById('rsvp-sending-sub');
+  if (fill) fill.style.width = '8%';
+  if (sub) sub.textContent = RSVP_SEND_STAGES[0][1];
+
+  const started = Date.now();
+  clearInterval(_rsvpSendTimer);
+  _rsvpSendTimer = setInterval(function() {
+    const elapsed = Date.now() - started;
+    // Approaches ~92% and slows as it goes, so a slow save looks like
+    // progress rather than a stall, without ever claiming completion.
+    const pct = Math.min(92, 8 + (84 * (1 - Math.exp(-elapsed / 3400))));
+    if (fill) fill.style.width = pct.toFixed(1) + '%';
+    let label = RSVP_SEND_STAGES[0][1];
+    RSVP_SEND_STAGES.forEach(function(s) { if (elapsed >= s[0]) label = s[1]; });
+    if (sub && sub.textContent !== label) sub.textContent = label;
+  }, 200);
+}
+
+function hideRsvpSending() {
+  clearInterval(_rsvpSendTimer);
+  _rsvpSendTimer = null;
+  const sending = document.getElementById('rsvp-step-sending');
+  const step2 = document.getElementById('rsvp-step-2');
+  if (sending) sending.style.display = 'none';
+  if (step2) step2.style.display = 'block';
+}
+
+// Completes the bar, then hands over to the confirmation. The short
+// pause lets the guest actually see it finish rather than the screen
+// flicking past — it's the difference between "done" and "did that work?"
+function finishRsvpSendingThen(next) {
+  clearInterval(_rsvpSendTimer);
+  _rsvpSendTimer = null;
+  const fill = document.getElementById('rsvp-sending-bar-fill');
+  const sub  = document.getElementById('rsvp-sending-sub');
+  if (fill) fill.style.width = '100%';
+  if (sub) sub.textContent = 'Confirmed';
+  setTimeout(function() {
+    const sending = document.getElementById('rsvp-step-sending');
+    if (sending) sending.style.display = 'none';
+    next();
+  }, 420);
 }
 
 // Called only when the guest explicitly clicks "Done" on the success
