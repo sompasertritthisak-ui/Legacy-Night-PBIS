@@ -3905,7 +3905,7 @@ function markGuestCheckedIn(ts, checkedIn, idx, personName) {
       // A definitive rejection (bad session, guest genuinely gone,
       // role not permitted) means retrying will never work — roll back
       // so the dashboard doesn't show something untrue.
-      const isDefinitive = /unauthorized|not found|cannot|permission|only specific/i.test(msg);
+      const isDefinitive = /unauthorized|not found|cannot|permission|only specific|invalid|no longer/i.test(msg);
 
       if (isDefinitive) {
         Object.assign(guest, prevState);
