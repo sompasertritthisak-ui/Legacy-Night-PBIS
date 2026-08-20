@@ -924,6 +924,32 @@ body.role-manager .dash-btn-doors{display:none !important;}
 .verify-pill.warn{background:rgba(232,201,110,.22);color:#8a6a26;}
 .verify-pill.bad{background:rgba(192,80,77,.14);color:#a03c3a;}
 .verify-sub{font-weight:400;font-size:11.5px;color:var(--gray-mid);margin-left:6px;}
+
+/* ── Tables / seating ── */
+.stat-note{font-size:11px;color:var(--gray-mid);margin-top:5px;line-height:1.45;}
+.seating-config{display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap;}
+.seating-config label{display:flex;flex-direction:column;gap:6px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--gray-mid);font-weight:700;}
+.seating-config input{width:120px;padding:10px 12px;border:1.5px solid var(--gray);border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;color:var(--navy);}
+.seating-config input:focus{outline:none;border-color:var(--gold);}
+.seat-list{display:flex;flex-direction:column;gap:1px;margin-top:10px;}
+.seat-row{display:grid;grid-template-columns:34px 1fr auto;gap:9px;align-items:center;padding:6px 8px;border-radius:6px;background:var(--cream);font-size:12.5px;}
+.seat-num{display:flex;align-items:center;justify-content:center;height:24px;border-radius:5px;background:var(--navy);color:var(--gold-light);font-weight:800;font-size:12px;}
+.seat-num.empty{background:transparent;border:1px dashed var(--gray);color:var(--gray-mid);font-weight:400;}
+.seat-name{color:var(--navy);font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;}
+.seat-sub{display:block;font-weight:400;font-size:10.5px;color:var(--gray-mid);}
+.seat-diet{font-size:10.5px;color:#8a6a26;background:rgba(201,168,76,.16);padding:2px 7px;border-radius:100px;white-space:nowrap;}
+.seat-diet.muted{background:transparent;color:var(--gray-mid);}
+.seat-allocs{margin-top:10px;padding-top:10px;border-top:1px dashed var(--gray);display:flex;flex-direction:column;gap:6px;}
+.seat-alloc{display:flex;align-items:center;gap:8px;font-size:11.5px;}
+.seat-alloc-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--gray-mid);}
+.seat-alloc-name em{font-style:normal;color:var(--gold);font-weight:700;}
+.seat-remove{background:none;border:none;color:var(--gray-mid);cursor:pointer;font-size:13px;padding:2px 5px;border-radius:5px;line-height:1;}
+.seat-remove:hover{background:rgba(192,80,77,.12);color:#a03c3a;}
+.table-empty{margin-top:10px;font-size:12px;color:var(--gray-mid);font-style:italic;}
+.table-card.over{border-color:#c0504d;}
+.table-card-fill.over{color:#a03c3a;font-weight:800;}
+.table-card-bar-fill.over{background:linear-gradient(90deg,#c0504d,#d9736f)!important;}
+body.role-usher .seating-config{display:none;}
 </style>
 </head>
 <body>
@@ -6241,92 +6267,415 @@ const FOLLOWUP_ALLOWED_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
    to a numbered table. Capacity is tracked per table so it's obvious
    at a glance which tables still have room.
    ══════════════════════════════════════════════════════════════ */
-const TABLE_COUNT = 20;
-const TABLE_CAPACITY = 10;
+/* ══════════════════════════════════════════════════════════════════
+   SEATING
+   ──────────────────────────────────────────────────────────────────
+   Venue numbers aren't confirmed yet (waiting on table count and seats
+   per table from the venue), so these are editable from the Tables tab
+   and remembered per device. When the real numbers arrive, change them
+   there — no code edit needed.
+
+   Seating model: a party sits together, so the TABLE is stored once on
+   the booking. Seat numbers are stored as a list on the same booking
+   ("3,4" or "3-4") and mapped to each person in party order, which
+   means every individual — companions included — gets their own seat
+   number without needing a separate record per person.
+══════════════════════════════════════════════════════════════════ */
+const TABLE_DEFAULTS = { count: 20, capacity: 10 };
+
+function getSeatingConfig() {
+  try {
+    const raw = localStorage.getItem('legacy_seating_config');
+    if (raw) {
+      const cfg = JSON.parse(raw);
+      const count = parseInt(cfg.count, 10), cap = parseInt(cfg.capacity, 10);
+      if (count >= 1 && count <= 200 && cap >= 1 && cap <= 50) return { count: count, capacity: cap };
+    }
+  } catch (e) {}
+  return { count: TABLE_DEFAULTS.count, capacity: TABLE_DEFAULTS.capacity };
+}
+
+function saveSeatingConfig(count, capacity) {
+  const c = Math.max(1, Math.min(200, parseInt(count, 10) || TABLE_DEFAULTS.count));
+  const k = Math.max(1, Math.min(50, parseInt(capacity, 10) || TABLE_DEFAULTS.capacity));
+  try { localStorage.setItem('legacy_seating_config', JSON.stringify({ count: c, capacity: k })); } catch (e) {}
+  showDashToast('✓ Seating set to ' + c + ' tables × ' + k + ' seats');
+  renderTablesTab();
+}
+
+// Accepts "3", "3,4", "3-5", "3, 5, 9" — whatever staff naturally type.
+function parseSeatList(raw) {
+  const s = String(raw == null ? '' : raw).trim();
+  if (!s) return [];
+  const out = [];
+  s.split(/[,;]/).forEach(function(part) {
+    const p = part.trim();
+    if (!p) return;
+    const range = /^(\d+)\s*[-–—]\s*(\d+)$/.exec(p);
+    if (range) {
+      let a = parseInt(range[1], 10), b = parseInt(range[2], 10);
+      if (a > b) { const t = a; a = b; b = t; }
+      for (let i = a; i <= b && out.length < 50; i++) out.push(String(i));
+    } else {
+      out.push(p);
+    }
+  });
+  return out;
+}
+
+// Everyone in a booking, in the order their seats were allocated.
+function partyMembers(g) {
+  const primary = ((g.fname || '') + ' ' + (g.lname || '')).trim() || 'Guest';
+  const people = [{ name: primary, idx: 0, isCompanion: false, diet: g.course_main || g.dietary_preferences || '' }];
+  parseAdditionalGuestsDetail(g).forEach(function(a, i) {
+    people.push({
+      name: a.name || ('Guest ' + (i + 2)),
+      idx: i + 1,
+      isCompanion: true,
+      diet: a.main_course || '',
+    });
+  });
+  return people;
+}
+
+// Pairs each person with their seat. Extra people beyond the seats
+// entered show as unassigned rather than silently sharing a number.
+function seatedPartyMembers(g) {
+  const seats = parseSeatList(g.seat_number);
+  return partyMembers(g).map(function(p, i) {
+    p.seat = seats[i] || '';
+    return p;
+  });
+}
 
 function renderTablesTab() {
   const el = document.getElementById('dash-tab-content-tables');
   if (!el) return;
   const guests = _dashGuestsCache;
+  const cfg = getSeatingConfig();
 
   if (!guests.length) {
-    el.innerHTML = `<div class="dash-panel"><div class="dash-empty">No RSVPs yet.</div></div>`;
+    el.innerHTML = '<div class="dash-panel"><div class="dash-empty">No RSVPs yet.</div></div>';
     return;
   }
 
   const tables = {};
-  for (let i = 1; i <= TABLE_COUNT; i++) tables[i] = [];
+  for (let i = 1; i <= cfg.count; i++) tables[i] = [];
   const unassigned = [];
+  const overflow = [];   // assigned to a table number beyond the configured count
   guests.forEach(function(g) {
-    if (g.table_number && tables[g.table_number]) tables[g.table_number].push(g);
+    const t = parseInt(g.table_number, 10);
+    if (t && tables[t]) tables[t].push(g);
+    else if (t) overflow.push(g);
     else unassigned.push(g);
+  });
+
+  // Headcount is PEOPLE, not bookings — a party of three is three
+  // seats, and that's the number the venue and caterer care about.
+  const totalPeople   = guests.reduce(function(s, g) { return s + partyMembers(g).length; }, 0);
+  const seatedPeople  = guests.filter(function(g) { return g.table_number; })
+                              .reduce(function(s, g) { return s + partyMembers(g).length; }, 0);
+  const unseatedPeople = totalPeople - seatedPeople;
+  const tablesUsed    = Object.keys(tables).filter(function(n) { return tables[n].length; }).length;
+  const capacityTotal = cfg.count * cfg.capacity;
+  // Everyone seated who still has no seat number of their own.
+  let missingSeatNos = 0;
+  guests.forEach(function(g) {
+    if (!g.table_number) return;
+    seatedPartyMembers(g).forEach(function(p) { if (!p.seat) missingSeatNos++; });
   });
 
   const countEl = document.getElementById('tables-tab-count');
   if (countEl) countEl.textContent = unassigned.length;
 
+  const canEdit = !(_currentUser && _currentUser.role === 'usher');
+
+  // ── Table cards: every PERSON listed, each with their own seat ──
   const tableCards = Object.keys(tables).map(function(num) {
-    const guestsAtTable = tables[num];
-    const seated = guestsAtTable.reduce((sum, g) => sum + (g.guest_count || 1), 0);
-    const isFull = seated >= TABLE_CAPACITY;
-    const pct = Math.min(100, Math.round((seated / TABLE_CAPACITY) * 100));
-    const chips = guestsAtTable.map(function(g) {
-      const fullName = `${g.fname||''} ${g.lname||''}`.trim() || 'Guest';
-      const partyTag = g.guest_count > 1 ? ` (+${g.guest_count - 1})` : '';
-      const safeTs = g.ts.replace(/'/g, "\\'");
-      return `<span class="table-guest-chip">
-        <span class="table-guest-chip-name">${fullName}${partyTag}</span>
-        <input type="text" class="table-seat-input" placeholder="Seat #" value="${g.seat_number || ''}"
-          onchange="updateGuestSeat('${safeTs}', this.value)" title="Seat number(s) for this party">
-        <button onclick="unassignGuestTable('${g.ts}')" title="Remove from table">✕</button>
-      </span>`;
+    const partiesHere = tables[num];
+    const peopleHere = [];
+    partiesHere.forEach(function(g) {
+      seatedPartyMembers(g).forEach(function(p) { peopleHere.push({ p: p, g: g }); });
+    });
+    // Order by seat number where known, so the card reads like the
+    // physical table rather than like the order people replied.
+    peopleHere.sort(function(a, b) {
+      const an = parseInt(a.p.seat, 10), bn = parseInt(b.p.seat, 10);
+      if (isNaN(an) && isNaN(bn)) return 0;
+      if (isNaN(an)) return 1;
+      if (isNaN(bn)) return -1;
+      return an - bn;
+    });
+
+    const seated = peopleHere.length;
+    const over = seated > cfg.capacity;
+    const pct = Math.min(100, Math.round((seated / cfg.capacity) * 100));
+
+    const rows = peopleHere.map(function(item) {
+      const p = item.p, g = item.g;
+      const safeTs = String(g.ts).replace(/'/g, "\\'");
+      return '<div class="seat-row">' +
+        '<span class="seat-num' + (p.seat ? '' : ' empty') + '">' + (p.seat ? escHtmlV(p.seat) : '–') + '</span>' +
+        '<span class="seat-name">' + escHtmlV(p.name) +
+          (p.isCompanion ? '<span class="seat-sub">guest of ' + escHtmlV((g.fname || '').trim()) + '</span>' : '') +
+        '</span>' +
+        (p.diet ? '<span class="seat-diet" title="' + escHtmlV(p.diet) + '">' + escHtmlV(shortDiet(p.diet)) + '</span>' : '<span class="seat-diet muted">—</span>') +
+      '</div>';
     }).join('');
-    return `<div class="table-card ${isFull ? 'full' : ''}">
-      <div class="table-card-header"><span class="table-card-num">Table ${num}</span><span class="table-card-fill">${seated}/${TABLE_CAPACITY}</span></div>
-      <div class="table-card-bar"><div class="table-card-bar-fill" style="width:${pct}%;"></div></div>
-      <div class="table-card-names">${chips || '<span style="color:var(--gray-mid);font-size:12px;">Empty</span>'}</div>
-    </div>`;
+
+    // Seat numbers are entered per BOOKING (one box per party), since
+    // that's how staff allocate them — the list is then split across
+    // the people above.
+    const seatInputs = canEdit ? partiesHere.map(function(g) {
+      const safeTs = String(g.ts).replace(/'/g, "\\'");
+      const n = partyMembers(g).length;
+      return '<div class="seat-alloc">' +
+        '<span class="seat-alloc-name">' + escHtmlV(((g.fname||'') + ' ' + (g.lname||'')).trim()) +
+          (n > 1 ? ' <em>+' + (n-1) + '</em>' : '') + '</span>' +
+        '<input type="text" class="table-seat-input" value="' + escHtmlV(g.seat_number || '') + '"' +
+          ' placeholder="' + (n > 1 ? 'e.g. 3-' + (2 + n) : 'e.g. 3') + '"' +
+          ' onchange="updateGuestSeat(\'' + safeTs + '\', this.value)"' +
+          ' title="Seat number' + (n > 1 ? 's for all ' + n + ' people, e.g. 3-' + (2+n) + ' or 3,4' : '') + '">' +
+        '<button class="seat-remove" onclick="unassignGuestTable(\'' + safeTs + '\')" title="Remove from this table">✕</button>' +
+      '</div>';
+    }).join('') : '';
+
+    return '<div class="table-card' + (over ? ' over' : (seated >= cfg.capacity ? ' full' : '')) + '">' +
+      '<div class="table-card-header">' +
+        '<span class="table-card-num">Table ' + num + '</span>' +
+        '<span class="table-card-fill' + (over ? ' over' : '') + '">' + seated + '/' + cfg.capacity + (over ? ' ⚠' : '') + '</span>' +
+      '</div>' +
+      '<div class="table-card-bar"><div class="table-card-bar-fill' + (over ? ' over' : '') + '" style="width:' + pct + '%;"></div></div>' +
+      (seated
+        ? '<div class="seat-list">' + rows + '</div>' +
+          (seatInputs ? '<div class="seat-allocs">' + seatInputs + '</div>' : '')
+        : '<div class="table-empty">Empty</div>') +
+    '</div>';
   }).join('');
 
-  const tableOptions = Array.from({length: TABLE_COUNT}, (_, i) => i + 1)
-    .map(n => `<option value="${n}">Table ${n} (${tables[n].reduce((s,g)=>s+(g.guest_count||1),0)}/${TABLE_CAPACITY})</option>`).join('');
+  const tableOptions = Array.from({ length: cfg.count }, function(_, i) { return i + 1; })
+    .map(function(n) {
+      const here = tables[n].reduce(function(s, g) { return s + partyMembers(g).length; }, 0);
+      const full = here >= cfg.capacity;
+      return '<option value="' + n + '"' + (full ? ' disabled' : '') + '>Table ' + n + ' (' + here + '/' + cfg.capacity + ')' + (full ? ' — full' : '') + '</option>';
+    }).join('');
 
   const unassignedRows = unassigned.slice().reverse().map(function(g) {
-    const fullName = `${g.fname||''} ${g.lname||''}`.trim() || 'Guest';
-    return `<tr>
-      <td style="font-weight:600;color:var(--navy);white-space:nowrap;">${fullName}</td>
-      <td>${g.guest_count > 1 ? `<span class="dash-party-pill">👥 ${g.guest_count}</span>` : '1'}</td>
-      <td>
-        <select onchange="assignGuestTable('${g.ts}', this.value)" class="table-assign-select">
-          <option value="">Assign to table…</option>
-          ${tableOptions}
-        </select>
-      </td>
-    </tr>`;
+    const members = partyMembers(g);
+    const names = members.map(function(m) { return escHtmlV(m.name); }).join('<br>');
+    return '<tr>' +
+      '<td style="font-weight:600;color:var(--navy);">' + names + '</td>' +
+      '<td>' + (members.length > 1 ? '<span class="dash-party-pill">👥 ' + members.length + '</span>' : '1') + '</td>' +
+      '<td>' + (canEdit
+        ? '<select onchange="assignGuestTable(\'' + String(g.ts).replace(/'/g, "\\'") + '\', this.value)" class="table-assign-select">' +
+            '<option value="">Assign to table…</option>' + tableOptions + '</select>'
+        : '<span style="color:var(--gray-mid);font-size:12px;">—</span>') +
+      '</td>' +
+    '</tr>';
   }).join('');
 
-  el.innerHTML = `
-    <div class="dash-stats-row">
-      <div class="dash-stat-card"><div class="dash-stat-value">${TABLE_COUNT}</div><div class="dash-stat-label">Tables Available</div></div>
-      <div class="dash-stat-card"><div class="dash-stat-value">${guests.length - unassigned.length}</div><div class="dash-stat-label">Guests Seated</div></div>
-      <div class="dash-stat-card"><div class="dash-stat-value">${unassigned.length}</div><div class="dash-stat-label">Not Yet Assigned</div></div>
-    </div>
+  el.innerHTML =
+    '<div class="dash-stats-row">' +
+      '<div class="dash-stat-card"><div class="dash-stat-value">' + totalPeople + '</div><div class="dash-stat-label">Total Attendees</div>' +
+        '<div class="stat-note">' + guests.length + ' bookings · includes additional guests</div></div>' +
+      '<div class="dash-stat-card"><div class="dash-stat-value">' + seatedPeople + '</div><div class="dash-stat-label">People Seated</div>' +
+        '<div class="stat-note">' + tablesUsed + ' of ' + cfg.count + ' tables in use</div></div>' +
+      '<div class="dash-stat-card"><div class="dash-stat-value">' + unseatedPeople + '</div><div class="dash-stat-label">Not Yet Seated</div>' +
+        '<div class="stat-note">' + unassigned.length + ' booking' + (unassigned.length===1?'':'s') + ' to place</div></div>' +
+      '<div class="dash-stat-card"><div class="dash-stat-value">' + capacityTotal + '</div><div class="dash-stat-label">Venue Capacity</div>' +
+        '<div class="stat-note">' + cfg.count + ' tables × ' + cfg.capacity + ' seats</div></div>' +
+    '</div>' +
 
-    <div class="dash-panel">
-      <div class="dash-panel-title">Unassigned Guests <span>${unassigned.length} guest${unassigned.length===1?'':'s'}</span></div>
-      ${unassigned.length ? `
-      <div class="dash-table-wrap">
-        <table class="dash-table">
-          <thead><tr><th>Guest Name</th><th>Party</th><th>Assign</th></tr></thead>
-          <tbody>${unassignedRows}</tbody>
-        </table>
-      </div>` : `<div class="dash-empty">Everyone has a table assigned. 🎉</div>`}
-    </div>
+    (overflow.length
+      ? '<div class="followup-warn" style="margin-bottom:16px;">⚠️ ' + overflow.length + ' booking' + (overflow.length===1?' is':'s are') +
+        ' assigned to a table number higher than your current setting of ' + cfg.count +
+        ' tables. Raise the table count below, or move them.</div>'
+      : '') +
+    (missingSeatNos
+      ? '<div class="followup-warn" style="margin-bottom:16px;">🪑 ' + missingSeatNos + ' seated ' +
+        (missingSeatNos === 1 ? 'person has' : 'people have') + ' no seat number yet. ' +
+        'Enter seats per booking on each table card below — a range like <strong>3-4</strong> covers a party of two.</div>'
+      : '') +
 
-    <div class="dash-panel">
-      <div class="dash-panel-title">Seating Chart <span style="font-weight:400;font-size:11px;color:var(--gray-mid);text-transform:none;letter-spacing:0;">— click a seat number to set it</span></div>
-      <div class="tables-grid">${tableCards}</div>
-    </div>`;
+    '<div class="dash-panel" style="margin-bottom:16px;">' +
+      '<div class="dash-panel-title">Venue Setup' +
+        '<button class="dash-btn" onclick="openSeatingSheet()" style="margin-left:auto;">🖨 Print Guest &amp; Seating Sheet</button>' +
+      '</div>' +
+      '<p style="margin:0 0 14px;font-size:13px;color:var(--gray-mid);line-height:1.7;">' +
+        'Set these to match the venue once the final layout is confirmed. Saved on this device.</p>' +
+      (canEdit
+        ? '<div class="seating-config">' +
+            '<label>Number of tables<input type="number" id="cfg-table-count" min="1" max="200" value="' + cfg.count + '"></label>' +
+            '<label>Seats per table<input type="number" id="cfg-table-cap" min="1" max="50" value="' + cfg.capacity + '"></label>' +
+            '<button class="dash-btn-gold" onclick="saveSeatingConfig(document.getElementById(\'cfg-table-count\').value, document.getElementById(\'cfg-table-cap\').value)">Save layout</button>' +
+          '</div>'
+        : '<p style="font-size:13px;color:var(--gray-mid);">' + cfg.count + ' tables × ' + cfg.capacity + ' seats (view only)</p>') +
+    '</div>' +
+
+    '<div class="dash-panel">' +
+      '<div class="dash-panel-title">Not Yet Seated <span>' + unassigned.length + ' booking' + (unassigned.length===1?'':'s') + '</span></div>' +
+      (unassigned.length
+        ? '<div class="dash-table-wrap"><table class="dash-table">' +
+            '<thead><tr><th>Everyone in the booking</th><th>People</th><th>Assign</th></tr></thead>' +
+            '<tbody>' + unassignedRows + '</tbody></table></div>'
+        : '<div class="dash-empty">Everyone has a table. 🎉</div>') +
+    '</div>' +
+
+    '<div class="dash-panel">' +
+      '<div class="dash-panel-title">Seating Chart ' +
+        '<span style="font-weight:400;font-size:11px;color:var(--gray-mid);text-transform:none;letter-spacing:0;">— every person shown with their own seat</span></div>' +
+      '<div class="tables-grid">' + tableCards + '</div>' +
+    '</div>';
+}
+
+// Compact label for the seat rows; full text stays in the tooltip.
+/* ── PRINTABLE GUEST & SEATING SHEET ───────────────────────────────
+   A paper fallback for the registration desk. Deliberately covers the
+   whole party — host and companions — with each person's own seat and
+   meal, because the paper copy is what gets used when a device fails,
+   and a sheet that only lists the person who filled in the form would
+   leave staff guessing about everyone standing next to them.
+
+   Two views in one document: by table (for the room) and A–Z by name
+   (for the desk, where a guest arrives and you look them up).      */
+function openSeatingSheet() {
+  const guests = _dashGuestsCache;
+  if (!guests.length) { showDashToast('⚠️ No RSVPs yet to print.'); return; }
+  const cfg = getSeatingConfig();
+
+  const everyone = [];
+  guests.forEach(function(g) {
+    seatedPartyMembers(g).forEach(function(p) {
+      everyone.push({
+        name: p.name,
+        isCompanion: p.isCompanion,
+        host: (g.fname || '').trim(),
+        org: g.organization || '',
+        table: g.table_number || '',
+        seat: p.seat || '',
+        diet: p.diet || '',
+        notes: g.notes || '',
+        vvip: !!g.vvip,
+      });
+    });
+  });
+
+  const esc = escHtmlV;
+  const total = everyone.length;
+  const seated = everyone.filter(function(p){ return p.table; }).length;
+
+  // ── By table ──
+  const byTable = {};
+  everyone.forEach(function(p) {
+    const k = p.table ? String(p.table) : 'unassigned';
+    (byTable[k] = byTable[k] || []).push(p);
+  });
+  const tableKeys = Object.keys(byTable).filter(function(k){ return k !== 'unassigned'; })
+    .sort(function(a,b){ return parseInt(a,10) - parseInt(b,10); });
+
+  const tableBlocks = tableKeys.map(function(k) {
+    const rows = byTable[k].slice().sort(function(a,b){
+      const an=parseInt(a.seat,10), bn=parseInt(b.seat,10);
+      if(isNaN(an)&&isNaN(bn)) return 0; if(isNaN(an)) return 1; if(isNaN(bn)) return -1;
+      return an-bn;
+    }).map(function(p) {
+      return '<tr>' +
+        '<td class="seatcol">' + (esc(p.seat) || '<span class="mut">–</span>') + '</td>' +
+        '<td>' + esc(p.name) + (p.vvip ? ' <span class="vip">VIP</span>' : '') +
+          (p.isCompanion ? '<div class="sub">guest of ' + esc(p.host) + '</div>' : '') + '</td>' +
+        '<td>' + (esc(p.org) || '<span class="mut">—</span>') + '</td>' +
+        '<td>' + (esc(p.diet) || '<span class="mut">—</span>') + '</td>' +
+        '<td class="tick"></td>' +
+      '</tr>';
+    }).join('');
+    return '<div class="tblblock">' +
+      '<h3>Table ' + esc(k) + ' <span class="cnt">' + byTable[k].length + ' of ' + cfg.capacity + ' seats</span></h3>' +
+      '<table><thead><tr><th class="seatcol">Seat</th><th>Guest</th><th>Organisation</th><th>Meal</th><th class="tick">Arrived</th></tr></thead>' +
+      '<tbody>' + rows + '</tbody></table></div>';
+  }).join('');
+
+  const unseated = (byTable['unassigned'] || []).slice().sort(function(a,b){ return a.name.localeCompare(b.name); });
+  const unseatedBlock = unseated.length
+    ? '<div class="tblblock"><h3>No table assigned <span class="cnt">' + unseated.length + ' people</span></h3>' +
+      '<table><thead><tr><th>Guest</th><th>Organisation</th><th>Meal</th><th class="tick">Arrived</th></tr></thead><tbody>' +
+      unseated.map(function(p) {
+        return '<tr><td>' + esc(p.name) + (p.isCompanion ? '<div class="sub">guest of ' + esc(p.host) + '</div>' : '') + '</td>' +
+          '<td>' + (esc(p.org) || '<span class="mut">—</span>') + '</td>' +
+          '<td>' + (esc(p.diet) || '<span class="mut">—</span>') + '</td><td class="tick"></td></tr>';
+      }).join('') + '</tbody></table></div>'
+    : '';
+
+  // ── A–Z for the desk ──
+  const azRows = everyone.slice().sort(function(a,b){ return a.name.localeCompare(b.name); }).map(function(p) {
+    return '<tr>' +
+      '<td>' + esc(p.name) + (p.vvip ? ' <span class="vip">VIP</span>' : '') +
+        (p.isCompanion ? '<div class="sub">guest of ' + esc(p.host) + '</div>' : '') + '</td>' +
+      '<td class="seatcol">' + (esc(p.table) || '<span class="mut">–</span>') + '</td>' +
+      '<td class="seatcol">' + (esc(p.seat) || '<span class="mut">–</span>') + '</td>' +
+      '<td>' + (esc(p.diet) || '<span class="mut">—</span>') + '</td>' +
+      '<td class="tick"></td>' +
+    '</tr>';
+  }).join('');
+
+  const printedAt = new Date().toLocaleString('en-GB', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+
+  const html =
+'<!DOCTYPE html><html><head><meta charset="UTF-8">' +
+'<title>PBIS Legacy Night — Guest &amp; Seating Sheet</title>' +
+'<style>' +
+'@page{size:A4;margin:14mm 12mm;}' +
+'*{box-sizing:border-box;}' +
+'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;color:#14211a;margin:0;font-size:11px;}' +
+'header{border-bottom:2px solid #c9a84c;padding-bottom:10px;margin-bottom:16px;}' +
+'h1{margin:0;font-size:19px;letter-spacing:.01em;}' +
+'.meta{margin-top:5px;color:#5f6b64;font-size:10.5px;}' +
+'.totals{display:flex;gap:26px;margin-top:10px;font-size:11px;}' +
+'.totals b{font-size:15px;display:block;}' +
+'h2{font-size:13px;margin:22px 0 10px;padding-bottom:5px;border-bottom:1px solid #d9d2bd;letter-spacing:.08em;text-transform:uppercase;color:#8a6a26;}' +
+'.tblblock{margin-bottom:14px;break-inside:avoid;page-break-inside:avoid;}' +
+'h3{font-size:12.5px;margin:0 0 5px;}' +
+'h3 .cnt{font-weight:400;color:#5f6b64;font-size:10.5px;margin-left:7px;}' +
+'table{width:100%;border-collapse:collapse;}' +
+'th{text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.09em;color:#6f7a72;border-bottom:1px solid #cfc8b4;padding:4px 5px;}' +
+'td{padding:5px;border-bottom:1px solid #ececec;vertical-align:top;}' +
+'.seatcol{width:46px;text-align:center;font-weight:700;}' +
+'.tick{width:58px;border:1px solid #cfc8b4;}' +
+'thead .tick{border:none;text-align:center;}' +
+'.sub{font-size:9.5px;color:#6f7a72;}' +
+'.mut{color:#b3b3ad;}' +
+'.vip{background:#f2e4b8;color:#7a5f1c;font-size:8.5px;padding:1px 5px;border-radius:8px;font-weight:700;}' +
+'.pagebreak{page-break-before:always;}' +
+'@media print{.noprint{display:none;}}' +
+'.noprint{position:fixed;top:10px;right:10px;background:#0a2818;color:#e8c96e;border:none;padding:10px 18px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;}' +
+'</style></head><body>' +
+'<button class="noprint" onclick="window.print()">🖨 Print</button>' +
+'<header><h1>PBIS Legacy Night — Guest &amp; Seating Sheet</h1>' +
+'<div class="meta">Friday, 25 September 2026 · Holiday Inn &amp; Suites Vientiane · printed ' + esc(printedAt) + '</div>' +
+'<div class="totals">' +
+'<span><b>' + total + '</b>total attendees</span>' +
+'<span><b>' + seated + '</b>seated</span>' +
+'<span><b>' + (total - seated) + '</b>not yet seated</span>' +
+'<span><b>' + guests.length + '</b>bookings</span>' +
+'</div></header>' +
+'<h2>By table</h2>' + (tableBlocks || '<p class="mut">No tables assigned yet.</p>') + unseatedBlock +
+'<div class="pagebreak"></div>' +
+'<h2>All guests A–Z</h2>' +
+'<table><thead><tr><th>Guest</th><th class="seatcol">Table</th><th class="seatcol">Seat</th><th>Meal</th><th class="tick">Arrived</th></tr></thead>' +
+'<tbody>' + azRows + '</tbody></table>' +
+'</body></html>';
+
+  const w = window.open('', '_blank');
+  if (!w) { showDashToast('⚠️ Pop-up blocked — allow pop-ups to print the sheet.'); return; }
+  w.document.write(html);
+  w.document.close();
+}
+
+function shortDiet(s) {
+  const t = String(s || '').toLowerCase();
+  if (t.indexOf('wagyu') !== -1 || t.indexOf('beef') !== -1 || t.indexOf('meat') !== -1) return 'Beef';
+  if (t.indexOf('barramundi') !== -1 || t.indexOf('fish') !== -1 || t.indexOf('seafood') !== -1) return 'Fish';
+  if (t.indexOf('mushroom') !== -1 || t.indexOf('veg') !== -1) return 'Veg';
+  return String(s).slice(0, 10);
 }
 
 function assignGuestTable(ts, tableNumber) {
