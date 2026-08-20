@@ -909,6 +909,21 @@ body.role-manager .dash-btn-doors{display:none !important;}
 @media (max-width:600px){
   .site-signature .sig-sep{display:block;height:0;overflow:hidden;margin:4px 0;}
 }
+
+/* ── Verify tab ── */
+.verify-chips{display:flex;gap:10px;flex-wrap:wrap;}
+.verify-chip{padding:9px 16px;border-radius:100px;border:1.5px solid var(--gray);background:var(--white);color:var(--gray-mid);font-size:12.5px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:border-color .18s ease,color .18s ease,background .18s ease;}
+.verify-chip strong{font-weight:800;margin-left:2px;}
+.verify-chip:hover{border-color:var(--gold);}
+.verify-chip.active{background:var(--navy);border-color:var(--navy);color:var(--gold-light);}
+.verify-chip.ok.active{background:#1c7a49;border-color:#1c7a49;color:#fff;}
+.verify-chip.warn.active{background:#a8791b;border-color:#a8791b;color:#fff;}
+.verify-chip.bad.active{background:#a4453e;border-color:#a4453e;color:#fff;}
+.verify-pill{display:inline-block;padding:4px 11px;border-radius:100px;font-size:11.5px;font-weight:700;white-space:nowrap;}
+.verify-pill.ok{background:rgba(45,158,95,.14);color:#1a7a45;}
+.verify-pill.warn{background:rgba(232,201,110,.22);color:#8a6a26;}
+.verify-pill.bad{background:rgba(192,80,77,.14);color:#a03c3a;}
+.verify-sub{font-weight:400;font-size:11.5px;color:var(--gray-mid);margin-left:6px;}
 </style>
 </head>
 <body>
@@ -928,7 +943,14 @@ body.role-manager .dash-btn-doors{display:none !important;}
       <div class="login-lockout-msg" id="login-lockout-msg">
         🔒 Too many failed attempts. Please wait <span id="lockout-countdown">60</span> seconds.
       </div>
-      <label for="login-pwd-input">Access Password</label>
+      <label for="login-name-input">Your Name</label>
+      <div class="login-pwd-wrap">
+        <input type="text" class="login-pwd-input" id="login-name-input"
+          placeholder="e.g. Mina"
+          onkeydown="if(event.key==='Enter')document.getElementById('login-pwd-input').focus()"
+          autocomplete="username" autocapitalize="words" spellcheck="false">
+      </div>
+      <label for="login-pwd-input" style="margin-top:16px;">Your Password</label>
       <div class="login-pwd-wrap">
         <input type="password" class="login-pwd-input" id="login-pwd-input"
           placeholder="Enter your password"
@@ -936,7 +958,7 @@ body.role-manager .dash-btn-doors{display:none !important;}
           autocomplete="current-password">
         <button class="login-eye-btn" onclick="togglePwdVisibility()" type="button" id="eye-btn">👁</button>
       </div>
-      <p class="login-error-msg" id="login-error-msg">Incorrect password. Please try again.</p>
+      <p class="login-error-msg" id="login-error-msg">Incorrect name or password. Please try again.</p>
       <p class="login-attempts" id="login-attempts-msg"></p>
       <button class="login-submit-btn" onclick="submitLogin()" id="login-submit-btn">
         🔐 Access Dashboard
@@ -997,6 +1019,9 @@ body.role-manager .dash-btn-doors{display:none !important;}
     <button class="dash-tab" onclick="switchDashTab('tables',this)" id="dtab-tables">
       <svg class="dash-tab-icon" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><circle cx="4" cy="5" r="1.6"/><circle cx="20" cy="5" r="1.6"/><circle cx="4" cy="19" r="1.6"/><circle cx="20" cy="19" r="1.6"/></svg> Tables <span class="dash-tab-count" id="tables-tab-count">0</span>
     </button>
+    <button class="dash-tab" onclick="switchDashTab('verify',this)" id="dtab-verify">
+      <svg class="dash-tab-icon" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7.5 3.2v5.1c0 4.4-3.1 8.4-7.5 9.7-4.4-1.3-7.5-5.3-7.5-9.7V6.2z"/><path d="M9.2 12.2l2 2 3.6-3.9"/></svg> Verify <span class="dash-tab-count" id="verify-tab-count">0</span>
+    </button>
     <button class="dash-tab" onclick="switchDashTab('activitylog',this)" id="dtab-activitylog">
       <svg class="dash-tab-icon" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2"/></svg> Activity Log
     </button>
@@ -1015,6 +1040,7 @@ body.role-manager .dash-btn-doors{display:none !important;}
     <div id="dash-tab-content-qrgen" style="display:none;"><!-- populated by JS --></div>
     <div id="dash-tab-content-followup" style="display:none;"><!-- populated by JS --></div>
     <div id="dash-tab-content-tables" style="display:none;"><!-- populated by JS --></div>
+    <div id="dash-tab-content-verify" style="display:none;"><!-- populated by JS --></div>
     <div id="dash-tab-content-activitylog" style="display:none;"><!-- populated by JS --></div>
     <div id="dash-tab-content-postevent" style="display:none;"><!-- populated by JS --></div>
   </div>
@@ -2504,7 +2530,16 @@ function openLoginModal() {
   if(_sessionExpiry && Date.now() < _sessionExpiry) { enterLegacyDashboard(); return; }
   const backdrop = document.getElementById('login-modal-backdrop');
   if(backdrop) { backdrop.classList.add('open'); backdrop.style.display = 'flex'; }
-  setTimeout(() => { const inp = document.getElementById('login-pwd-input'); if(inp) inp.focus(); }, 100);
+  setTimeout(function() {
+    const nameInp = document.getElementById('login-name-input');
+    const pwdInp = document.getElementById('login-pwd-input');
+    let remembered = '';
+    try { remembered = localStorage.getItem('legacy_last_user') || ''; } catch (e) {}
+    if (nameInp && remembered && !nameInp.value) nameInp.value = remembered;
+    // Focus whichever field still needs filling in.
+    if (nameInp && !nameInp.value) nameInp.focus();
+    else if (pwdInp) pwdInp.focus();
+  }, 100);
 
   // Restore an active lockout even after a page refresh
   const state = getLockoutState();
@@ -2548,9 +2583,15 @@ async function submitLogin() {
   const state = getLockoutState();
   if (state.until && Date.now() < state.until) { _lockedUntil = state.until; return; }
 
+  const nameInp = document.getElementById('login-name-input');
   const inp = document.getElementById('login-pwd-input');
+  const uname = (nameInp && nameInp.value || '').trim();
   const pwd = inp.value;
-  if(!pwd) return;
+
+  // Nudge focus to whichever field is missing rather than silently
+  // doing nothing when the button is pressed.
+  if (!uname) { if (nameInp) { nameInp.focus(); nameInp.classList.add('error'); setTimeout(function(){ nameInp.classList.remove('error'); }, 500); } return; }
+  if (!pwd) { inp.focus(); inp.classList.add('error'); setTimeout(function(){ inp.classList.remove('error'); }, 500); return; }
 
   const btn = document.getElementById('login-submit-btn');
   btn.disabled = true;
@@ -2558,7 +2599,7 @@ async function submitLogin() {
 
   let result;
   try {
-    result = await loginRequest({ action: 'login', password: pwd, device_id: getDeviceId() });
+    result = await loginRequest({ action: 'login', username: uname, password: pwd, device_id: getDeviceId() });
   } catch (e) {
     result = { status: 'error', message: 'Could not reach the server.' };
   }
@@ -2573,13 +2614,16 @@ async function submitLogin() {
     setLockoutState({ strikes: 0, until: 0 }); // successful login clears lockout escalation
     _sessionExpiry = result.expires_at || (Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);
     try { localStorage.setItem('legacy_session', JSON.stringify({exp:_sessionExpiry,token:_sessionToken,name:_currentUser.name,role:_currentUser.role,team:_currentUser.team})); } catch(e){}
+    // Remember the name (not the password) so a returning staff member
+    // on their own phone only types their password next time.
+    try { localStorage.setItem('legacy_last_user', uname); } catch (e) {}
     closeLoginModal();
     enterLegacyDashboard();
   } else {
     _currentUser = null;
     _sessionToken = null;
     _loginAttempts++;
-    inp.value = '';
+    inp.value = '';   // clear the password, keep the name so they only retype one thing
     inp.classList.add('error');
     setTimeout(() => inp.classList.remove('error'), 500);
     document.getElementById('login-error-msg').classList.add('show');
@@ -2693,7 +2737,17 @@ function enterLegacyDashboard() {
     }
   }
 
-  showDashSkeletons();
+  // Show the last known guest list immediately. The dashboard is then
+  // usable from the first second — including QR scanning and check-in —
+  // rather than sitting blank while the first network call completes
+  // (or fails). The live sync below replaces it as soon as it lands.
+  const hadSnapshot = restoreGuestSnapshot();
+  if (hadSnapshot) {
+    setSyncStatus('● Loading · showing last saved data');
+    renderDashTabsFromCache();
+  } else {
+    showDashSkeletons();
+  }
   loadDashboardData();
   startAutoSync();
 
@@ -2802,30 +2856,118 @@ function showDashSkeletons() {
   });
 }
 
-async function fetchDashboardGuests() {
+/* ══════════════════════════════════════════════════════════════════
+   SYNC — built so the dashboard keeps working even when the network
+   doesn't.
+   ──────────────────────────────────────────────────────────────────
+   The previous version treated ONE failed request as a full failure:
+   a single dropped packet on venue WiFi put a red banner across the
+   screen saying tabs may be empty. On a phone, at a door, that reads
+   as "the system is down" — and it wasn't.
+
+   Three changes make it dependable:
+
+   1. RETRY BEFORE PANICKING. A sync now makes several attempts with
+      growing gaps before it admits defeat. Most blips never surface.
+
+   2. LAST-GOOD SNAPSHOT ON DISK. Every successful sync is saved
+      locally. On load the dashboard shows that data instantly, so it
+      is NEVER blank — even if the network is down at that moment or
+      Apps Script is cold-starting. QR scanning and check-in work off
+      this cache, and writes are already queued and retried.
+
+   3. HONEST STATUS. If we're on cached data the header says how old
+      it is, rather than implying nothing works. The alarming banner
+      is reserved for a genuinely prolonged outage.
+══════════════════════════════════════════════════════════════════ */
+const GUEST_SNAPSHOT_KEY = 'legacy_guest_snapshot_v1';
+let _lastSyncOk = 0;
+let _consecutiveSyncFails = 0;
+
+function saveGuestSnapshot(guests) {
+  try {
+    localStorage.setItem(GUEST_SNAPSHOT_KEY, JSON.stringify({ at: Date.now(), guests: guests }));
+  } catch (e) { /* storage full or blocked — not fatal */ }
+}
+
+// Loads the last known guest list so the dashboard has something to
+// show the instant it opens, before any network call completes.
+function restoreGuestSnapshot() {
+  try {
+    const raw = localStorage.getItem(GUEST_SNAPSHOT_KEY);
+    if (!raw) return false;
+    const snap = JSON.parse(raw);
+    if (!snap || !Array.isArray(snap.guests) || !snap.guests.length) return false;
+    _dashGuestsCache = snap.guests;
+    _lastSyncOk = snap.at || 0;
+    return true;
+  } catch (e) { return false; }
+}
+
+function describeAge(ms) {
+  const s = Math.round(ms / 1000);
+  if (s < 60) return s + 's ago';
+  const m = Math.round(s / 60);
+  if (m < 60) return m + ' min ago';
+  return Math.round(m / 60) + 'h ago';
+}
+
+function setSyncStatus(text) {
+  const el = document.getElementById('dash-sync-status');
+  if (el) el.textContent = text;
+}
+
+// One attempt. Returns 'ok' | 'unauthorized' | 'fail'.
+async function fetchGuestsOnce(timeoutMs) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(function() { controller.abort(); }, timeoutMs || 20000);
   try {
     const url = SHEETS_URL + '?action=getLegacyGuests&token=' + encodeURIComponent(_sessionToken) + '&_=' + Date.now();
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
     const res = await fetch(url, { method: 'GET', signal: controller.signal });
     clearTimeout(timeoutId);
-    if(res.ok) {
-      const j = await res.json();
-      if(j.status === 'ok' && Array.isArray(j.guests)) {
-        _dashGuestsCache = j.guests;
-        const el = document.getElementById('dash-sync-status');
-        if(el) el.textContent = '● Live · ' + new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
-        hideDashSyncErrorBanner();
-        return true;
-      }
-      if(j.status === 'error' && j.message === 'Unauthorized') {
-        handleExpiredSession();
-        return false;
-      }
+    if (!res.ok) return 'fail';
+    const j = await res.json();
+    if (j.status === 'ok' && Array.isArray(j.guests)) {
+      _dashGuestsCache = j.guests;
+      saveGuestSnapshot(j.guests);
+      _lastSyncOk = Date.now();
+      return 'ok';
     }
-  } catch(e) { console.warn('Fetch failed:', e); }
-  const el = document.getElementById('dash-sync-status');
-  if(el) el.textContent = '● Sync Error';
+    if (j.status === 'error' && j.message === 'Unauthorized') return 'unauthorized';
+    return 'fail';
+  } catch (e) {
+    clearTimeout(timeoutId);
+    return 'fail';
+  }
+}
+
+async function fetchDashboardGuests(opts) {
+  const attempts = (opts && opts.attempts) || 3;
+  for (let i = 0; i < attempts; i++) {
+    const r = await fetchGuestsOnce(i === 0 ? 20000 : 25000);
+    if (r === 'ok') {
+      _consecutiveSyncFails = 0;
+      setSyncStatus('● Live · ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }));
+      hideDashSyncErrorBanner();
+      return true;
+    }
+    if (r === 'unauthorized') { handleExpiredSession(); return false; }
+    // Brief, growing pause before trying again — a blip usually clears
+    // well inside this, and the staff member never sees anything.
+    if (i < attempts - 1) await new Promise(function(res){ setTimeout(res, 1200 * (i + 1)); });
+  }
+
+  _consecutiveSyncFails++;
+
+  // We still have usable data — say so plainly instead of alarming.
+  if (_dashGuestsCache && _dashGuestsCache.length) {
+    setSyncStatus('● Offline · data from ' + describeAge(Date.now() - (_lastSyncOk || Date.now())));
+    // Only escalate to the banner once it's clearly not a passing blip.
+    if (_consecutiveSyncFails >= 3) showDashSyncErrorBanner();
+    return false;
+  }
+
+  setSyncStatus('● Sync Error');
   showDashSyncErrorBanner();
   return false;
 }
@@ -2853,7 +2995,10 @@ function showDashSyncErrorBanner() {
   const banner = document.createElement('div');
   banner.id = 'dash-sync-error-banner';
   banner.className = 'dash-sync-error-banner';
-  banner.innerHTML = '⚠️ Could not load guest data — check your connection and tap Retry. Tabs may look empty until this succeeds. ' +
+  // Wording matters here: staff read this mid-shift. It should say what
+  // is actually true — check-ins still work and are saved — not imply
+  // the whole system is down.
+  banner.innerHTML = '⚠️ Can\'t reach the server right now. You can keep checking guests in — everything is saved and will sync automatically once the connection returns. ' +
     '<button onclick="loadDashboardData()">Retry</button>';
   const dbView = document.getElementById('dashboard-view');
   if (dbView) dbView.insertBefore(banner, dbView.firstChild);
@@ -2867,6 +3012,31 @@ function hideDashSyncErrorBanner() {
 let _knownGuestTsSet = null; // null until the first successful load completes
 
 let _loadDashboardDataInFlight = false;
+
+// Renders every tab from whatever is currently in _dashGuestsCache.
+// Used both after a live sync and when showing the saved snapshot at
+// startup, so the two paths can never drift apart.
+//
+// Each tab renders independently — if one throws (e.g. a single
+// malformed guest record), the rest still render instead of the whole
+// dashboard freezing. The error is surfaced, not swallowed.
+function renderDashTabsFromCache() {
+  const renderSteps = [
+    ['Overview', renderOverviewTab], ['Guest List', renderGuestListTab],
+    ['Approvals', renderApprovalsTab], ['Check-In', renderCheckInTab],
+    ['Overdue', renderOverdueTab], ['VIP', renderVipTab],
+    ['QR Generator', renderQrGeneratorTab], ['Tables', renderTablesTab],
+  ];
+  const failures = [];
+  renderSteps.forEach(function(step) {
+    try { step[1](); } catch (e) {
+      failures.push(step[0] + ': ' + e.message);
+      console.error(step[0] + ' tab failed to render:', e);
+    }
+  });
+  try { updateDoorsCounter(); } catch (e) { console.error('updateDoorsCounter failed:', e); }
+  return failures;
+}
 
 async function loadDashboardData() {
   if (_loadDashboardDataInFlight) return; // avoid overlapping syncs if one runs long
@@ -2898,19 +3068,7 @@ async function loadDashboardData() {
   // malformed guest record), the rest still render instead of the
   // whole dashboard silently freezing on "Syncing…" forever. The
   // actual error is surfaced so it can be diagnosed, not swallowed.
-  const renderSteps = [
-    ['Overview', renderOverviewTab], ['Guest List', renderGuestListTab],
-    ['Approvals', renderApprovalsTab], ['Check-In', renderCheckInTab],
-    ['Overdue', renderOverdueTab], ['VIP', renderVipTab], ['QR Generator', renderQrGeneratorTab], ['Tables', renderTablesTab],
-  ];
-  const failures = [];
-  renderSteps.forEach(function(step) {
-    try { step[1](); } catch (e) {
-      failures.push(step[0] + ': ' + e.message);
-      console.error(step[0] + ' tab failed to render:', e);
-    }
-  });
-  try { updateDoorsCounter(); } catch (e) { console.error('updateDoorsCounter failed:', e); }
+  const failures = renderDashTabsFromCache();
 
   if (failures.length) {
     showDashToast('⚠️ Some tabs failed to load: ' + failures.join(' · '));
@@ -2924,7 +3082,7 @@ async function loadDashboardData() {
 function switchDashTab(tab, btn) {
   document.querySelectorAll('.dash-tab').forEach(t => t.classList.remove('active'));
   btn.classList.add('active');
-  ['overview','guestlist','approvals','checkin','overdue','vip','qrgen','followup','tables','activitylog','postevent'].forEach(t => {
+  ['overview','guestlist','approvals','checkin','overdue','vip','qrgen','followup','tables','verify','activitylog','postevent'].forEach(t => {
     const el = document.getElementById('dash-tab-content-' + t);
     if(el) el.style.display = (t === tab) ? 'block' : 'none';
   });
@@ -2934,8 +3092,300 @@ function switchDashTab(tab, btn) {
   if (tab === 'qrgen') renderQrGeneratorTab();
   if (tab === 'approvals') renderApprovalsTab();
   if (tab === 'tables') renderTablesTab();
+  if (tab === 'verify') renderVerifyTab();
   if (tab === 'activitylog') loadActivityLog();
   if (tab === 'postevent') renderPostEventTab();
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   VERIFY — RSVPs vs the pre-approved invitation list
+   ──────────────────────────────────────────────────────────────────
+   Invitations go only to people on a list the Events team maintains in
+   a separate spreadsheet. This tab checks every RSVP against it and
+   sorts them into three buckets:
+
+     ✓ Verified      the name matches an invited guest cleanly
+     ⚠ Check name    close but not exact — most likely a typo when
+                     they filled the form, worth a human glance
+     ✕ Not on list   no plausible match; either an oversight or
+                     someone who wasn't invited
+
+   Matching has to cope with how the invitation list is actually
+   written: titles ("Ms.", "H.E. Dr."), couples on one row ("Mr and
+   Mrs Somdeth Bodhisane"), trailing notes ("(Invitation for 2
+   Guests)"), organisations, nicknames in brackets, and Lao script.
+
+   The deliberate design choice: a name only counts as VERIFIED when
+   every part of it appears verbatim in an invited entry. Anything
+   merely similar is pushed to "Check name" rather than waved through,
+   because a missed typo is recoverable but a wrongly-approved guest
+   is not. That is why "Anna Kleinschroth" is flagged against the
+   list's "Anna Kleinschoroth" instead of silently passing.
+══════════════════════════════════════════════════════════════════ */
+let _invitedList = null;
+let _verifyLoading = false;
+let _verifyError = '';
+let _verifyFilter = 'all';
+
+const VERIFY_TITLES = /^(?:h\.?e\.?|his excellency|her excellency|assoc(?:iate)?\.? prof(?:essor)?\.?|prof(?:essor)?\.?|dr\.?|mr\.?|mrs\.?|ms\.?|miss|madam|khun|dato|datuk|tan sri|phra|maechee|t\.?|teacher|ajarn)\s+/i;
+
+function vStripTitles(s) {
+  let p = s, prev;
+  do { prev = p; p = p.replace(VERIFY_TITLES, ''); } while (p !== prev);
+  return p;
+}
+
+function vNormalize(raw) {
+  let s = String(raw || '');
+  s = s.replace(/\([^)]*\)/g, ' ');                                   // "(Invitation for 2 Guests)", nicknames
+  s = s.replace(/\+\s*wife/gi, ' ');
+  s = s.replace(/\b(?:and\s+)?(?:spouse|guest|wife|husband|partner)\b/gi, ' ');
+  s = s.replace(/[.,'’`"]/g, ' ');
+  s = s.replace(/\s+/g, ' ').trim();
+  s = vStripTitles(s);
+  return s.toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+// One row can name two people ("Mr Ola Khampasong & Ms Manothip
+// Siripaphanh"), so each row yields every person it could refer to.
+function vSplitPeople(raw) {
+  const s = String(raw || '').replace(/\([^)]*\)/g, ' ');
+  const parts = s.split(/\s*(?:&|;|\/)\s*|\s+\band\b\s+/i).filter(Boolean);
+  const out = [];
+  parts.forEach(function(p) {
+    const n = vNormalize(p);
+    if (n && n.length > 2) out.push(n);
+  });
+  const full = vNormalize(raw);
+  if (full && out.indexOf(full) === -1) out.push(full);
+  return out.filter(function(x, i, a) { return x.length > 2 && a.indexOf(x) === i; });
+}
+
+function vLev(a, b) {
+  if (a === b) return 0;
+  const m = a.length, n = b.length;
+  if (!m) return n;
+  if (!n) return m;
+  let prev = [], cur = [];
+  for (let j = 0; j <= n; j++) prev[j] = j;
+  for (let i = 1; i <= m; i++) {
+    cur[0] = i;
+    for (let j = 1; j <= n; j++) {
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a.charAt(i-1) === b.charAt(j-1) ? 0 : 1));
+    }
+    const t = prev; prev = cur; cur = t;
+  }
+  return prev[n];
+}
+function vSim(a, b) { const L = Math.max(a.length, b.length); return L ? 1 - vLev(a, b) / L : 1; }
+
+function vTokenScore(a, b) {
+  const A = a.split(' ').filter(function(t){ return t.length > 2; });
+  const B = b.split(' ').filter(function(t){ return t.length > 2; });
+  if (!A.length || !B.length) return 0;
+  let hit = 0;
+  A.forEach(function(t) { if (B.indexOf(t) !== -1) hit++; });
+  return hit / Math.min(A.length, B.length);
+}
+
+// Verified only when every meaningful part of the RSVP name appears
+// verbatim. This is what lets "Adrian Elmer Cruz" match the list's
+// longer "Adrian Elmer Cruz   Embassy of the Republic of the
+// Philippines" while still catching a one-letter misspelling.
+function vExactTokens(q, cand) {
+  const qs = q.split(' ').filter(function(t){ return t.length > 2; });
+  if (qs.length < 2) return false;     // a single token is too weak to trust
+  const cs = cand.split(' ');
+  return qs.every(function(t) { return cs.indexOf(t) !== -1; });
+}
+
+function vBestMatch(name) {
+  const q = vNormalize(name);
+  if (!q || !_invitedList) return { verdict: 'unmatched', score: 0, entry: null };
+  let best = { score: 0, entry: null };
+  for (let i = 0; i < _invitedList.length; i++) {
+    const inv = _invitedList[i];
+    for (let k = 0; k < inv._people.length; k++) {
+      const cand = inv._people[k];
+      if (q === cand || vExactTokens(q, cand)) {
+        return { verdict: 'matched', score: 1, entry: inv };
+      }
+      const score = Math.max(vSim(q, cand), vTokenScore(q, cand) * 0.9);
+      if (score > best.score) best = { score: score, entry: inv };
+    }
+  }
+  return {
+    verdict: best.score >= 0.70 ? 'possible-typo' : 'unmatched',
+    score: best.score,
+    entry: best.entry,
+  };
+}
+
+async function loadInvitedList(forceRefresh) {
+  _verifyLoading = true; _verifyError = '';
+  renderVerifyTab();
+  try {
+    const url = SHEETS_URL + '?action=getInvitedList&token=' + encodeURIComponent(_sessionToken)
+      + (forceRefresh ? '&refresh=1' : '') + '&_=' + Date.now();
+    const res = await fetch(url);
+    const j = await res.json();
+    if (j.status !== 'ok' || !Array.isArray(j.invited)) {
+      _verifyError = j.message || 'Could not load the invited guest list.';
+      _invitedList = null;
+    } else {
+      _invitedList = j.invited.map(function(inv) {
+        inv._people = vSplitPeople(inv.name);
+        return inv;
+      });
+    }
+  } catch (e) {
+    _verifyError = 'Could not reach the server while loading the invited list.';
+    _invitedList = null;
+  }
+  _verifyLoading = false;
+  renderVerifyTab();
+}
+
+// Every individual attendee — the person who RSVP'd plus each named
+// companion — because a companion can just as easily be someone who
+// wasn't invited.
+function verifyAllAttendees() {
+  const out = [];
+  _dashGuestsCache.forEach(function(g) {
+    const primary = ((g.fname || '') + ' ' + (g.lname || '')).trim();
+    if (primary) out.push({ name: primary, ts: g.ts, guest: g, isCompanion: false });
+    parseAdditionalGuestsDetail(g).forEach(function(a) {
+      if (a.name) out.push({ name: a.name, ts: g.ts, guest: g, isCompanion: true, host: g.fname || '' });
+    });
+  });
+  return out;
+}
+
+function setVerifyFilter(f) { _verifyFilter = f; renderVerifyTab(); }
+
+function renderVerifyTab() {
+  const el = document.getElementById('dash-tab-content-verify');
+  if (!el) return;
+
+  if (_verifyLoading) {
+    el.innerHTML = '<div class="dash-panel"><div class="dash-empty">Loading the invited guest list…</div></div>';
+    return;
+  }
+
+  if (!_invitedList) {
+    el.innerHTML =
+      '<div class="dash-panel">' +
+        '<div class="dash-panel-title">🛡 Verify Against Invitation List</div>' +
+        '<p style="margin:0 0 16px;font-size:14px;color:var(--gray-mid);line-height:1.7;">' +
+          'Checks every RSVP against the pre-approved invitation list, flags likely typos, ' +
+          'and highlights anyone who replied without being on the list.</p>' +
+        (_verifyError ? '<div class="followup-warn" style="margin-bottom:16px;">⚠️ ' + escHtmlV(_verifyError) + '</div>' : '') +
+        '<button class="dash-btn-gold" onclick="loadInvitedList(true)">Load Invitation List</button>' +
+      '</div>';
+    return;
+  }
+
+  const people = verifyAllAttendees();
+  const results = people.map(function(p) {
+    const m = vBestMatch(p.name);
+    return { person: p, verdict: m.verdict, score: m.score, entry: m.entry };
+  });
+
+  const matched = results.filter(function(r){ return r.verdict === 'matched'; });
+  const typos   = results.filter(function(r){ return r.verdict === 'possible-typo'; });
+  const unknown = results.filter(function(r){ return r.verdict === 'unmatched'; });
+
+  const badge = document.getElementById('verify-tab-count');
+  if (badge) badge.textContent = typos.length + unknown.length;
+
+  // Invited people who haven't replied at all — the other half of the
+  // picture, and the list you chase before the deadline.
+  const rsvpNorm = results.filter(function(r){ return r.verdict === 'matched'; })
+                          .map(function(r){ return r.entry; });
+  const awaiting = _invitedList.filter(function(inv) {
+    return rsvpNorm.indexOf(inv) === -1 && inv.name && inv._people.length;
+  });
+
+  const chip = function(k, label, n, cls) {
+    return '<button class="verify-chip ' + (_verifyFilter === k ? 'active ' : '') + cls + '" onclick="setVerifyFilter(\'' + k + '\')">' +
+      label + ' <strong>' + n + '</strong></button>';
+  };
+
+  let show = results;
+  if (_verifyFilter === 'matched') show = matched;
+  else if (_verifyFilter === 'typo') show = typos;
+  else if (_verifyFilter === 'unknown') show = unknown;
+
+  const rows = show.slice().sort(function(a, b) {
+    const rank = { 'unmatched': 0, 'possible-typo': 1, 'matched': 2 };
+    if (rank[a.verdict] !== rank[b.verdict]) return rank[a.verdict] - rank[b.verdict];
+    return a.person.name.localeCompare(b.person.name);
+  }).map(function(r) {
+    const p = r.person;
+    let pill, detail;
+    if (r.verdict === 'matched') {
+      pill = '<span class="verify-pill ok">✓ Verified</span>';
+      detail = '<span style="color:var(--gray-mid);">' + escHtmlV(r.entry ? r.entry.category : '') + '</span>';
+    } else if (r.verdict === 'possible-typo') {
+      pill = '<span class="verify-pill warn">⚠ Check name</span>';
+      detail = 'Closest on list: <strong>' + escHtmlV(r.entry ? r.entry.name : '—') + '</strong>' +
+               ' <span style="color:var(--gray-mid);">(' + Math.round(r.score * 100) + '% similar · ' +
+               escHtmlV(r.entry ? r.entry.category : '') + ')</span>';
+    } else {
+      pill = '<span class="verify-pill bad">✕ Not on list</span>';
+      detail = r.entry
+        ? '<span style="color:var(--gray-mid);">Nearest was “' + escHtmlV(r.entry.name) + '” — only ' + Math.round(r.score * 100) + '% similar</span>'
+        : '<span style="color:var(--gray-mid);">No similar name found</span>';
+    }
+    return '<tr>' +
+      '<td style="font-weight:600;color:var(--navy);white-space:nowrap;">' + escHtmlV(p.name) +
+        (p.isCompanion ? ' <span class="verify-sub">guest of ' + escHtmlV(p.host) + '</span>' : '') + '</td>' +
+      '<td>' + pill + '</td>' +
+      '<td style="font-size:12.5px;">' + detail + '</td>' +
+    '</tr>';
+  }).join('');
+
+  el.innerHTML =
+    '<div class="dash-panel" style="margin-bottom:16px;">' +
+      '<div class="dash-panel-title">🛡 Verify Against Invitation List' +
+        '<button class="dash-btn" onclick="loadInvitedList(true)" style="margin-left:auto;">↻ Reload list</button>' +
+      '</div>' +
+      '<p style="margin:0 0 14px;font-size:13px;color:var(--gray-mid);line-height:1.7;">' +
+        'Comparing <strong>' + people.length + '</strong> people who have RSVP\'d against <strong>' +
+        _invitedList.length + '</strong> entries on the invitation list. ' +
+        'A name is only marked verified when it matches exactly — anything close but not identical ' +
+        'is flagged so you can check it rather than being let through.</p>' +
+      '<div class="verify-chips">' +
+        chip('all', 'All', results.length, '') +
+        chip('matched', '✓ Verified', matched.length, 'ok') +
+        chip('typo', '⚠ Check name', typos.length, 'warn') +
+        chip('unknown', '✕ Not on list', unknown.length, 'bad') +
+      '</div>' +
+    '</div>' +
+    '<div class="dash-panel">' +
+      '<div class="dash-panel-title">Results <span>' + show.length + ' shown</span></div>' +
+      (show.length
+        ? '<div class="dash-table-wrap"><table class="dash-table"><thead><tr><th>Name on RSVP</th><th>Status</th><th>Details</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
+        : '<div class="dash-empty">Nothing in this category.</div>') +
+    '</div>' +
+    '<div class="dash-panel" style="margin-top:16px;">' +
+      '<div class="dash-panel-title">Invited but no RSVP yet <span>' + awaiting.length + '</span></div>' +
+      (awaiting.length
+        ? '<div class="dash-table-wrap"><table class="dash-table"><thead><tr><th>Name</th><th>Category</th><th>Marked on their sheet</th></tr></thead><tbody>' +
+            awaiting.slice(0, 300).map(function(inv) {
+              return '<tr><td style="color:var(--navy);">' + escHtmlV(inv.name) + '</td>' +
+                     '<td style="font-size:12.5px;color:var(--gray-mid);">' + escHtmlV(inv.category) + '</td>' +
+                     '<td style="font-size:12.5px;color:var(--gray-mid);">' + (escHtmlV(inv.confirmed) || '—') + '</td></tr>';
+            }).join('') +
+          '</tbody></table></div>'
+        : '<div class="dash-empty">Everyone on the invitation list has replied.</div>') +
+    '</div>';
+}
+
+function escHtmlV(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
 /* ── LIGHTWEIGHT INLINE SVG CHART HELPERS (no external chart library) ── */
