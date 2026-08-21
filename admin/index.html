@@ -950,6 +950,56 @@ body.role-manager .dash-btn-doors{display:none !important;}
 .table-card-fill.over{color:#a03c3a;font-weight:800;}
 .table-card-bar-fill.over{background:linear-gradient(90deg,#c0504d,#d9736f)!important;}
 body.role-usher .seating-config{display:none;}
+
+/* ── Floor plan ── */
+.fp-modes{display:inline-flex;gap:6px;}
+.fp-mode{padding:7px 14px;border-radius:100px;border:1.5px solid var(--gray);background:var(--white);color:var(--gray-mid);font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .16s ease;white-space:nowrap;}
+.fp-mode:hover{border-color:var(--gold);}
+.fp-mode.active{background:var(--navy);border-color:var(--navy);color:var(--gold-light);}
+.fp-zones{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
+.fp-zone-chip{font-size:11.5px;color:var(--gray-mid);background:var(--cream);border:1px solid var(--gray);border-radius:100px;padding:5px 12px;}
+.fp-zone-chip strong{color:var(--navy);}
+.fp-layout{display:grid;grid-template-columns:1fr 250px;gap:16px;align-items:start;}
+@media (max-width:1100px){.fp-layout{grid-template-columns:1fr;}}
+.fp-canvas{background:var(--white);border:1px solid var(--gray);border-radius:12px;overflow:hidden;}
+.fp-svg{width:100%;height:auto;display:block;touch-action:none;user-select:none;-webkit-user-select:none;}
+.fp-bg{fill:#fbf9f3;}
+.fp-section{fill:#f4efe1;stroke:#e2d9c0;stroke-width:1;}
+.fp-section.alt{fill:#f8f4e9;}
+.fp-section-label{font-family:'DM Sans',sans-serif;font-size:12px;fill:#a8925a;text-anchor:end;letter-spacing:.06em;}
+.fp-ball-outline{fill:none;stroke:#c9a84c;stroke-width:2;}
+.fp-pre{fill:#eef2ee;stroke:#d6ddd6;stroke-width:1;}
+.fp-pre-label{font-family:'DM Sans',sans-serif;font-size:12px;fill:#6f7a72;text-anchor:middle;letter-spacing:.05em;}
+.fp-desk{fill:#0a2818;rx:6;}
+.fp-desk-label{font-family:'DM Sans',sans-serif;font-size:11px;fill:#e8c96e;text-anchor:middle;font-weight:700;}
+.fp-stage{fill:#2b3a30;rx:4;}
+.fp-stage-label{font-family:'DM Sans',sans-serif;font-size:13px;fill:#e8c96e;text-anchor:middle;dominant-baseline:middle;letter-spacing:.22em;font-weight:700;}
+.fp-table{fill:#fff;stroke:#c9a84c;stroke-width:2;transition:fill .15s ease,stroke .15s ease;}
+.fp-table.part{fill:#fdf6e0;}
+.fp-table.full{fill:#e8c96e;}
+.fp-table.over{fill:#f3d3d1;stroke:#c0504d;}
+.fp-table-num{font-family:'Cinzel',serif;font-size:15px;font-weight:700;fill:#0a2818;text-anchor:middle;pointer-events:none;}
+.fp-table-cnt{font-family:'DM Sans',sans-serif;font-size:9.5px;fill:#7a7268;text-anchor:middle;pointer-events:none;}
+.fp-chair circle{fill:#fff;stroke:#c9c2ad;stroke-width:1.5;transition:fill .12s ease,stroke .12s ease;}
+.fp-chair.taken circle{fill:#2d9e5f;stroke:#1c7a49;}
+.fp-chair.drop-target circle{fill:#e8c96e;stroke:#8a6a26;stroke-width:2.5;}
+.fp-table-group{cursor:default;}
+.fp-svg.mode-move .fp-table-group{cursor:grab;}
+.fp-table-group.dragging{cursor:grabbing;opacity:.85;}
+.fp-table-group.drop-target .fp-table{stroke:#2d9e5f;stroke-width:3.5;}
+.fp-warn{fill:#c0504d;}
+.fp-warn-t{font-family:'DM Sans',sans-serif;font-size:10px;font-weight:800;fill:#fff;text-anchor:middle;pointer-events:none;}
+.fp-side{background:var(--cream);border:1px solid var(--gray);border-radius:12px;padding:14px;max-height:640px;overflow-y:auto;}
+.fp-side-title{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray-mid);font-weight:700;margin-bottom:10px;display:flex;justify-content:space-between;}
+.fp-side-title span{color:var(--gold);}
+.fp-chips{display:flex;flex-direction:column;gap:7px;}
+.fp-chip{background:var(--white);border:1.5px solid var(--gray);border-radius:9px;padding:9px 11px;cursor:grab;touch-action:none;transition:border-color .15s ease,transform .1s ease;}
+.fp-chip:hover{border-color:var(--gold);}
+.fp-chip:active,.fp-chip.dragging{cursor:grabbing;opacity:.45;}
+.fp-chip-name{display:block;font-size:12.5px;font-weight:600;color:var(--navy);}
+.fp-chip-sub{display:block;font-size:10.5px;color:var(--gray-mid);margin-top:2px;}
+.fp-chip-tag{display:inline-block;margin-top:5px;font-size:10px;font-weight:700;color:#8a6a26;background:rgba(201,168,76,.18);padding:2px 7px;border-radius:100px;}
+.fp-ghost{position:fixed;top:0;left:0;z-index:999999;pointer-events:none;background:var(--navy);color:var(--gold-light);font-size:12.5px;font-weight:700;padding:7px 13px;border-radius:8px;box-shadow:0 8px 22px rgba(0,0,0,.3);white-space:nowrap;font-family:'DM Sans',sans-serif;}
 </style>
 </head>
 <body>
@@ -3256,7 +3306,10 @@ async function loadInvitedList(forceRefresh) {
     const res = await fetch(url);
     const j = await res.json();
     if (j.status !== 'ok' || !Array.isArray(j.invited)) {
-      _verifyError = j.message || 'Could not load the invited guest list.';
+      // Surface whatever the server actually said. A generic message
+      // here is what made this hard to diagnose the first time.
+      _verifyError = j.message
+        || 'The server replied, but without an invitation list. This usually means the Apps Script needs redeploying so it knows about this feature.';
       _invitedList = null;
     } else {
       _invitedList = j.invited.map(function(inv) {
@@ -6348,6 +6401,429 @@ function seatedPartyMembers(g) {
   });
 }
 
+/* ══════════════════════════════════════════════════════════════════
+   INTERACTIVE FLOOR PLAN — Vientiane Ballroom
+   ──────────────────────────────────────────────────────────────────
+   A scale drawing of the real room from the venue plan: three ballroom
+   sections stacked, with the Pre-Function Area down the right-hand
+   side where registration and the main entrance are.
+
+   Two kinds of dragging, deliberately kept distinct:
+
+     · MOVE A TABLE   — drag the table itself to match the room.
+       Its zone is then DERIVED from where it physically sits, so a
+       table dragged into Ballroom 2 simply is in Ballroom 2. Nobody
+       has to remember to update a label, so the plan can't drift out
+       of step with the room.
+
+     · SEAT A GUEST   — drag a guest from the side panel onto a table
+       (sits them at the next free chair) or onto a specific chair.
+
+   Smoothness comes from doing almost nothing during the drag: the
+   element is moved with a transform on each pointer frame, and the
+   real state change happens once, on drop. Pointer events are used
+   rather than mouse events so a trackpad, a mouse and a touchscreen
+   all take the same path.
+══════════════════════════════════════════════════════════════════ */
+const FP = {
+  W: 1000, H: 640,
+  ball: { x: 40, y: 40, w: 700, h: 560 },      // the ballroom itself
+  pre:  { x: 760, y: 40, w: 200, h: 560 },     // Pre-Function Area
+  sections: [
+    { key: 'Ballroom 1', y: 40,  h: 186 },
+    { key: 'Ballroom 2', y: 226, h: 187 },
+    { key: 'Ballroom 3', y: 413, h: 187 },
+  ],
+  stage: { x: 60, y: 250, w: 60, h: 140 },
+};
+
+let _floorPlan = null;         // { tables: [{n,x,y,seats}] }
+let _fpLoaded = false;
+let _fpDirty = false;
+let _fpDrag = null;
+let _fpMode = 'seat';          // 'seat' = drag guests, 'move' = rearrange tables
+
+// Which ballroom section a point falls in. Zone follows position.
+function fpZoneAt(y) {
+  for (let i = 0; i < FP.sections.length; i++) {
+    const s = FP.sections[i];
+    if (y >= s.y && y < s.y + s.h) return s.key;
+  }
+  return FP.sections[FP.sections.length - 1].key;
+}
+
+// A sensible starting arrangement when no plan has been saved yet:
+// tables laid out in rows across the three sections, which staff then
+// drag to match the real room.
+function fpDefaultPlan(count, seats) {
+  const tables = [];
+  const perRow = 4;
+  const usableW = FP.ball.w - 200;   // leave room for the stage
+  const startX = FP.ball.x + 170;
+  for (let i = 0; i < count; i++) {
+    const row = Math.floor(i / perRow);
+    const col = i % perRow;
+    tables.push({
+      n: i + 1,
+      x: Math.round(startX + col * (usableW / perRow) + (usableW / perRow) / 2),
+      y: Math.round(FP.ball.y + 70 + row * 92),
+      seats: seats,
+    });
+  }
+  return { tables: tables };
+}
+
+async function loadFloorPlan() {
+  const cfg = getSeatingConfig();
+  try {
+    const url = SHEETS_URL + '?action=getFloorPlan&token=' + encodeURIComponent(_sessionToken) + '&_=' + Date.now();
+    const res = await fetch(url);
+    const j = await res.json();
+    if (j.status === 'ok' && j.plan && Array.isArray(j.plan.tables) && j.plan.tables.length) {
+      _floorPlan = j.plan;
+    }
+  } catch (e) { /* fall through to a default layout */ }
+
+  if (!_floorPlan) _floorPlan = fpDefaultPlan(cfg.count, cfg.capacity);
+  reconcilePlanWithConfig();
+  _fpLoaded = true;
+  renderTablesTab();
+}
+
+// Keep the plan in step with the table count / seats setting, without
+// throwing away positions someone has already arranged.
+function reconcilePlanWithConfig() {
+  const cfg = getSeatingConfig();
+  if (!_floorPlan) return;
+  const existing = {};
+  _floorPlan.tables.forEach(function(t) { existing[t.n] = t; });
+  const fresh = fpDefaultPlan(cfg.count, cfg.capacity).tables;
+  _floorPlan.tables = fresh.map(function(def) {
+    const e = existing[def.n];
+    return e ? { n: def.n, x: e.x, y: e.y, seats: cfg.capacity } : def;
+  });
+}
+
+async function saveFloorPlan() {
+  if (!_floorPlan) return;
+  const r = await postToSheets({ action: 'saveFloorPlan', plan: _floorPlan, session_token: _sessionToken });
+  if (r && r.status === 'error') { showDashToast('⚠️ ' + (r.message || 'Could not save the floor plan.')); return; }
+  _fpDirty = false;
+  showDashToast('✓ Floor plan saved for everyone');
+  renderTablesTab();
+}
+
+function setFpMode(m) { _fpMode = m; renderTablesTab(); }
+
+// Chair positions around a round table.
+function fpChairs(cx, cy, seats, r) {
+  const out = [];
+  for (let i = 0; i < seats; i++) {
+    const a = (Math.PI * 2 * i) / seats - Math.PI / 2;
+    out.push({ i: i, x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r });
+  }
+  return out;
+}
+
+// Everyone currently sitting at a given table, in seat order.
+function fpPeopleAtTable(n) {
+  const out = [];
+  _dashGuestsCache.forEach(function(g) {
+    if (parseInt(g.table_number, 10) !== n) return;
+    seatedPartyMembers(g).forEach(function(p) { out.push({ p: p, g: g }); });
+  });
+  return out;
+}
+
+function buildFloorPlanSVG() {
+  const cfg = getSeatingConfig();
+  const tables = (_floorPlan && _floorPlan.tables) || [];
+  const R = 26, CHAIR_R = 38;
+
+  const sections = FP.sections.map(function(s, i) {
+    return '<g>' +
+      '<rect x="' + FP.ball.x + '" y="' + s.y + '" width="' + FP.ball.w + '" height="' + s.h + '" ' +
+        'class="fp-section' + (i % 2 ? ' alt' : '') + '"/>' +
+      '<text x="' + (FP.ball.x + FP.ball.w - 12) + '" y="' + (s.y + 20) + '" class="fp-section-label">' + s.key + '</text>' +
+    '</g>';
+  }).join('');
+
+  const tableEls = tables.map(function(t) {
+    const people = fpPeopleAtTable(t.n);
+    const bySeat = {};
+    people.forEach(function(item) {
+      const s = parseInt(item.p.seat, 10);
+      if (s >= 1 && s <= t.seats) bySeat[s] = item;
+    });
+    const unseatedHere = people.filter(function(item) {
+      const s = parseInt(item.p.seat, 10);
+      return !(s >= 1 && s <= t.seats);
+    }).length;
+
+    const occupied = people.length;
+    const over = occupied > t.seats;
+    const cls = 'fp-table' + (over ? ' over' : (occupied >= t.seats ? ' full' : (occupied ? ' part' : '')));
+
+    const chairs = fpChairs(t.x, t.y, t.seats, CHAIR_R).map(function(ch) {
+      const seatNo = ch.i + 1;
+      const item = bySeat[seatNo];
+      const title = item ? escHtmlV(item.p.name) + ' — seat ' + seatNo : 'Table ' + t.n + ', seat ' + seatNo + ' (free)';
+      return '<g class="fp-chair' + (item ? ' taken' : '') + '" data-table="' + t.n + '" data-seat="' + seatNo + '">' +
+        '<circle cx="' + ch.x.toFixed(1) + '" cy="' + ch.y.toFixed(1) + '" r="7.5"/>' +
+        '<title>' + title + '</title>' +
+      '</g>';
+    }).join('');
+
+    return '<g class="fp-table-group" data-table="' + t.n + '" transform="translate(0,0)">' +
+      chairs +
+      '<circle class="' + cls + '" cx="' + t.x + '" cy="' + t.y + '" r="' + R + '"/>' +
+      '<text class="fp-table-num" x="' + t.x + '" y="' + (t.y - 2) + '">' + t.n + '</text>' +
+      '<text class="fp-table-cnt" x="' + t.x + '" y="' + (t.y + 12) + '">' + occupied + '/' + t.seats + '</text>' +
+      (unseatedHere ? '<circle class="fp-warn" cx="' + (t.x + R - 4) + '" cy="' + (t.y - R + 4) + '" r="7"/>' +
+                      '<text class="fp-warn-t" x="' + (t.x + R - 4) + '" y="' + (t.y - R + 7.5) + '">!</text>' : '') +
+      '<title>Table ' + t.n + ' · ' + fpZoneAt(t.y) + ' · ' + occupied + ' of ' + t.seats + ' seats</title>' +
+    '</g>';
+  }).join('');
+
+  return '<svg id="fp-svg" viewBox="0 0 ' + FP.W + ' ' + FP.H + '" class="fp-svg' + (_fpMode === 'move' ? ' mode-move' : '') + '">' +
+    '<rect x="0" y="0" width="' + FP.W + '" height="' + FP.H + '" class="fp-bg"/>' +
+    sections +
+    '<rect x="' + FP.ball.x + '" y="' + FP.ball.y + '" width="' + FP.ball.w + '" height="' + FP.ball.h + '" class="fp-ball-outline"/>' +
+    // Pre-function area, entrance and registration — matches the venue plan
+    '<rect x="' + FP.pre.x + '" y="' + FP.pre.y + '" width="' + FP.pre.w + '" height="' + FP.pre.h + '" class="fp-pre"/>' +
+    '<text x="' + (FP.pre.x + FP.pre.w / 2) + '" y="' + (FP.pre.y + 26) + '" class="fp-pre-label">Pre-Function Area</text>' +
+    '<rect x="' + (FP.pre.x + 26) + '" y="' + (FP.pre.y + 60) + '" width="148" height="46" class="fp-desk"/>' +
+    '<text x="' + (FP.pre.x + FP.pre.w / 2) + '" y="' + (FP.pre.y + 88) + '" class="fp-desk-label">Registration</text>' +
+    '<rect x="' + (FP.pre.x + 26) + '" y="' + (FP.pre.y + 470) + '" width="148" height="46" class="fp-desk"/>' +
+    '<text x="' + (FP.pre.x + FP.pre.w / 2) + '" y="' + (FP.pre.y + 498) + '" class="fp-desk-label">Main Entrance</text>' +
+    // Stage
+    '<rect x="' + FP.stage.x + '" y="' + FP.stage.y + '" width="' + FP.stage.w + '" height="' + FP.stage.h + '" class="fp-stage"/>' +
+    '<text x="' + (FP.stage.x + FP.stage.w / 2) + '" y="' + (FP.stage.y + FP.stage.h / 2) + '" class="fp-stage-label" transform="rotate(-90 ' + (FP.stage.x + FP.stage.w / 2) + ' ' + (FP.stage.y + FP.stage.h / 2) + ')">STAGE</text>' +
+    tableEls +
+  '</svg>';
+}
+
+/* ── DRAG ───────────────────────────────────────────────────────────
+   One pointer handler serves both modes. The rules that keep it
+   feeling immediate:
+
+   · Nothing re-renders mid-drag. Only a transform is written per
+     frame, and only inside requestAnimationFrame, so the browser
+     composites it on the GPU instead of relaying out the SVG.
+   · Pointer capture means the drag survives the cursor leaving the
+     element — no more "it dropped when I moved too fast".
+   · A few pixels of slop before a drag starts, so a click that
+     wobbles slightly is still a click.
+   · Drop targets are found with elementFromPoint at the END, not
+     tracked continuously.                                          */
+function fpClientToSvg(svg, clientX, clientY) {
+  const r = svg.getBoundingClientRect();
+  return {
+    x: ((clientX - r.left) / r.width) * FP.W,
+    y: ((clientY - r.top) / r.height) * FP.H,
+  };
+}
+
+function fpBeginDrag(e) {
+  const svg = document.getElementById('fp-svg');
+  if (!svg) return;
+  const canEdit = !(_currentUser && (_currentUser.role === 'usher' || _currentUser.role === 'manager'));
+  if (!canEdit) return;
+
+  // Dragging a TABLE (rearrange mode)
+  const grp = e.target.closest && e.target.closest('.fp-table-group');
+  if (_fpMode === 'move' && grp) {
+    const n = parseInt(grp.getAttribute('data-table'), 10);
+    const t = _floorPlan.tables.find(function(x) { return x.n === n; });
+    if (!t) return;
+    const p = fpClientToSvg(svg, e.clientX, e.clientY);
+    _fpDrag = { kind: 'table', n: n, t: t, grp: grp, dx: p.x - t.x, dy: p.y - t.y, moved: false, raf: 0, tx: 0, ty: 0 };
+    grp.classList.add('dragging');
+    try { grp.setPointerCapture(e.pointerId); } catch (err) {}
+    e.preventDefault();
+    return;
+  }
+}
+
+// Dragging a GUEST from the side list onto the plan.
+function fpBeginGuestDrag(e, ts, idx) {
+  const canEdit = !(_currentUser && (_currentUser.role === 'usher' || _currentUser.role === 'manager'));
+  if (!canEdit) return;
+  const chip = e.currentTarget;
+  const ghost = document.createElement('div');
+  ghost.className = 'fp-ghost';
+  ghost.textContent = chip.getAttribute('data-name') || 'Guest';
+  document.body.appendChild(ghost);
+
+  _fpDrag = {
+    kind: 'guest', ts: ts, idx: idx, ghost: ghost, chip: chip,
+    moved: false, raf: 0, cx: e.clientX, cy: e.clientY,
+  };
+  chip.classList.add('dragging');
+  try { chip.setPointerCapture(e.pointerId); } catch (err) {}
+  fpPositionGhost(e.clientX, e.clientY);
+  e.preventDefault();
+}
+
+function fpPositionGhost(x, y) {
+  const d = _fpDrag;
+  if (!d || !d.ghost) return;
+  d.cx = x; d.cy = y;
+  if (d.raf) return;
+  d.raf = requestAnimationFrame(function() {
+    d.raf = 0;
+    if (!_fpDrag || !_fpDrag.ghost) return;
+    _fpDrag.ghost.style.transform = 'translate3d(' + (_fpDrag.cx + 14) + 'px,' + (_fpDrag.cy + 14) + 'px,0)';
+  });
+}
+
+function fpOnPointerMove(e) {
+  const d = _fpDrag;
+  if (!d) return;
+
+  if (d.kind === 'guest') {
+    d.moved = true;
+    fpPositionGhost(e.clientX, e.clientY);
+    fpHighlightTargetUnder(e.clientX, e.clientY);
+    return;
+  }
+
+  if (d.kind === 'table') {
+    const svg = document.getElementById('fp-svg');
+    if (!svg) return;
+    const p = fpClientToSvg(svg, e.clientX, e.clientY);
+    let nx = p.x - d.dx, ny = p.y - d.dy;
+    // Keep tables inside the ballroom — a table in the corridor isn't
+    // a real arrangement, and letting one escape is disorienting.
+    nx = Math.max(FP.ball.x + 42, Math.min(FP.ball.x + FP.ball.w - 42, nx));
+    ny = Math.max(FP.ball.y + 42, Math.min(FP.ball.y + FP.ball.h - 42, ny));
+    if (Math.abs(nx - d.t.x) > 1 || Math.abs(ny - d.t.y) > 1) d.moved = true;
+    d.tx = nx - d.t.x; d.ty = ny - d.t.y;
+    if (!d.raf) {
+      d.raf = requestAnimationFrame(function() {
+        d.raf = 0;
+        if (_fpDrag && _fpDrag.grp) _fpDrag.grp.setAttribute('transform', 'translate(' + _fpDrag.tx.toFixed(1) + ',' + _fpDrag.ty.toFixed(1) + ')');
+      });
+    }
+  }
+}
+
+function fpHighlightTargetUnder(x, y) {
+  document.querySelectorAll('.fp-table-group.drop-target, .fp-chair.drop-target')
+    .forEach(function(el) { el.classList.remove('drop-target'); });
+  const el = document.elementFromPoint(x, y);
+  if (!el) return;
+  const chair = el.closest && el.closest('.fp-chair');
+  if (chair) { chair.classList.add('drop-target'); return; }
+  const grp = el.closest && el.closest('.fp-table-group');
+  if (grp) grp.classList.add('drop-target');
+}
+
+function fpOnPointerUp(e) {
+  const d = _fpDrag;
+  if (!d) return;
+  _fpDrag = null;
+  if (d.raf) cancelAnimationFrame(d.raf);
+
+  if (d.kind === 'table') {
+    if (d.grp) d.grp.classList.remove('dragging');
+    if (d.moved) {
+      d.t.x = Math.round(d.t.x + d.tx);
+      d.t.y = Math.round(d.t.y + d.ty);
+      _fpDirty = true;
+      renderTablesTab();
+    } else if (d.grp) {
+      d.grp.setAttribute('transform', 'translate(0,0)');
+    }
+    return;
+  }
+
+  if (d.kind === 'guest') {
+    if (d.chip) d.chip.classList.remove('dragging');
+    if (d.ghost && d.ghost.parentNode) d.ghost.parentNode.removeChild(d.ghost);
+    document.querySelectorAll('.fp-table-group.drop-target, .fp-chair.drop-target')
+      .forEach(function(el) { el.classList.remove('drop-target'); });
+    if (!d.moved) return;
+
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    if (!el) return;
+    const chair = el.closest && el.closest('.fp-chair');
+    const grp = el.closest && el.closest('.fp-table-group');
+    if (chair) {
+      fpSeatGuest(d.ts, d.idx, parseInt(chair.getAttribute('data-table'), 10), parseInt(chair.getAttribute('data-seat'), 10));
+    } else if (grp) {
+      fpSeatGuest(d.ts, d.idx, parseInt(grp.getAttribute('data-table'), 10), null);
+    }
+  }
+}
+
+// Places one person. Seat numbers live as a per-booking list, so this
+// edits that person's slot in the list and leaves their companions'
+// seats untouched.
+function fpSeatGuest(ts, idx, tableNo, seatNo) {
+  const guest = _dashGuestsCache.find(function(g) { return g.ts === ts; });
+  if (!guest || !tableNo) return;
+  const table = _floorPlan.tables.find(function(t) { return t.n === tableNo; });
+  if (!table) return;
+
+  // No seat chosen — take the first free chair at that table.
+  if (!seatNo) {
+    const taken = {};
+    fpPeopleAtTable(tableNo).forEach(function(item) {
+      if (item.g.ts === ts && item.p.idx === idx) return;   // ignore the person being moved
+      const s = parseInt(item.p.seat, 10);
+      if (s) taken[s] = true;
+    });
+    for (let s = 1; s <= table.seats; s++) { if (!taken[s]) { seatNo = s; break; } }
+    if (!seatNo) { showDashToast('⚠️ Table ' + tableNo + ' is full.'); return; }
+  }
+
+  // Warn rather than silently double-book.
+  const clash = fpPeopleAtTable(tableNo).find(function(item) {
+    return parseInt(item.p.seat, 10) === seatNo && !(item.g.ts === ts && item.p.idx === idx);
+  });
+  if (clash) { showDashToast('⚠️ Seat ' + seatNo + ' is already ' + clash.p.name + '.'); return; }
+
+  const prevTable = guest.table_number, prevSeat = guest.seat_number;
+  const seats = parseSeatList(guest.seat_number);
+  const members = partyMembers(guest);
+  while (seats.length < members.length) seats.push('');
+  seats[idx] = String(seatNo);
+
+  guest.table_number = tableNo;
+  guest.seat_number = seats.join(',').replace(/(^,+|,+$)/g, '');
+  renderTablesTab();
+
+  postToSheets({
+    action: 'assignTable', ts: ts,
+    table_number: guest.table_number, seat_number: guest.seat_number,
+    session_token: _sessionToken, staff_name: _currentUser ? _currentUser.name : ''
+  }).then(function(result) {
+    if (result && result.status === 'error') {
+      guest.table_number = prevTable; guest.seat_number = prevSeat;
+      renderTablesTab();
+      showDashToast('⚠️ ' + (result.message || 'Could not save the seating change.'));
+      return;
+    }
+    showDashToast('✓ ' + members[idx].name + ' → Table ' + tableNo + ', seat ' + seatNo);
+  });
+}
+
+function fpAttachHandlers() {
+  const svg = document.getElementById('fp-svg');
+  if (!svg || svg._fpBound) return;
+  svg._fpBound = true;
+  svg.addEventListener('pointerdown', fpBeginDrag);
+  // Bound once on the document so a drag that leaves the SVG still ends
+  // cleanly instead of leaving a table stuck to the cursor.
+  if (!document._fpGlobalBound) {
+    document._fpGlobalBound = true;
+    document.addEventListener('pointermove', fpOnPointerMove, { passive: true });
+    document.addEventListener('pointerup', fpOnPointerUp);
+    document.addEventListener('pointercancel', fpOnPointerUp);
+  }
+}
+
 function renderTablesTab() {
   const el = document.getElementById('dash-tab-content-tables');
   if (!el) return;
@@ -6499,7 +6975,11 @@ function renderTablesTab() {
 
     '<div class="dash-panel" style="margin-bottom:16px;">' +
       '<div class="dash-panel-title">Venue Setup' +
-        '<button class="dash-btn" onclick="openSeatingSheet()" style="margin-left:auto;">🖨 Print Guest &amp; Seating Sheet</button>' +
+        '<span class="fp-modes" style="margin-left:auto;">' +
+          '<button class="fp-mode' + (_tablesView === 'list' ? ' active' : '') + '" onclick="setTablesView(\'list\')">☰ List</button>' +
+          '<button class="fp-mode' + (_tablesView === 'plan' ? ' active' : '') + '" onclick="setTablesView(\'plan\')">▦ Floor plan</button>' +
+        '</span>' +
+        '<button class="dash-btn" onclick="openSeatingSheet()" style="margin-left:10px;">🖨 Print Sheet</button>' +
       '</div>' +
       '<p style="margin:0 0 14px;font-size:13px;color:var(--gray-mid);line-height:1.7;">' +
         'Set these to match the venue once the final layout is confirmed. Saved on this device.</p>' +
@@ -6521,11 +7001,91 @@ function renderTablesTab() {
         : '<div class="dash-empty">Everyone has a table. 🎉</div>') +
     '</div>' +
 
+    (_tablesView === 'plan' ? buildFloorPlanPanel() :
     '<div class="dash-panel">' +
       '<div class="dash-panel-title">Seating Chart ' +
         '<span style="font-weight:400;font-size:11px;color:var(--gray-mid);text-transform:none;letter-spacing:0;">— every person shown with their own seat</span></div>' +
       '<div class="tables-grid">' + tableCards + '</div>' +
+    '</div>');
+
+  if (_tablesView === 'plan') {
+    // Handlers are attached after the SVG is in the DOM, and the plan
+    // is fetched on first use rather than on every dashboard load.
+    if (!_fpLoaded) loadFloorPlan();
+    else setTimeout(fpAttachHandlers, 0);
+  }
+}
+
+let _tablesView = 'list';
+function setTablesView(v) { _tablesView = v; renderTablesTab(); }
+
+// The side panel of people still to be seated, plus the plan itself.
+function buildFloorPlanPanel() {
+  if (!_fpLoaded) {
+    return '<div class="dash-panel"><div class="dash-empty">Loading the floor plan…</div></div>';
+  }
+  const canEdit = !(_currentUser && (_currentUser.role === 'usher' || _currentUser.role === 'manager'));
+
+  // Anyone without a table, or with a table but no seat — these are
+  // what you drag onto the plan.
+  const todo = [];
+  _dashGuestsCache.forEach(function(g) {
+    seatedPartyMembers(g).forEach(function(p) {
+      const seated = g.table_number && p.seat;
+      if (!seated) todo.push({ g: g, p: p });
+    });
+  });
+
+  const chips = todo.map(function(item) {
+    const g = item.g, p = item.p;
+    const safeTs = String(g.ts).replace(/'/g, "\\'");
+    return '<div class="fp-chip" data-name="' + escHtmlV(p.name) + '"' +
+      (canEdit ? ' onpointerdown="fpBeginGuestDrag(event, \'' + safeTs + '\', ' + p.idx + ')"' : '') + '>' +
+      '<span class="fp-chip-name">' + escHtmlV(p.name) + '</span>' +
+      (p.isCompanion ? '<span class="fp-chip-sub">guest of ' + escHtmlV((g.fname||'').trim()) + '</span>' : '') +
+      (g.table_number ? '<span class="fp-chip-tag">T' + escHtmlV(g.table_number) + ' · no seat</span>' : '') +
     '</div>';
+  }).join('');
+
+  // Zones are read off the plan, so this always reflects the room.
+  const zoneCounts = {};
+  FP.sections.forEach(function(s) { zoneCounts[s.key] = { tables: 0, people: 0 }; });
+  (_floorPlan.tables || []).forEach(function(t) {
+    const z = fpZoneAt(t.y);
+    if (!zoneCounts[z]) zoneCounts[z] = { tables: 0, people: 0 };
+    zoneCounts[z].tables++;
+    zoneCounts[z].people += fpPeopleAtTable(t.n).length;
+  });
+  const zoneChips = Object.keys(zoneCounts).map(function(z) {
+    return '<span class="fp-zone-chip"><strong>' + escHtmlV(z) + '</strong> ' +
+      zoneCounts[z].tables + ' tables · ' + zoneCounts[z].people + ' seated</span>';
+  }).join('');
+
+  return '<div class="dash-panel">' +
+    '<div class="dash-panel-title">Floor Plan — Vientiane Ballroom' +
+      (canEdit
+        ? '<span class="fp-modes">' +
+            '<button class="fp-mode' + (_fpMode === 'seat' ? ' active' : '') + '" onclick="setFpMode(\'seat\')">🪑 Seat guests</button>' +
+            '<button class="fp-mode' + (_fpMode === 'move' ? ' active' : '') + '" onclick="setFpMode(\'move\')">✥ Move tables</button>' +
+          '</span>'
+        : '') +
+      (_fpDirty && canEdit ? '<button class="dash-btn-gold" style="margin-left:10px;" onclick="saveFloorPlan()">Save layout for everyone</button>' : '') +
+    '</div>' +
+    '<p style="margin:0 0 12px;font-size:13px;color:var(--gray-mid);line-height:1.7;">' +
+      (_fpMode === 'move'
+        ? 'Drag any table to match the real room. Each table\'s zone follows where you put it, so nothing needs relabelling. Remember to save when you\'re happy.'
+        : 'Drag a name onto a table to seat them at the next free chair, or onto a specific chair to choose the seat.') +
+    '</p>' +
+    '<div class="fp-zones">' + zoneChips + '</div>' +
+    '<div class="fp-layout">' +
+      '<div class="fp-canvas">' + buildFloorPlanSVG() + '</div>' +
+      '<div class="fp-side">' +
+        '<div class="fp-side-title">To seat <span>' + todo.length + '</span></div>' +
+        (todo.length ? '<div class="fp-chips">' + chips + '</div>'
+                     : '<div class="dash-empty" style="padding:20px 8px;">Everyone has a seat. 🎉</div>') +
+      '</div>' +
+    '</div>' +
+  '</div>';
 }
 
 // Compact label for the seat rows; full text stays in the tooltip.
