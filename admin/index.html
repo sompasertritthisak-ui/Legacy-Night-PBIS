@@ -1000,6 +1000,29 @@ body.role-usher .seating-config{display:none;}
 .fp-chip-sub{display:block;font-size:10.5px;color:var(--gray-mid);margin-top:2px;}
 .fp-chip-tag{display:inline-block;margin-top:5px;font-size:10px;font-weight:700;color:#8a6a26;background:rgba(201,168,76,.18);padding:2px 7px;border-radius:100px;}
 .fp-ghost{position:fixed;top:0;left:0;z-index:999999;pointer-events:none;background:var(--navy);color:var(--gold-light);font-size:12.5px;font-weight:700;padding:7px 13px;border-radius:8px;box-shadow:0 8px 22px rgba(0,0,0,.3);white-space:nowrap;font-family:'DM Sans',sans-serif;}
+
+.fp-table.fp-cocktail{fill:#fff;stroke:#6f8f7a;stroke-width:2;stroke-dasharray:3 2;}
+.fp-table.fp-cocktail.part,.fp-table.fp-cocktail.full{fill:#dbe9df;stroke-dasharray:none;}
+.fp-table-num.sm{font-size:11px;dominant-baseline:middle;}
+.fp-table-group.cocktail .fp-table-cnt{display:none;}
+
+/* ── Names on the plan + table roster panel ── */
+.fp-name{font-family:'DM Sans',sans-serif;font-size:8.5px;font-weight:700;fill:#0a2818;pointer-events:none;paint-order:stroke;stroke:#fbf9f3;stroke-width:2.5px;stroke-linejoin:round;}
+.fp-sel-ring{fill:none;stroke:#2d9e5f;stroke-width:2;stroke-dasharray:5 4;opacity:.85;}
+.fp-svg:not(.mode-move) .fp-table-group{cursor:pointer;}
+.fp-side-zone{font-size:11px;color:var(--gray-mid);margin:-4px 0 10px;letter-spacing:.04em;}
+.fp-seat-list{display:flex;flex-direction:column;gap:5px;}
+.fp-seat-row{display:grid;grid-template-columns:24px 1fr auto;gap:8px;align-items:center;background:var(--white);border:1px solid var(--gray);border-radius:8px;padding:7px 8px;}
+.fp-seat-no{display:flex;align-items:center;justify-content:center;height:22px;border-radius:5px;background:var(--navy);color:var(--gold-light);font-size:11px;font-weight:800;}
+.fp-seat-no.none{background:transparent;border:1px dashed var(--gray);color:var(--gray-mid);font-weight:400;}
+.fp-seat-info{min-width:0;}
+.fp-seat-name{display:block;font-size:12px;font-weight:600;color:var(--navy);overflow:hidden;text-overflow:ellipsis;}
+.fp-seat-sub{display:block;font-size:10px;color:var(--gray-mid);}
+.fp-seat-diet{display:inline-block;margin-top:3px;font-size:9.5px;color:#8a6a26;background:rgba(201,168,76,.16);padding:1px 6px;border-radius:100px;}
+.fp-seat-clear{background:none;border:none;color:var(--gray-mid);cursor:pointer;font-size:12px;padding:2px 5px;border-radius:5px;line-height:1;}
+.fp-seat-clear:hover{background:rgba(192,80,77,.12);color:#a03c3a;}
+.fp-back{margin-top:12px;width:100%;padding:9px;border:1.5px solid var(--gray);border-radius:8px;background:transparent;color:var(--gray-mid);font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;}
+.fp-back:hover{border-color:var(--gold);color:var(--gold);}
 </style>
 </head>
 <body>
@@ -2535,10 +2558,18 @@ let _currentUser = null;
 // list is for showing/hiding those buttons in the UI only — the
 // backend enforces the same restriction independently on its own, so
 // tampering with this client-side copy doesn't grant real access.
-const VIP_EDIT_ALLOWLIST = ['Da', 'Richard', 'Kop', 'Nanfa', 'Ana', 'Top'];
+// Mirrors the backend rule in code.gs (canStaffEditGuests). Kept in
+// step by team, not by name, so a new Admissions or Events Team member
+// gets access automatically. The backend enforces this independently —
+// this copy only decides what to show.
+const GUEST_EDIT_TEAMS = ['Admissions', 'Events Team'];
+const GUEST_EDIT_EXTRA_NAMES = ['Da', 'Kop', 'Top'];
 
 function canEditOrVip() {
-  return !!(_currentUser && VIP_EDIT_ALLOWLIST.includes(_currentUser.name));
+  if (!_currentUser) return false;
+  if (_currentUser.role === 'usher' || _currentUser.role === 'manager') return false;
+  if (GUEST_EDIT_TEAMS.indexOf(_currentUser.team) !== -1) return true;
+  return GUEST_EDIT_EXTRA_NAMES.indexOf(_currentUser.name) !== -1;
 }
 const MAX_ATTEMPTS = 4;
 // Escalating lockout durations (seconds) — each repeat lockout within
@@ -6352,6 +6383,13 @@ function saveSeatingConfig(count, capacity) {
   const c = Math.max(1, Math.min(200, parseInt(count, 10) || TABLE_DEFAULTS.count));
   const k = Math.max(1, Math.min(50, parseInt(capacity, 10) || TABLE_DEFAULTS.capacity));
   try { localStorage.setItem('legacy_seating_config', JSON.stringify({ count: c, capacity: k })); } catch (e) {}
+  // Rebuild the plan to match, keeping positions already arranged and
+  // leaving cocktail tables alone. Without this the setting changed but
+  // the floor plan quietly kept the old number of tables.
+  if (_fpLoaded && _floorPlan) {
+    reconcilePlanWithConfig();
+    _fpDirty = true;
+  }
   showDashToast('✓ Seating set to ' + c + ' tables × ' + k + ' seats');
   renderTablesTab();
 }
@@ -6442,14 +6480,64 @@ let _fpLoaded = false;
 let _fpDirty = false;
 let _fpDrag = null;
 let _fpMode = 'seat';          // 'seat' = drag guests, 'move' = rearrange tables
+let _fpShowNames = true;       // draw names beside occupied chairs
+let _fpSelected = null;        // table number whose roster is shown in the side panel
+
+// A chair is only a few pixels across, so the label has to be short
+// enough to read at a glance without colliding with its neighbours.
+// First name is what staff actually scan for; the full name is still
+// in the tooltip and the side panel.
+function fpShortName(full) {
+  const s = String(full || '').trim();
+  if (!s) return '';
+  const first = s.split(/\s+/)[0];
+  return first.length > 9 ? first.slice(0, 8) + '…' : first;
+}
+
+function setFpShowNames(v) { _fpShowNames = v; renderTablesTab(); }
+function fpSelectTable(n) { _fpSelected = (_fpSelected === n ? null : n); renderTablesTab(); }
 
 // Which ballroom section a point falls in. Zone follows position.
-function fpZoneAt(y) {
+function fpZoneAt(y, x) {
+  // The Pre-Function Area is a zone in its own right — it's where the
+  // cocktail tables go, and staff need it counted separately from the
+  // dinner sections.
+  if (x !== undefined && x >= FP.pre.x) return 'Pre-Function Area';
   for (let i = 0; i < FP.sections.length; i++) {
     const s = FP.sections[i];
     if (y >= s.y && y < s.y + s.h) return s.key;
   }
   return FP.sections[FP.sections.length - 1].key;
+}
+
+// Cocktail tables are numbered from here so they never collide with
+// dinner table numbers, however many dinner tables get configured.
+const FP_COCKTAIL_BASE = 1000;
+const isCocktail = function(t) { return t.kind === 'cocktail'; };
+const fpLabel = function(t) { return isCocktail(t) ? 'C' + (t.n - FP_COCKTAIL_BASE) : String(t.n); };
+
+function addCocktailTable() {
+  if (!_floorPlan) return;
+  const existing = _floorPlan.tables.filter(isCocktail);
+  const n = FP_COCKTAIL_BASE + existing.length + 1;
+  // Drop new ones into the Pre-Function Area, stacked down the strip.
+  _floorPlan.tables.push({
+    n: n, kind: 'cocktail', seats: 4,
+    x: Math.round(FP.pre.x + FP.pre.w / 2),
+    y: Math.round(FP.pre.y + 150 + (existing.length % 6) * 52),
+  });
+  _fpDirty = true;
+  renderTablesTab();
+  showDashToast('✓ Added cocktail table C' + (existing.length + 1) + ' — drag it into place');
+}
+
+function removeCocktailTable(n) {
+  if (!_floorPlan) return;
+  const seated = fpPeopleAtTable(n).length;
+  if (seated) { showDashToast('⚠️ Move the ' + seated + ' guest(s) off this table first.'); return; }
+  _floorPlan.tables = _floorPlan.tables.filter(function(t) { return t.n !== n; });
+  _fpDirty = true;
+  renderTablesTab();
 }
 
 // A sensible starting arrangement when no plan has been saved yet:
@@ -6497,11 +6585,14 @@ function reconcilePlanWithConfig() {
   if (!_floorPlan) return;
   const existing = {};
   _floorPlan.tables.forEach(function(t) { existing[t.n] = t; });
+  const cocktails = _floorPlan.tables.filter(isCocktail);
   const fresh = fpDefaultPlan(cfg.count, cfg.capacity).tables;
   _floorPlan.tables = fresh.map(function(def) {
     const e = existing[def.n];
     return e ? { n: def.n, x: e.x, y: e.y, seats: cfg.capacity } : def;
-  });
+  // Cocktail tables aren't part of the dinner table count, so changing
+  // that setting must not wipe them.
+  }).concat(cocktails);
 }
 
 async function saveFloorPlan() {
@@ -6549,6 +6640,9 @@ function buildFloorPlanSVG() {
   }).join('');
 
   const tableEls = tables.map(function(t) {
+    const cocktail = isCocktail(t);
+    const tR = cocktail ? 16 : R;
+    const tChairR = cocktail ? 26 : CHAIR_R;
     const people = fpPeopleAtTable(t.n);
     const bySeat = {};
     people.forEach(function(item) {
@@ -6564,24 +6658,39 @@ function buildFloorPlanSVG() {
     const over = occupied > t.seats;
     const cls = 'fp-table' + (over ? ' over' : (occupied >= t.seats ? ' full' : (occupied ? ' part' : '')));
 
-    const chairs = fpChairs(t.x, t.y, t.seats, CHAIR_R).map(function(ch) {
+    const chairs = fpChairs(t.x, t.y, t.seats, tChairR).map(function(ch) {
       const seatNo = ch.i + 1;
       const item = bySeat[seatNo];
       const title = item ? escHtmlV(item.p.name) + ' — seat ' + seatNo : 'Table ' + t.n + ', seat ' + seatNo + ' (free)';
+      // Labels sit just outside the chair, pushed away from the table
+      // centre so they radiate outward instead of overlapping it.
+      let label = '';
+      if (item && _fpShowNames) {
+        const dx = ch.x - t.x, dy = ch.y - t.y;
+        const len = Math.sqrt(dx * dx + dy * dy) || 1;
+        const lx = ch.x + (dx / len) * 12;
+        const ly = ch.y + (dy / len) * 12;
+        const anchor = dx > 6 ? 'start' : (dx < -6 ? 'end' : 'middle');
+        label = '<text class="fp-name" x="' + lx.toFixed(1) + '" y="' + (ly + 3).toFixed(1) + '" text-anchor="' + anchor + '">' +
+          escHtmlV(fpShortName(item.p.name)) + '</text>';
+      }
       return '<g class="fp-chair' + (item ? ' taken' : '') + '" data-table="' + t.n + '" data-seat="' + seatNo + '">' +
-        '<circle cx="' + ch.x.toFixed(1) + '" cy="' + ch.y.toFixed(1) + '" r="7.5"/>' +
+        '<circle cx="' + ch.x.toFixed(1) + '" cy="' + ch.y.toFixed(1) + '" r="' + (cocktail ? 5.5 : 7.5) + '"/>' +
+        label +
         '<title>' + title + '</title>' +
       '</g>';
     }).join('');
 
-    return '<g class="fp-table-group" data-table="' + t.n + '" transform="translate(0,0)">' +
+    const label = fpLabel(t);
+    return '<g class="fp-table-group' + (cocktail ? ' cocktail' : '') + (_fpSelected === t.n ? ' selected' : '') + '" data-table="' + t.n + '" transform="translate(0,0)">' +
+      (_fpSelected === t.n ? '<circle class="fp-sel-ring" cx="' + t.x + '" cy="' + t.y + '" r="' + (tChairR + 16) + '"/>' : '') +
       chairs +
-      '<circle class="' + cls + '" cx="' + t.x + '" cy="' + t.y + '" r="' + R + '"/>' +
-      '<text class="fp-table-num" x="' + t.x + '" y="' + (t.y - 2) + '">' + t.n + '</text>' +
-      '<text class="fp-table-cnt" x="' + t.x + '" y="' + (t.y + 12) + '">' + occupied + '/' + t.seats + '</text>' +
-      (unseatedHere ? '<circle class="fp-warn" cx="' + (t.x + R - 4) + '" cy="' + (t.y - R + 4) + '" r="7"/>' +
-                      '<text class="fp-warn-t" x="' + (t.x + R - 4) + '" y="' + (t.y - R + 7.5) + '">!</text>' : '') +
-      '<title>Table ' + t.n + ' · ' + fpZoneAt(t.y) + ' · ' + occupied + ' of ' + t.seats + ' seats</title>' +
+      '<circle class="' + cls + (cocktail ? ' fp-cocktail' : '') + '" cx="' + t.x + '" cy="' + t.y + '" r="' + tR + '"/>' +
+      '<text class="fp-table-num' + (cocktail ? ' sm' : '') + '" x="' + t.x + '" y="' + (t.y + (cocktail ? 1 : -2)) + '">' + label + '</text>' +
+      (cocktail ? '' : '<text class="fp-table-cnt" x="' + t.x + '" y="' + (t.y + 12) + '">' + occupied + '/' + t.seats + '</text>') +
+      (unseatedHere ? '<circle class="fp-warn" cx="' + (t.x + tR - 4) + '" cy="' + (t.y - tR + 4) + '" r="7"/>' +
+                      '<text class="fp-warn-t" x="' + (t.x + tR - 4) + '" y="' + (t.y - tR + 7.5) + '">!</text>' : '') +
+      '<title>' + (cocktail ? 'Cocktail table ' + label : 'Table ' + label) + ' · ' + fpZoneAt(t.y, t.x) + ' · ' + occupied + ' of ' + t.seats + '</title>' +
     '</g>';
   }).join('');
 
@@ -6627,6 +6736,16 @@ function fpClientToSvg(svg, clientX, clientY) {
 function fpBeginDrag(e) {
   const svg = document.getElementById('fp-svg');
   if (!svg) return;
+
+  // In seat mode a tap on a table opens its roster in the side panel.
+  // That's the fast way to answer "who's on table 7?" without hovering
+  // ten chairs one at a time.
+  if (_fpMode === 'seat') {
+    const g = e.target.closest && e.target.closest('.fp-table-group');
+    if (g) { fpSelectTable(parseInt(g.getAttribute('data-table'), 10)); return; }
+    if (_fpSelected !== null) fpSelectTable(_fpSelected);   // tap empty space to clear
+    return;
+  }
   const canEdit = !(_currentUser && (_currentUser.role === 'usher' || _currentUser.role === 'manager'));
   if (!canEdit) return;
 
@@ -6693,10 +6812,18 @@ function fpOnPointerMove(e) {
     if (!svg) return;
     const p = fpClientToSvg(svg, e.clientX, e.clientY);
     let nx = p.x - d.dx, ny = p.y - d.dy;
-    // Keep tables inside the ballroom — a table in the corridor isn't
-    // a real arrangement, and letting one escape is disorienting.
-    nx = Math.max(FP.ball.x + 42, Math.min(FP.ball.x + FP.ball.w - 42, nx));
-    ny = Math.max(FP.ball.y + 42, Math.min(FP.ball.y + FP.ball.h - 42, ny));
+    // Tables can live anywhere in the venue — the ballroom OR the
+    // Pre-Function Area, where the cocktail stands go. Clamped only to
+    // the building itself so a table can't be dragged off the plan.
+    const pad = isCocktail(d.t) ? 26 : 42;
+    const inPre = nx >= (FP.pre.x - 20);
+    if (inPre) {
+      nx = Math.max(FP.pre.x + pad, Math.min(FP.pre.x + FP.pre.w - pad, nx));
+      ny = Math.max(FP.pre.y + pad, Math.min(FP.pre.y + FP.pre.h - pad, ny));
+    } else {
+      nx = Math.max(FP.ball.x + pad, Math.min(FP.ball.x + FP.ball.w - pad, nx));
+      ny = Math.max(FP.ball.y + pad, Math.min(FP.ball.y + FP.ball.h - pad, ny));
+    }
     if (Math.abs(nx - d.t.x) > 1 || Math.abs(ny - d.t.y) > 1) d.moved = true;
     d.tx = nx - d.t.x; d.ty = ny - d.t.y;
     if (!d.raf) {
@@ -7020,6 +7147,78 @@ let _tablesView = 'list';
 function setTablesView(v) { _tablesView = v; renderTablesTab(); }
 
 // The side panel of people still to be seated, plus the plan itself.
+// The side panel does double duty: the queue of people still to seat,
+// and — once a table is tapped — exactly who is sitting at it.
+function buildFpSidePanel(todo, chips, canEdit) {
+  if (_fpSelected !== null && _floorPlan) {
+    const t = _floorPlan.tables.find(function(x) { return x.n === _fpSelected; });
+    if (t) {
+      const label = fpLabel(t);
+      const people = fpPeopleAtTable(t.n).slice().sort(function(a, b) {
+        const an = parseInt(a.p.seat, 10), bn = parseInt(b.p.seat, 10);
+        if (isNaN(an) && isNaN(bn)) return 0;
+        if (isNaN(an)) return 1;
+        if (isNaN(bn)) return -1;
+        return an - bn;
+      });
+      const rows = people.map(function(item) {
+        const p = item.p, g = item.g;
+        const safeTs = String(g.ts).replace(/'/g, "\\'");
+        return '<div class="fp-seat-row">' +
+          '<span class="fp-seat-no' + (p.seat ? '' : ' none') + '">' + (p.seat ? escHtmlV(p.seat) : '–') + '</span>' +
+          '<span class="fp-seat-info">' +
+            '<span class="fp-seat-name">' + escHtmlV(p.name) + '</span>' +
+            (p.isCompanion ? '<span class="fp-seat-sub">guest of ' + escHtmlV((g.fname||'').trim()) + '</span>' : '') +
+            (p.diet ? '<span class="fp-seat-diet">' + escHtmlV(shortDiet(p.diet)) + '</span>' : '') +
+          '</span>' +
+          (canEdit ? '<button class="fp-seat-clear" title="Remove from this table" onclick="fpUnseatPerson(\'' + safeTs + '\', ' + p.idx + ')">✕</button>' : '') +
+        '</div>';
+      }).join('');
+      return '<div class="fp-side-title">' + (isCocktail(t) ? 'Cocktail ' + label : 'Table ' + label) +
+          '<span>' + people.length + '/' + t.seats + '</span></div>' +
+        '<div class="fp-side-zone">' + escHtmlV(fpZoneAt(t.y, t.x)) + '</div>' +
+        (people.length ? '<div class="fp-seat-list">' + rows + '</div>'
+                       : '<div class="dash-empty" style="padding:18px 8px;">Nobody seated here yet.</div>') +
+        '<button class="fp-back" onclick="fpSelectTable(' + t.n + ')">← Back to list</button>';
+    }
+  }
+  return '<div class="fp-side-title">To seat <span>' + todo.length + '</span></div>' +
+    (todo.length ? '<div class="fp-chips">' + chips + '</div>'
+                 : '<div class="dash-empty" style="padding:20px 8px;">Everyone has a seat. 🎉</div>');
+}
+
+// Takes one person off their table without disturbing their party.
+function fpUnseatPerson(ts, idx) {
+  const guest = _dashGuestsCache.find(function(g) { return g.ts === ts; });
+  if (!guest) return;
+  const prevTable = guest.table_number, prevSeat = guest.seat_number;
+  const seats = parseSeatList(guest.seat_number);
+  const members = partyMembers(guest);
+  while (seats.length < members.length) seats.push('');
+  seats[idx] = '';
+
+  // If nobody in the party is seated any more, clear the table too so
+  // the booking returns cleanly to the "not yet seated" list.
+  const anyLeft = seats.some(function(s) { return s; });
+  guest.seat_number = anyLeft ? seats.join(',') : '';
+  if (!anyLeft) guest.table_number = '';
+  renderTablesTab();
+
+  postToSheets({
+    action: 'assignTable', ts: ts,
+    table_number: guest.table_number, seat_number: guest.seat_number,
+    session_token: _sessionToken, staff_name: _currentUser ? _currentUser.name : ''
+  }).then(function(result) {
+    if (result && result.status === 'error') {
+      guest.table_number = prevTable; guest.seat_number = prevSeat;
+      renderTablesTab();
+      showDashToast('⚠️ ' + (result.message || 'Could not save.'));
+      return;
+    }
+    showDashToast('↩ ' + members[idx].name + ' removed from their seat');
+  });
+}
+
 function buildFloorPlanPanel() {
   if (!_fpLoaded) {
     return '<div class="dash-panel"><div class="dash-empty">Loading the floor plan…</div></div>';
@@ -7050,8 +7249,9 @@ function buildFloorPlanPanel() {
   // Zones are read off the plan, so this always reflects the room.
   const zoneCounts = {};
   FP.sections.forEach(function(s) { zoneCounts[s.key] = { tables: 0, people: 0 }; });
+  zoneCounts['Pre-Function Area'] = { tables: 0, people: 0 };
   (_floorPlan.tables || []).forEach(function(t) {
-    const z = fpZoneAt(t.y);
+    const z = fpZoneAt(t.y, t.x);
     if (!zoneCounts[z]) zoneCounts[z] = { tables: 0, people: 0 };
     zoneCounts[z].tables++;
     zoneCounts[z].people += fpPeopleAtTable(t.n).length;
@@ -7067,23 +7267,21 @@ function buildFloorPlanPanel() {
         ? '<span class="fp-modes">' +
             '<button class="fp-mode' + (_fpMode === 'seat' ? ' active' : '') + '" onclick="setFpMode(\'seat\')">🪑 Seat guests</button>' +
             '<button class="fp-mode' + (_fpMode === 'move' ? ' active' : '') + '" onclick="setFpMode(\'move\')">✥ Move tables</button>' +
+            '<button class="fp-mode' + (_fpShowNames ? ' active' : '') + '" onclick="setFpShowNames(' + (!_fpShowNames) + ')" title="Show or hide guest names on the plan">🏷 Names</button>' +
           '</span>'
         : '') +
-      (_fpDirty && canEdit ? '<button class="dash-btn-gold" style="margin-left:10px;" onclick="saveFloorPlan()">Save layout for everyone</button>' : '') +
+      (canEdit && _fpMode === 'move' ? '<button class="dash-btn" style="margin-left:8px;" onclick="addCocktailTable()">+ Cocktail table</button>' : '') +
+      (_fpDirty && canEdit ? '<button class="dash-btn-gold" style="margin-left:8px;" onclick="saveFloorPlan()">Save layout for everyone</button>' : '') +
     '</div>' +
     '<p style="margin:0 0 12px;font-size:13px;color:var(--gray-mid);line-height:1.7;">' +
       (_fpMode === 'move'
-        ? 'Drag any table to match the real room. Each table\'s zone follows where you put it, so nothing needs relabelling. Remember to save when you\'re happy.'
-        : 'Drag a name onto a table to seat them at the next free chair, or onto a specific chair to choose the seat.') +
+        ? 'Drag any table anywhere in the venue — the ballroom or the Pre-Function Area for cocktail stands. Each table\'s zone follows where you put it, so nothing needs relabelling. Remember to save when you\'re happy.'
+        : 'Drag a name onto a table to seat them at the next free chair, or onto a specific chair to choose the seat. Tap any table to see everyone sitting there.') +
     '</p>' +
     '<div class="fp-zones">' + zoneChips + '</div>' +
     '<div class="fp-layout">' +
       '<div class="fp-canvas">' + buildFloorPlanSVG() + '</div>' +
-      '<div class="fp-side">' +
-        '<div class="fp-side-title">To seat <span>' + todo.length + '</span></div>' +
-        (todo.length ? '<div class="fp-chips">' + chips + '</div>'
-                     : '<div class="dash-empty" style="padding:20px 8px;">Everyone has a seat. 🎉</div>') +
-      '</div>' +
+      '<div class="fp-side">' + buildFpSidePanel(todo, chips, canEdit) + '</div>' +
     '</div>' +
   '</div>';
 }
