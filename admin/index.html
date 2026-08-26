@@ -4823,7 +4823,12 @@ function enterMonitorMode() {
   // everyone who already walked in.
   _monitorLastSeenAt = Date.now();
   pollForRecentCheckIn();
-  _monitorPollInterval = setInterval(pollForRecentCheckIn, 2500);
+  // Polling every 2.5s meant a guest could stand at the desk for
+  // several seconds before their name appeared. At one second the
+  // screen keeps pace with the door, and the request is tiny — it
+  // sends the timestamp of the last arrival already shown, so an idle
+  // poll returns an empty list rather than the whole recent history.
+  _monitorPollInterval = setInterval(pollForRecentCheckIn, 1000);
 }
 
 async function pollForRecentCheckIn() {
@@ -5896,13 +5901,37 @@ function startQRScannerCamera() {
     return;
   }
 
-  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+  // Ask for a sharp, close-focusing rear camera. Without a resolution
+  // request some phones hand back 640×480, which is too coarse to
+  // resolve a ticket QR held at arm's length; without continuous focus
+  // the image stays soft at close range, which is exactly how a guest
+  // presents a phone at a door.
+  const constraints = {
+    video: {
+      facingMode: { ideal: 'environment' },
+      width:  { ideal: 1280 },
+      height: { ideal: 720 },
+      focusMode: 'continuous',
+      advanced: [{ focusMode: 'continuous' }],
+    }
+  };
+
+  navigator.mediaDevices.getUserMedia(constraints)
+    .catch(function() {
+      // Some browsers reject the whole request if any constraint is
+      // unsupported — fall back to the plainest possible ask rather
+      // than leaving the door with no scanner at all.
+      return navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    })
     .then(function(stream) {
       _qrScannerStream = stream;
       video.srcObject = stream;
+      video.setAttribute('playsinline', '');   // iOS: don't go fullscreen
       video.play();
       resultEl.innerHTML = '<p class="qr-scanner-status">Point the camera at a guest\'s QR code…</p>';
       _qrScannerCanvas = document.createElement('canvas');
+      _qrScanTick = 0;
+      _qrLastScanAt = 0;
       scanQRFrame();
     })
     .catch(function() {
@@ -5910,19 +5939,75 @@ function startQRScannerCamera() {
     });
 }
 
+/* ── SCAN LOOP ──────────────────────────────────────────────────────
+   The previous version decoded the FULL camera frame at native
+   resolution on every animation frame. On a phone shooting 1280×720
+   that's ~920,000 pixels per pass, and jsQR simply can't finish one
+   before the next arrives — so the loop backs up and only a few frames
+   per second actually get decoded. That is why codes "wouldn't scan":
+   the camera saw them, but the decoder was never given a clean look.
+
+   Three changes:
+
+   1. DOWNSCALE. The frame is drawn into a canvas ~480px on its long
+      edge before decoding — roughly a tenth of the pixels. jsQR is
+      both far faster and no less accurate at this size for a code
+      filling a reasonable part of the frame.
+
+   2. ALTERNATE FULL FRAME AND CENTRE CROP. A code held further away is
+      small in the full frame; cropping the middle and decoding that at
+      the same working size effectively doubles the resolution where
+      the guest actually holds their phone. Alternating catches both
+      near and far without paying for two decodes per frame.
+
+   3. STEADY CADENCE. Decoding is capped to ~12 attempts a second
+      instead of racing the display refresh, which leaves the phone
+      enough headroom to keep autofocus and the video pipeline smooth.
+──────────────────────────────────────────────────────────────────── */
+let _qrScanTick = 0;
+let _qrLastScanAt = 0;
+const QR_WORK_SIZE = 480;      // long edge of the decode canvas
+const QR_SCAN_INTERVAL = 80;   // ms between decode attempts (~12/sec)
+
 function scanQRFrame() {
   const video = document.getElementById('qr-scanner-video');
   if (!video || !video.srcObject) return; // scanner was closed
 
   try {
-    if (video.readyState === video.HAVE_ENOUGH_DATA && !_qrScannerCooldown && typeof jsQR !== 'undefined') {
+    const now = performance.now();
+    const due = (now - _qrLastScanAt) >= QR_SCAN_INTERVAL;
+
+    if (due && video.readyState === video.HAVE_ENOUGH_DATA &&
+        !_qrScannerCooldown && typeof jsQR !== 'undefined' &&
+        video.videoWidth && video.videoHeight) {
+      _qrLastScanAt = now;
+      _qrScanTick++;
+
+      const vw = video.videoWidth, vh = video.videoHeight;
+      // Every other pass, look only at the middle 60% of the frame.
+      const cropped = (_qrScanTick % 2) === 1;
+      const sw = cropped ? vw * 0.6 : vw;
+      const sh = cropped ? vh * 0.6 : vh;
+      const sx = (vw - sw) / 2;
+      const sy = (vh - sh) / 2;
+
+      const scale = QR_WORK_SIZE / Math.max(sw, sh);
+      const dw = Math.max(1, Math.round(sw * scale));
+      const dh = Math.max(1, Math.round(sh * scale));
+
       const canvas = _qrScannerCanvas;
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const code = jsQR(imageData.data, imageData.width, imageData.height);
+      if (canvas.width !== dw || canvas.height !== dh) {
+        canvas.width = dw; canvas.height = dh;
+      }
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      ctx.drawImage(video, sx, sy, sw, sh, 0, 0, dw, dh);
+      const imageData = ctx.getImageData(0, 0, dw, dh);
+
+      // attemptBoth also reads light-on-dark codes — a ticket shown on
+      // a phone in dark mode, or a photo of one, would otherwise fail.
+      const code = jsQR(imageData.data, imageData.width, imageData.height, {
+        inversionAttempts: 'attemptBoth'
+      });
       if (code && code.data) {
         handleQRScanResult(code.data);
       }
