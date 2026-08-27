@@ -3524,16 +3524,24 @@ async function loadCategories(showToast) {
   renderCategoriesTab();
 }
 
-async function importCategories() {
-  const ok = await appConfirm({
-    title: 'Import from the invitation list?',
-    message: 'Bring in everyone from the Events team\'s invitation list who isn\'t on this board yet.',
-    sub: 'Only adds people who are missing — it never changes a category you have already set here, so this is safe to run again whenever their list grows.',
-    confirmLabel: '↓ Import',
-  });
+async function importCategories(rebuild) {
+  const ok = rebuild
+    ? await appConfirm({
+        title: 'Rebuild from the invitation list?',
+        message: 'Clear everything that came from the Events team\'s list and import it fresh.',
+        sub: 'Use this if categories look wrong. Anyone you placed by hand in the dashboard is kept — only imported entries are replaced.',
+        confirmLabel: '↻ Rebuild',
+        danger: true,
+      })
+    : await appConfirm({
+        title: 'Import from the invitation list?',
+        message: 'Bring in everyone from the Events team\'s invitation list who isn\'t on this board yet.',
+        sub: 'Only adds people who are missing — it never changes a category you have already set here, so this is safe to run again whenever their list grows.',
+        confirmLabel: '↓ Import',
+      });
   if (!ok) return;
-  showDashToast('Importing…');
-  const r = await postToSheets({ action: 'importCategories', session_token: _sessionToken });
+  showDashToast(rebuild ? 'Rebuilding…' : 'Importing…');
+  const r = await postToSheets({ action: 'importCategories', rebuild: !!rebuild, session_token: _sessionToken });
   if (r && r.status === 'error') { showDashToast('⚠️ ' + (r.message || 'Import failed.')); return; }
   await loadCategories(false);
   showDashToast('✓ Imported ' + (r.added != null ? r.added : 0) + ' new — ' + (r.skipped != null ? r.skipped : 0) + ' already on the board');
@@ -3709,7 +3717,8 @@ function renderCategoriesTab() {
     '<div class="dash-panel" style="margin-bottom:16px;">' +
       '<div class="dash-panel-title">🗂 Guest Categories' +
         '<button class="dash-btn" onclick="loadCategories(true)" style="margin-left:auto;">↻ Reload</button>' +
-        (canEdit ? '<button class="dash-btn" onclick="importCategories()" style="margin-left:8px;">↓ Import from invitation list</button>' : '') +
+        (canEdit ? '<button class="dash-btn" onclick="importCategories(false)" style="margin-left:8px;">↓ Import new</button>' : '') +
+        (canEdit ? '<button class="dash-btn" onclick="importCategories(true)" style="margin-left:8px;">↻ Rebuild from list</button>' : '') +
       '</div>' +
       '<p style="margin:0 0 12px;font-size:13px;color:var(--gray-mid);line-height:1.7;">' +
         (canEdit
