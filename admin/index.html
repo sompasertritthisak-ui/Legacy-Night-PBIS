@@ -1061,6 +1061,25 @@ body.kiosk-active #dashboard-view,body.kiosk-active .login-modal-backdrop{displa
 .kiosk-note{margin-top:clamp(18px,3vh,28px);font-size:clamp(15px,1.8vw,20px);color:rgba(250,247,240,.68);line-height:1.6;}
 .kiosk-done{margin-top:clamp(22px,3.5vh,36px);padding:16px 44px;border:none;border-radius:100px;background:linear-gradient(135deg,var(--gold),var(--gold-light));color:var(--deep);font-size:17px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;}
 .kiosk-foot{margin-top:auto;padding-top:28px;text-align:center;font-size:14px;color:rgba(250,247,240,.42);}
+
+/* ── Category board ── */
+.cat-board{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;align-items:start;}
+.cat-lane{background:var(--white);border:1.5px solid var(--gray);border-radius:12px;overflow:hidden;transition:border-color .16s ease,box-shadow .16s ease;}
+.cat-lane.drop-target{border-color:#2d9e5f;box-shadow:0 0 0 3px rgba(45,158,95,.16);}
+.cat-lane-pool{border-color:var(--gold);background:var(--cream);}
+.cat-lane-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:11px 13px;background:var(--cream);border-bottom:1px solid var(--gray);}
+.cat-lane-pool .cat-lane-head{background:rgba(201,168,76,.16);}
+.cat-lane-name{font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--navy);line-height:1.35;}
+.cat-lane-count{flex-shrink:0;font-size:11px;font-weight:700;color:var(--gold);background:rgba(201,168,76,.16);border-radius:100px;padding:2px 9px;}
+.cat-lane-body{padding:10px;display:flex;flex-direction:column;gap:6px;min-height:78px;max-height:340px;overflow-y:auto;}
+.cat-chip{background:var(--white);border:1.5px solid var(--gray);border-radius:8px;padding:8px 10px;font-size:12.5px;color:var(--navy);font-weight:600;cursor:grab;touch-action:none;display:flex;align-items:center;gap:7px;transition:border-color .14s ease;}
+.cat-lane-pool .cat-chip{background:var(--white);}
+.cat-chip:hover{border-color:var(--gold);}
+.cat-chip.dragging{opacity:.4;cursor:grabbing;}
+.cat-chip.rsvpd{border-color:rgba(45,158,95,.45);background:rgba(45,158,95,.05);}
+.cat-tick{flex-shrink:0;width:16px;height:16px;border-radius:50%;background:#2d9e5f;color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;}
+.cat-empty{font-size:11.5px;color:var(--gray-mid);font-style:italic;text-align:center;padding:14px 4px;}
+body.role-usher .cat-chip,body.role-manager .cat-chip{cursor:default;}
 </style>
 </head>
 <body>
@@ -1156,6 +1175,9 @@ body.kiosk-active #dashboard-view,body.kiosk-active .login-modal-backdrop{displa
     <button class="dash-tab" onclick="switchDashTab('tables',this)" id="dtab-tables">
       <svg class="dash-tab-icon" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><circle cx="4" cy="5" r="1.6"/><circle cx="20" cy="5" r="1.6"/><circle cx="4" cy="19" r="1.6"/><circle cx="20" cy="19" r="1.6"/></svg> Tables <span class="dash-tab-count" id="tables-tab-count">0</span>
     </button>
+    <button class="dash-tab" onclick="switchDashTab('categories',this)" id="dtab-categories">
+      <svg class="dash-tab-icon" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="7" height="7" rx="1.5"/><rect x="14" y="4" width="7" height="7" rx="1.5"/><rect x="3" y="15" width="7" height="5" rx="1.5"/><rect x="14" y="15" width="7" height="5" rx="1.5"/></svg> Categories <span class="dash-tab-count" id="categories-tab-count">0</span>
+    </button>
     <button class="dash-tab" onclick="switchDashTab('verify',this)" id="dtab-verify">
       <svg class="dash-tab-icon" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7.5 3.2v5.1c0 4.4-3.1 8.4-7.5 9.7-4.4-1.3-7.5-5.3-7.5-9.7V6.2z"/><path d="M9.2 12.2l2 2 3.6-3.9"/></svg> Verify <span class="dash-tab-count" id="verify-tab-count">0</span>
     </button>
@@ -1177,6 +1199,7 @@ body.kiosk-active #dashboard-view,body.kiosk-active .login-modal-backdrop{displa
     <div id="dash-tab-content-qrgen" style="display:none;"><!-- populated by JS --></div>
     <div id="dash-tab-content-followup" style="display:none;"><!-- populated by JS --></div>
     <div id="dash-tab-content-tables" style="display:none;"><!-- populated by JS --></div>
+    <div id="dash-tab-content-categories" style="display:none;"><!-- populated by JS --></div>
     <div id="dash-tab-content-verify" style="display:none;"><!-- populated by JS --></div>
     <div id="dash-tab-content-activitylog" style="display:none;"><!-- populated by JS --></div>
     <div id="dash-tab-content-postevent" style="display:none;"><!-- populated by JS --></div>
@@ -3272,7 +3295,7 @@ async function loadDashboardData() {
 function switchDashTab(tab, btn) {
   document.querySelectorAll('.dash-tab').forEach(t => t.classList.remove('active'));
   btn.classList.add('active');
-  ['overview','guestlist','approvals','checkin','overdue','vip','qrgen','followup','tables','verify','activitylog','postevent'].forEach(t => {
+  ['overview','guestlist','approvals','checkin','overdue','vip','qrgen','followup','tables','categories','verify','activitylog','postevent'].forEach(t => {
     const el = document.getElementById('dash-tab-content-' + t);
     if(el) el.style.display = (t === tab) ? 'block' : 'none';
   });
@@ -3282,6 +3305,7 @@ function switchDashTab(tab, btn) {
   if (tab === 'qrgen') renderQrGeneratorTab();
   if (tab === 'approvals') renderApprovalsTab();
   if (tab === 'tables') renderTablesTab();
+  if (tab === 'categories') renderCategoriesTab();
   if (tab === 'verify') renderVerifyTab();
   if (tab === 'activitylog') loadActivityLog();
   if (tab === 'postevent') renderPostEventTab();
@@ -3455,6 +3479,265 @@ function verifyAllAttendees() {
 }
 
 function setVerifyFilter(f) { _verifyFilter = f; renderVerifyTab(); }
+
+/* ══════════════════════════════════════════════════════════════════
+   GUEST CATEGORIES — drag-and-drop board
+   ──────────────────────────────────────────────────────────────────
+   Covers EVERYONE on the invitation list, not just people who have
+   replied — which is the point: you need to know a category is thin
+   before the RSVPs are in, not after.
+
+   Stored in our own sheet, seeded from the Events team's list. Their
+   file is only ever read. Re-importing is additive, so it never
+   overwrites a decision made here and can be run whenever their list
+   grows.
+
+   Same drag approach as the floor plan: a lightweight ghost follows
+   the pointer, nothing re-renders mid-drag, and the change is written
+   once on drop.
+══════════════════════════════════════════════════════════════════ */
+let _cats = null;              // { people: [{name,category,source}], categories: [] }
+let _catsLoading = false;
+let _catsError = '';
+let _catSearch = '';
+let _catDrag = null;
+
+async function loadCategories(showToast) {
+  _catsLoading = true; _catsError = '';
+  renderCategoriesTab();
+  try {
+    const url = SHEETS_URL + '?action=getCategories&token=' + encodeURIComponent(_sessionToken) + '&_=' + Date.now();
+    const res = await fetch(url);
+    const j = await res.json();
+    if (j.status !== 'ok' || !Array.isArray(j.people)) {
+      _catsError = j.message || 'Could not load the category board. If this is new, the Apps Script may need redeploying.';
+      _cats = null;
+    } else {
+      _cats = { people: j.people, categories: j.categories || [] };
+      if (showToast) showDashToast('✓ Category board loaded');
+    }
+  } catch (e) {
+    _catsError = 'Could not reach the server while loading categories.';
+    _cats = null;
+  }
+  _catsLoading = false;
+  renderCategoriesTab();
+}
+
+async function importCategories() {
+  const ok = await appConfirm({
+    title: 'Import from the invitation list?',
+    message: 'Bring in everyone from the Events team\'s invitation list who isn\'t on this board yet.',
+    sub: 'Only adds people who are missing — it never changes a category you have already set here, so this is safe to run again whenever their list grows.',
+    confirmLabel: '↓ Import',
+  });
+  if (!ok) return;
+  showDashToast('Importing…');
+  const r = await postToSheets({ action: 'importCategories', session_token: _sessionToken });
+  if (r && r.status === 'error') { showDashToast('⚠️ ' + (r.message || 'Import failed.')); return; }
+  await loadCategories(false);
+  showDashToast('✓ Imported ' + (r.added != null ? r.added : 0) + ' new — ' + (r.skipped != null ? r.skipped : 0) + ' already on the board');
+}
+
+function catKey(n) {
+  return String(n || '').replace(/\([^)]*\)/g, ' ').replace(/[.,'’`"]/g, ' ')
+    .replace(/\s+/g, ' ').trim().toLowerCase();
+}
+
+// Has this person replied? Used only to show a small marker, so you can
+// see at a glance which categories are actually turning up.
+function catHasRsvp(name) {
+  const k = catKey(name);
+  return (_dashGuestsCache || []).some(function(g) {
+    if (catKey((g.fname || '') + ' ' + (g.lname || '')) === k) return true;
+    return parseAdditionalGuestsDetail(g).some(function(a) { return catKey(a.name) === k; });
+  });
+}
+
+function setCatSearch(v) { _catSearch = v; renderCategoriesTab(); }
+
+function catBeginDrag(e, name) {
+  if (!canEditOrVip()) return;
+  const chip = e.currentTarget;
+  const ghost = document.createElement('div');
+  ghost.className = 'fp-ghost';
+  ghost.textContent = name;
+  document.body.appendChild(ghost);
+  _catDrag = { name: name, ghost: ghost, chip: chip, moved: false, raf: 0, cx: e.clientX, cy: e.clientY };
+  chip.classList.add('dragging');
+  try { chip.setPointerCapture(e.pointerId); } catch (err) {}
+  catMoveGhost(e.clientX, e.clientY);
+  e.preventDefault();
+}
+
+function catMoveGhost(x, y) {
+  const d = _catDrag; if (!d) return;
+  d.cx = x; d.cy = y;
+  if (d.raf) return;
+  d.raf = requestAnimationFrame(function() {
+    d.raf = 0;
+    if (_catDrag && _catDrag.ghost) {
+      _catDrag.ghost.style.transform = 'translate3d(' + (_catDrag.cx + 14) + 'px,' + (_catDrag.cy + 14) + 'px,0)';
+    }
+  });
+}
+
+function catOnMove(e) {
+  const d = _catDrag; if (!d) return;
+  d.moved = true;
+  catMoveGhost(e.clientX, e.clientY);
+  document.querySelectorAll('.cat-lane.drop-target').forEach(function(el) { el.classList.remove('drop-target'); });
+  const el = document.elementFromPoint(e.clientX, e.clientY);
+  const lane = el && el.closest && el.closest('.cat-lane');
+  if (lane) lane.classList.add('drop-target');
+}
+
+function catOnUp(e) {
+  const d = _catDrag; if (!d) return;
+  _catDrag = null;
+  if (d.raf) cancelAnimationFrame(d.raf);
+  if (d.chip) d.chip.classList.remove('dragging');
+  if (d.ghost && d.ghost.parentNode) d.ghost.parentNode.removeChild(d.ghost);
+  document.querySelectorAll('.cat-lane.drop-target').forEach(function(el) { el.classList.remove('drop-target'); });
+  if (!d.moved) return;
+  const el = document.elementFromPoint(e.clientX, e.clientY);
+  const lane = el && el.closest && el.closest('.cat-lane');
+  if (lane) setGuestCategory(d.name, lane.getAttribute('data-cat'));
+}
+
+function catAttachHandlers() {
+  if (document._catBound) return;
+  document._catBound = true;
+  document.addEventListener('pointermove', catOnMove, { passive: true });
+  document.addEventListener('pointerup', catOnUp);
+  document.addEventListener('pointercancel', catOnUp);
+}
+
+function setGuestCategory(name, category) {
+  if (!_cats) return;
+  const person = _cats.people.find(function(p) { return catKey(p.name) === catKey(name); });
+  const prev = person ? person.category : '';
+  if (person) person.category = category; else _cats.people.push({ name: name, category: category, source: 'dashboard' });
+  renderCategoriesTab();
+
+  postToSheets({ action: 'setCategory', name: name, category: category, session_token: _sessionToken })
+    .then(function(r) {
+      if (r && r.status === 'error') {
+        if (person) person.category = prev;
+        renderCategoriesTab();
+        showDashToast('⚠️ ' + (r.message || 'Could not save.'));
+        return;
+      }
+      showDashToast('✓ ' + name + ' → ' + category);
+    });
+}
+
+function renderCategoriesTab() {
+  const el = document.getElementById('dash-tab-content-categories');
+  if (!el) return;
+  const canEdit = canEditOrVip();
+
+  if (_catsLoading) {
+    el.innerHTML = '<div class="dash-panel"><div class="dash-empty">Loading the category board…</div></div>';
+    return;
+  }
+  if (!_cats) {
+    el.innerHTML = '<div class="dash-panel">' +
+      '<div class="dash-panel-title">🗂 Guest Categories</div>' +
+      '<p style="margin:0 0 16px;font-size:14px;color:var(--gray-mid);line-height:1.7;">' +
+        'Sort every invited guest into their group — not just the ones who have replied. ' +
+        'Seeded from the Events team\'s invitation list; their sheet is only ever read, never changed.</p>' +
+      (_catsError ? '<div class="followup-warn" style="margin-bottom:16px;">⚠️ ' + escHtmlV(_catsError) + '</div>' : '') +
+      '<button class="dash-btn-gold" onclick="loadCategories(true)">Open Category Board</button>' +
+    '</div>';
+    return;
+  }
+
+  const cats = _cats.categories.length ? _cats.categories : ['Others'];
+  const byCat = {}; cats.forEach(function(k) { byCat[k] = []; });
+  const unplaced = [];
+  _cats.people.forEach(function(p) {
+    if (p.category && byCat[p.category]) byCat[p.category].push(p);
+    else if (p.category) { byCat[p.category] = byCat[p.category] || []; byCat[p.category].push(p); }
+    else unplaced.push(p);
+  });
+
+  const badge = document.getElementById('categories-tab-count');
+  if (badge) badge.textContent = unplaced.length;
+
+  const q = _catSearch.trim().toLowerCase();
+  const match = function(p) { return !q || p.name.toLowerCase().indexOf(q) !== -1; };
+
+  const chip = function(p) {
+    const safe = String(p.name).replace(/'/g, "\\'");
+    const rsvpd = catHasRsvp(p.name);
+    return '<div class="cat-chip' + (rsvpd ? ' rsvpd' : '') + '"' +
+      (canEdit ? ' onpointerdown="catBeginDrag(event, \'' + safe + '\')"' : '') + '>' +
+      (rsvpd ? '<span class="cat-tick" title="Has RSVP\'d">✓</span>' : '') +
+      escHtmlV(p.name) +
+    '</div>';
+  };
+
+  const lanes = Object.keys(byCat).map(function(k) {
+    const list = byCat[k].filter(match);
+    const rsvpCount = byCat[k].filter(function(p) { return catHasRsvp(p.name); }).length;
+    return '<div class="cat-lane" data-cat="' + escHtmlV(k) + '">' +
+      '<div class="cat-lane-head">' +
+        '<span class="cat-lane-name">' + escHtmlV(k) + '</span>' +
+        '<span class="cat-lane-count">' + rsvpCount + '/' + byCat[k].length + '</span>' +
+      '</div>' +
+      '<div class="cat-lane-body">' +
+        (list.length ? list.map(chip).join('') : '<p class="cat-empty">Drop guests here</p>') +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  const totalRsvpd = _cats.people.filter(function(p) { return catHasRsvp(p.name); }).length;
+
+  el.innerHTML =
+    '<div class="dash-stats-row">' +
+      '<div class="dash-stat-card"><div class="dash-stat-value">' + _cats.people.length + '</div><div class="dash-stat-label">On the Board</div>' +
+        '<div class="stat-note">invited guests, replied or not</div></div>' +
+      '<div class="dash-stat-card"><div class="dash-stat-value">' + totalRsvpd + '</div><div class="dash-stat-label">Have RSVP\'d</div>' +
+        '<div class="stat-note">marked ✓ on their card</div></div>' +
+      '<div class="dash-stat-card"><div class="dash-stat-value">' + unplaced.length + '</div><div class="dash-stat-label">Not Categorised</div>' +
+        '<div class="stat-note">waiting to be placed</div></div>' +
+      '<div class="dash-stat-card"><div class="dash-stat-value">' + cats.length + '</div><div class="dash-stat-label">Categories</div>' +
+        '<div class="stat-note">drag between them freely</div></div>' +
+    '</div>' +
+
+    '<div class="dash-panel" style="margin-bottom:16px;">' +
+      '<div class="dash-panel-title">🗂 Guest Categories' +
+        '<button class="dash-btn" onclick="loadCategories(true)" style="margin-left:auto;">↻ Reload</button>' +
+        (canEdit ? '<button class="dash-btn" onclick="importCategories()" style="margin-left:8px;">↓ Import from invitation list</button>' : '') +
+      '</div>' +
+      '<p style="margin:0 0 12px;font-size:13px;color:var(--gray-mid);line-height:1.7;">' +
+        (canEdit
+          ? 'Drag any name into a category. A ✓ means they have already RSVP\'d, so you can see which groups are actually turning up. Changes save as you drop them.'
+          : 'View only — your account cannot change categories.') +
+      '</p>' +
+      '<div class="dash-search-row">' +
+        '<input type="text" placeholder="Find someone on the board…" value="' + escHtmlV(_catSearch) + '" oninput="setCatSearch(this.value)">' +
+      '</div>' +
+    '</div>' +
+
+    '<div class="cat-board">' +
+      '<div class="cat-lane cat-lane-pool" data-cat="">' +
+        '<div class="cat-lane-head">' +
+          '<span class="cat-lane-name">Not categorised</span>' +
+          '<span class="cat-lane-count">' + unplaced.length + '</span>' +
+        '</div>' +
+        '<div class="cat-lane-body">' +
+          (unplaced.filter(match).length
+            ? unplaced.filter(match).map(chip).join('')
+            : '<p class="cat-empty">Everyone has a category. 🎉</p>') +
+        '</div>' +
+      '</div>' +
+      lanes +
+    '</div>';
+
+  setTimeout(catAttachHandlers, 0);
+}
 
 function renderVerifyTab() {
   const el = document.getElementById('dash-tab-content-verify');
