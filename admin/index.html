@@ -1080,6 +1080,9 @@ body.kiosk-active #dashboard-view,body.kiosk-active .login-modal-backdrop{displa
 .cat-tick{flex-shrink:0;width:16px;height:16px;border-radius:50%;background:#2d9e5f;color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;}
 .cat-empty{font-size:11.5px;color:var(--gray-mid);font-style:italic;text-align:center;padding:14px 4px;}
 body.role-usher .cat-chip,body.role-manager .cat-chip{cursor:default;}
+
+#hw-scan-ping{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(14px);z-index:999998;background:var(--navy);color:var(--gold-light);font-size:12.5px;font-weight:700;padding:9px 18px;border-radius:100px;font-family:'DM Sans',sans-serif;opacity:0;pointer-events:none;transition:opacity .18s ease,transform .18s ease;box-shadow:0 6px 20px rgba(0,0,0,.3);}
+#hw-scan-ping.show{opacity:1;transform:translateX(-50%) translateY(0);}
 </style>
 </head>
 <body>
@@ -3664,7 +3667,17 @@ function renderCategoriesTab() {
   const cats = _cats.categories.length ? _cats.categories : ['Others'];
   const byCat = {}; cats.forEach(function(k) { byCat[k] = []; });
   const unplaced = [];
+
+  // A category that is just a number is not a category — it's a stray
+  // value picked up from the invitation sheet by an older version of
+  // the importer. Rather than render nonsense lanes, those people are
+  // shown as uncategorised and the cause is explained above the board,
+  // so the fix is obvious instead of mysterious.
+  const isJunkCategory = function(v) { return /^[\d\s.,%-]+$/.test(String(v || '').trim()); };
+  let junkCount = 0;
+
   _cats.people.forEach(function(p) {
+    if (p.category && isJunkCategory(p.category)) { junkCount++; unplaced.push(p); return; }
     if (p.category && byCat[p.category]) byCat[p.category].push(p);
     else if (p.category) { byCat[p.category] = byCat[p.category] || []; byCat[p.category].push(p); }
     else unplaced.push(p);
@@ -3714,6 +3727,12 @@ function renderCategoriesTab() {
         '<div class="stat-note">drag between them freely</div></div>' +
     '</div>' +
 
+    (junkCount
+      ? '<div class="followup-warn" style="margin-bottom:16px;">⚠️ <strong>' + junkCount + ' guests have a numbered category instead of a real one.</strong> ' +
+        'That comes from an earlier version of the importer reading the wrong row of the invitation sheet. ' +
+        'To fix: redeploy the Apps Script (Deploy → Manage deployments → Edit → New version), then press ' +
+        '<strong>↻ Rebuild from list</strong> below. They are shown as “Not categorised” until then.</div>'
+      : '') +
     '<div class="dash-panel" style="margin-bottom:16px;">' +
       '<div class="dash-panel-title">🗂 Guest Categories' +
         '<button class="dash-btn" onclick="loadCategories(true)" style="margin-left:auto;">↻ Reload</button>' +
@@ -6613,19 +6632,59 @@ function playScanFeedback(type) {
   } catch (e) {}
 }
 
-function parseTicketQRPayload(data) {
-  // New format: a real URL, so a guest's own camera app can open it.
-  // Old format: plain "PBIS-LEGACY|ts=...|idx=..." from before this
-  // change — still accepted so any tickets already sent out keep working.
-  try {
-    const url = new URL(data);
-    if (url.searchParams.get('ticket') === '1' && url.searchParams.has('ts') && url.searchParams.has('idx')) {
-      return { ts: url.searchParams.get('ts'), idx: parseInt(url.searchParams.get('idx'), 10) };
-    }
-  } catch (e) { /* not a URL — fall through to the legacy format */ }
+/* ── QR PAYLOAD VALIDATION ─────────────────────────────────────────
+   A QR code is untrusted input: anyone can print one and present it
+   at the door. This refuses anything that isn't provably one of our
+   own tickets, rather than accepting whatever it can parse.
 
-  const legacyMatch = /^PBIS-LEGACY\|ts=([^|]+)\|idx=(\d+)$/.exec(data);
-  if (legacyMatch) return { ts: legacyMatch[1], idx: parseInt(legacyMatch[2], 10) };
+   What it rejects that a permissive parser lets straight through:
+     · a ticket URL pointing at somebody else's domain
+     · a guest index that is negative, absurd, or not a number
+     · an id of implausible shape, or containing markup characters
+     · anything longer than a real ticket could ever be
+
+   Being strict is safe because the only thing producing valid codes
+   is our own approval flow — there is no legitimate variation to
+   accommodate.                                                     */
+const QR_ALLOWED_HOSTS = ['legacynight.pbis.edu.la'];
+const QR_MAX_LEN = 512;
+const QR_MAX_IDX = 9;
+const QR_TS_MAX = 120;
+// A blocklist, not an allowlist: the id is whatever the sheet holds,
+// and guessing its exact shape risks rejecting real tickets at the
+// door. Cap the length, refuse characters that could ever matter for
+// markup, and let the guest-list lookup reject unknown ids.
+const QR_TS_BAD = /[<>"'`\\\x00-\x1f]/;
+
+function parseTicketQRPayload(data) {
+  if (typeof data !== 'string') return null;
+  const raw = data.trim();
+  if (!raw || raw.length > QR_MAX_LEN) return null;
+
+  const validate = function(ts, idxRaw) {
+    const t = String(ts == null ? '' : ts).trim();
+    if (!t || t.length > QR_TS_MAX || QR_TS_BAD.test(t)) return null;
+    // Must be plain digits — rejects "0abc", "1e1", " ", "" and "-1".
+    if (!/^\d{1,2}$/.test(String(idxRaw).trim())) return null;
+    const idx = parseInt(idxRaw, 10);
+    if (!Number.isInteger(idx) || idx < 0 || idx > QR_MAX_IDX) return null;
+    return { ts: t, idx: idx };
+  };
+
+  if (/^https?:\/\//i.test(raw)) {
+    let url;
+    try { url = new URL(raw); } catch (e) { return null; }
+    // The host check is the important one — without it a ticket
+    // pointing at ANY domain would be accepted as ours.
+    const host = url.hostname.toLowerCase();
+    const sameOrigin = host === String(window.location.hostname || '').toLowerCase();
+    if (QR_ALLOWED_HOSTS.indexOf(host) === -1 && !(sameOrigin && host)) return null;
+    if (url.searchParams.get('ticket') !== '1') return null;
+    return validate(url.searchParams.get('ts'), url.searchParams.get('idx'));
+  }
+
+  const m = /^PBIS-LEGACY\|ts=([^|]{1,120})\|idx=(\d{1,2})$/.exec(raw);
+  if (m) return validate(m[1], m[2]);
 
   return null;
 }
@@ -6707,6 +6766,100 @@ function closeQRScanner() {
    the same QR scanner and markGuestCheckedIn() as the main
    dashboard, so behavior (including network-failure rollback and
    scan sound/vibration) is identical, just presented differently. ── */
+/* ══════════════════════════════════════════════════════════════════
+   HARDWARE QR SCANNER SUPPORT
+   ──────────────────────────────────────────────────────────────────
+   USB and Bluetooth barcode scanners work as keyboards: they "type"
+   the decoded text very fast and finish with Enter. Nothing needs
+   installing — plug one into the desk PC and it just works alongside
+   the phone camera, so a desk has two independent ways to check a
+   guest in and neither depends on the other.
+
+   Telling a scanner apart from a person typing:
+     · a scanner delivers characters in a few milliseconds each,
+       far faster than anyone can type
+     · it ends with Enter
+     · the payload is long
+   So keystrokes are buffered, and the buffer is only treated as a
+   scan if it arrived fast enough and looks like one of our tickets.
+   Anything slower is left alone, which means staff can still type in
+   the search box without triggering a phantom check-in.
+──────────────────────────────────────────────────────────────────── */
+let _hwBuf = '';
+let _hwLastKey = 0;
+let _hwStart = 0;
+const HW_MAX_GAP_MS = 60;      // a human rarely types faster than this
+const HW_MIN_LEN = 12;         // shorter than any real ticket payload
+
+function hwScannerKeydown(e) {
+  // Only while a scanning surface is open.
+  const doorsOpen = document.getElementById('doors-mode-view');
+  const kioskOpen = document.getElementById('kiosk-view');
+  const active = (doorsOpen && doorsOpen.classList.contains('active')) ||
+                 (kioskOpen && kioskOpen.classList.contains('active'));
+  if (!active) return;
+
+  // Never swallow real typing. If someone is in a text field, the only
+  // thing we act on is a burst fast enough that it cannot be a person.
+  const t = e.target;
+  const typing = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
+
+  const now = performance.now();
+  // Start a fresh buffer the moment there's a pause. A scanner emits
+  // characters a few milliseconds apart, so anything slower than this
+  // is a new burst — without it, two scans close together can run into
+  // one another and the joined text may still parse as a valid URL,
+  // letting a forged code ride in on the back of a real one.
+  if (now - _hwLastKey > 200) { _hwBuf = ''; _hwStart = now; }
+  _hwLastKey = now;
+
+  if (e.key === 'Enter') {
+    const buf = _hwBuf;
+    const elapsed = now - _hwStart;
+    _hwBuf = '';
+    if (buf.length < HW_MIN_LEN) return;
+    const perChar = elapsed / Math.max(1, buf.length);
+    if (perChar > HW_MAX_GAP_MS) return;          // typed by a human — ignore
+    if (!parseTicketQRPayload(buf)) return;       // not one of our tickets
+    e.preventDefault();
+    if (typing && t.value !== undefined) {
+      // Clear whatever the scanner dumped into the search box.
+      t.value = '';
+      if (t.id === 'doors-search' && typeof renderDoorsSearchResults === 'function') renderDoorsSearchResults();
+      if (t.id === 'kiosk-input' && typeof kioskSearch === 'function') kioskSearch('');
+    }
+    if (kioskOpen && kioskOpen.classList.contains('active')) kioskHandleScan(buf);
+    else handleQRScanResult(buf);
+    showHwScannerPing();
+    return;
+  }
+
+  if (e.key.length === 1) {
+    _hwBuf += e.key;
+    if (_hwBuf.length > 600) _hwBuf = _hwBuf.slice(-600);   // never grow unbounded
+  }
+}
+
+// A brief visual acknowledgement, because a hardware scanner gives no
+// on-screen feedback of its own — staff need to see it registered.
+function showHwScannerPing() {
+  let el = document.getElementById('hw-scan-ping');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'hw-scan-ping';
+    el.textContent = '⌨ Scanner';
+    document.body.appendChild(el);
+  }
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(function() { el.classList.remove('show'); }, 1200);
+}
+
+if (!document._hwScannerBound) {
+  document._hwScannerBound = true;
+  document.addEventListener('keydown', hwScannerKeydown, true);
+}
+
 function enterDoorsMode() {
   document.getElementById('doors-mode-view').classList.add('active');
   document.body.style.overflow = 'hidden';
