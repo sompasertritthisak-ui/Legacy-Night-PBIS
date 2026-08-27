@@ -1023,6 +1023,44 @@ body.role-usher .seating-config{display:none;}
 .fp-seat-clear:hover{background:rgba(192,80,77,.12);color:#a03c3a;}
 .fp-back{margin-top:12px;width:100%;padding:9px;border:1.5px solid var(--gray);border-radius:8px;background:transparent;color:var(--gray-mid);font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;}
 .fp-back:hover{border-color:var(--gold);color:var(--gold);}
+
+/* ── Self-service kiosk ── */
+#kiosk-view{display:none;position:fixed;inset:0;z-index:900;background:linear-gradient(165deg,#0a2818,#050f0a);color:var(--cream);overflow-y:auto;}
+#kiosk-view.active{display:block;}
+body.kiosk-active #dashboard-view,body.kiosk-active .login-modal-backdrop{display:none!important;}
+.kiosk-inner{max-width:1100px;margin:0 auto;padding:clamp(24px,4vh,56px) clamp(20px,4vw,48px) 48px;min-height:100vh;display:flex;flex-direction:column;}
+.kiosk-head{display:flex;align-items:center;gap:22px;padding-bottom:24px;border-bottom:1px solid rgba(201,168,76,.28);margin-bottom:clamp(20px,4vh,40px);}
+.kiosk-crest{width:78px;height:78px;object-fit:contain;flex-shrink:0;}
+.kiosk-head h1{font-family:'Cinzel',serif;font-size:clamp(28px,4.4vw,48px);font-weight:700;color:var(--gold-light);line-height:1.1;}
+.kiosk-head p{color:rgba(250,247,240,.6);font-size:clamp(14px,1.6vw,19px);margin-top:6px;}
+.kiosk-body{display:grid;grid-template-columns:1fr 1fr;gap:clamp(20px,3vw,40px);align-items:start;}
+@media (max-width:820px){.kiosk-body{grid-template-columns:1fr;}}
+.kiosk-scan{position:relative;border-radius:16px;overflow:hidden;background:#0d1f14;border:1px solid rgba(201,168,76,.3);aspect-ratio:4/3;}
+#kiosk-video{width:100%;height:100%;object-fit:cover;display:block;transform:scaleX(-1);}
+.kiosk-scan-frame{position:absolute;inset:18%;border:3px solid rgba(232,201,110,.85);border-radius:14px;pointer-events:none;box-shadow:0 0 0 100vmax rgba(5,15,10,.35);}
+.kiosk-scan-hint{position:absolute;left:0;right:0;bottom:14px;text-align:center;font-size:15px;color:rgba(250,247,240,.9);text-shadow:0 2px 8px rgba(0,0,0,.8);}
+.kiosk-search label{display:block;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:12px;}
+#kiosk-input{width:100%;padding:20px 22px;border-radius:14px;border:2px solid rgba(201,168,76,.4);background:rgba(255,255,255,.06);color:var(--cream);font-size:clamp(18px,2.2vw,26px);font-family:'DM Sans',sans-serif;}
+#kiosk-input:focus{outline:none;border-color:var(--gold-light);background:rgba(255,255,255,.1);}
+#kiosk-input::placeholder{color:rgba(250,247,240,.35);}
+#kiosk-results{margin-top:14px;display:flex;flex-direction:column;gap:9px;}
+.kiosk-hit{width:100%;text-align:left;padding:16px 18px;border-radius:12px;border:1.5px solid rgba(201,168,76,.3);background:rgba(255,255,255,.05);color:var(--cream);font-size:clamp(16px,1.9vw,20px);font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;}
+.kiosk-hit:hover,.kiosk-hit:active{background:rgba(232,201,110,.16);border-color:var(--gold-light);}
+.kiosk-hit span{display:block;font-size:13px;font-weight:400;color:rgba(250,247,240,.55);margin-top:3px;}
+.kiosk-none{font-size:14px;color:rgba(250,247,240,.5);padding:6px 2px;}
+#kiosk-answer{display:none;position:fixed;inset:0;z-index:20;background:rgba(5,15,10,.94);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:24px;}
+#kiosk-answer.show{display:flex;}
+.kiosk-card{text-align:center;max-width:760px;width:100%;animation:kioskIn .35s cubic-bezier(.2,.8,.2,1);}
+@keyframes kioskIn{from{opacity:0;transform:translateY(16px) scale(.98);}to{opacity:1;transform:none;}}
+.kiosk-hello{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:clamp(20px,2.6vw,30px);color:rgba(250,247,240,.62);}
+.kiosk-card h2{font-family:'Cinzel',serif;font-size:clamp(34px,6vw,72px);font-weight:700;color:var(--gold-light);line-height:1.08;margin:6px 0 clamp(20px,3vh,34px);}
+.kiosk-seat{display:flex;gap:clamp(16px,3vw,34px);justify-content:center;flex-wrap:wrap;}
+.kiosk-seat>div{background:rgba(232,201,110,.12);border:2px solid var(--gold);border-radius:18px;padding:clamp(18px,2.6vh,30px) clamp(28px,4vw,56px);min-width:180px;}
+.kiosk-seat span{display:block;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:8px;}
+.kiosk-seat strong{display:block;font-family:'Cinzel',serif;font-size:clamp(44px,8vw,92px);font-weight:700;color:var(--cream);line-height:1;}
+.kiosk-note{margin-top:clamp(18px,3vh,28px);font-size:clamp(15px,1.8vw,20px);color:rgba(250,247,240,.68);line-height:1.6;}
+.kiosk-done{margin-top:clamp(22px,3.5vh,36px);padding:16px 44px;border:none;border-radius:100px;background:linear-gradient(135deg,var(--gold),var(--gold-light));color:var(--deep);font-size:17px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;}
+.kiosk-foot{margin-top:auto;padding-top:28px;text-align:center;font-size:14px;color:rgba(250,247,240,.42);}
 </style>
 </head>
 <body>
@@ -1533,6 +1571,48 @@ body.role-usher .seating-config{display:none;}
      many screens you want (each just polls independently, no login
      needed since it's read-only). Shows "Welcome, [Name]" the moment
      a QR scan checks someone in, then resets itself automatically. -->
+<!-- ══════════════════════════════════════════════════════════════
+     SELF-SERVICE KIOSK
+     A screen a guest can use unaided when no staff member is free:
+     scan the QR on their ticket, or type a few letters of their name
+     or their reference. It answers one question — where do I sit —
+     and shows nothing else about anyone.
+     Opened with ?kiosk=1 from a device that has already been logged
+     in by staff, so guest data is never exposed to an anonymous
+     visitor. Results clear themselves so one guest's details are
+     never left on screen for the next person.
+════════════════════════════════════════════════════════════════ -->
+<div id="kiosk-view">
+  <div class="kiosk-inner">
+    <div class="kiosk-head">
+      <img class="kiosk-crest js-logo" src="" alt="PBIS">
+      <div>
+        <h1>Find Your Table</h1>
+        <p>Scan your ticket, or type your name below</p>
+      </div>
+    </div>
+
+    <div class="kiosk-body">
+      <div class="kiosk-scan">
+        <video id="kiosk-video" playsinline muted></video>
+        <div class="kiosk-scan-frame"></div>
+        <p class="kiosk-scan-hint" id="kiosk-scan-hint">Hold your QR code up to the camera</p>
+      </div>
+
+      <div class="kiosk-search">
+        <label for="kiosk-input">Or type your name or reference</label>
+        <input type="text" id="kiosk-input" autocomplete="off" autocorrect="off"
+               spellcheck="false" placeholder="e.g. Somdeth  or  LN-4KX7"
+               oninput="kioskSearch(this.value)">
+        <div id="kiosk-results"></div>
+      </div>
+    </div>
+
+    <div id="kiosk-answer"></div>
+    <p class="kiosk-foot">Need help? Please ask a member of the PBIS team.</p>
+  </div>
+</div>
+
 <div id="monitor-view">
   <div id="monitor-lane-badge" style="display:none;position:absolute;top:18px;right:24px;z-index:5;font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(232,201,110,0.65);font-weight:700;"></div>
   <div id="monitor-content">
@@ -1575,6 +1655,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const params = new URLSearchParams(window.location.search);
     if (params.get('admin') === '1') {
       setTimeout(function() { openLoginModal(); }, 300);
+    }
+    if (params.get('kiosk') === '1') {
+      enterKioskMode();
     }
     if (params.get('monitor') === '1') {
       enterMonitorMode();
@@ -4802,6 +4885,196 @@ function chooseMonitorLane() {
   }).then(function(v) {
     if (v) openReceptionMonitor(v);
   });
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   KIOSK — self-service "where do I sit?"
+   ──────────────────────────────────────────────────────────────────
+   Two ways in, because a lost guest may have neither:
+     · scan the QR on their ticket
+     · type part of their name, or their reference (LN-XXXX)
+
+   Deliberate limits, because this screen faces the public:
+     · It answers table and seat, and nothing else. No email, phone,
+       organisation or dietary information is ever rendered here.
+     · A search needs at least three characters, and shows at most a
+       handful of matches, so it can't be used to browse the guest
+       list by typing a single letter.
+     · The answer clears itself after a short while, so one guest's
+       details are never left on screen for the next person.
+     · It runs on a device staff have already logged in, so the guest
+       list is never exposed to an anonymous visitor.
+══════════════════════════════════════════════════════════════════ */
+let _kioskClearTimer = null;
+let _kioskScanRAF = null;
+let _kioskStream = null;
+let _kioskCanvas = null;
+let _kioskCooldown = false;
+let _kioskTick = 0;
+let _kioskLastScan = 0;
+const KIOSK_CLEAR_MS = 25000;   // how long an answer stays up
+const KIOSK_MIN_CHARS = 3;
+
+function enterKioskMode() {
+  const el = document.getElementById('kiosk-view');
+  if (!el) return;
+  el.classList.add('active');
+  document.body.classList.add('kiosk-active');
+  try { document.querySelectorAll('img.js-logo').forEach(function(i){ i.src = LOGO; }); } catch (e) {}
+  startKioskCamera();
+  // The guest list still syncs in the background, so a check-in or a
+  // seating change made moments earlier is reflected here.
+  if (typeof loadDashboardData === 'function') loadDashboardData();
+  if (typeof startAutoSync === 'function') startAutoSync();
+}
+
+function startKioskCamera() {
+  const video = document.getElementById('kiosk-video');
+  const hint = document.getElementById('kiosk-scan-hint');
+  if (!video || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    if (hint) hint.textContent = 'Camera unavailable — please type your name instead';
+    return;
+  }
+  navigator.mediaDevices.getUserMedia({
+    video: { facingMode: { ideal: 'user' }, width: { ideal: 1280 }, height: { ideal: 720 },
+             advanced: [{ focusMode: 'continuous' }] }
+  }).catch(function() {
+    return navigator.mediaDevices.getUserMedia({ video: true });
+  }).then(function(stream) {
+    _kioskStream = stream;
+    video.srcObject = stream;
+    video.setAttribute('playsinline', '');
+    video.play();
+    _kioskCanvas = document.createElement('canvas');
+    kioskScanFrame();
+  }).catch(function() {
+    if (hint) hint.textContent = 'Camera unavailable — please type your name instead';
+  });
+}
+
+// Same downscale-and-alternate approach as the door scanner, for the
+// same reason: decoding full frames is too slow to catch a code.
+function kioskScanFrame() {
+  const video = document.getElementById('kiosk-video');
+  if (!video || !video.srcObject) return;
+  try {
+    const now = performance.now();
+    if ((now - _kioskLastScan) >= 80 && !_kioskCooldown &&
+        video.readyState === video.HAVE_ENOUGH_DATA &&
+        typeof jsQR !== 'undefined' && video.videoWidth) {
+      _kioskLastScan = now; _kioskTick++;
+      const vw = video.videoWidth, vh = video.videoHeight;
+      const cropped = (_kioskTick % 2) === 1;
+      const sw = cropped ? vw * 0.6 : vw, sh = cropped ? vh * 0.6 : vh;
+      const sx = (vw - sw) / 2, sy = (vh - sh) / 2;
+      const scale = 480 / Math.max(sw, sh);
+      const dw = Math.round(sw * scale), dh = Math.round(sh * scale);
+      const cv = _kioskCanvas;
+      if (cv.width !== dw || cv.height !== dh) { cv.width = dw; cv.height = dh; }
+      const ctx = cv.getContext('2d', { willReadFrequently: true });
+      ctx.drawImage(video, sx, sy, sw, sh, 0, 0, dw, dh);
+      const d = ctx.getImageData(0, 0, dw, dh);
+      const code = jsQR(d.data, d.width, d.height, { inversionAttempts: 'attemptBoth' });
+      if (code && code.data) kioskHandleScan(code.data);
+    }
+  } catch (e) {}
+  _kioskScanRAF = requestAnimationFrame(kioskScanFrame);
+}
+
+function kioskHandleScan(data) {
+  const parsed = parseTicketQRPayload(data);
+  _kioskCooldown = true;
+  setTimeout(function() { _kioskCooldown = false; }, 2500);
+
+  if (!parsed) { kioskShowMessage("That doesn't look like a Legacy Night ticket. Please type your name below."); return; }
+  const guest = _dashGuestsCache.find(function(g) { return String(g.ts) === String(parsed.ts); });
+  if (!guest) { kioskShowMessage("We couldn't find that ticket. Please ask a member of our team."); return; }
+  const members = seatedPartyMembers(guest);
+  const person = members[parsed.idx] || members[0];
+  kioskShowAnswer(person, guest);
+}
+
+// Search is intentionally narrow: whole-word-ish matching on names and
+// an exact match on the reference. It will not list the guest list.
+function kioskSearch(qRaw) {
+  const q = String(qRaw || '').trim().toLowerCase();
+  const box = document.getElementById('kiosk-results');
+  if (!box) return;
+  if (q.length < KIOSK_MIN_CHARS) { box.innerHTML = ''; return; }
+
+  const hits = [];
+  (_dashGuestsCache || []).forEach(function(g) {
+    const track = String(g.track_id || '').toLowerCase();
+    const trackMatch = track && (track === q || track.replace(/^ln-/, '') === q.replace(/^ln-/, ''));
+    seatedPartyMembers(g).forEach(function(p) {
+      const name = String(p.name || '').toLowerCase();
+      if (trackMatch || name.indexOf(q) !== -1) hits.push({ p: p, g: g });
+    });
+  });
+
+  if (!hits.length) {
+    box.innerHTML = '<p class="kiosk-none">No match yet — try a little more of your name.</p>';
+    return;
+  }
+  box.innerHTML = hits.slice(0, 6).map(function(h, i) {
+    return '<button class="kiosk-hit" onclick="kioskPick(' + i + ')">' +
+      escHtmlV(h.p.name) +
+      (h.p.isCompanion ? '<span>guest of ' + escHtmlV((h.g.fname || '').trim()) + '</span>' : '') +
+    '</button>';
+  }).join('') + (hits.length > 6 ? '<p class="kiosk-none">Showing the first 6 matches — type a little more.</p>' : '');
+  window._kioskHits = hits.slice(0, 6);
+}
+
+function kioskPick(i) {
+  const h = (window._kioskHits || [])[i];
+  if (h) kioskShowAnswer(h.p, h.g);
+}
+
+function kioskShowAnswer(person, guest) {
+  const el = document.getElementById('kiosk-answer');
+  if (!el) return;
+  const hasSeat = guest.table_number;
+  el.innerHTML =
+    '<div class="kiosk-card">' +
+      '<p class="kiosk-hello">Welcome,</p>' +
+      '<h2>' + escHtmlV(person.name) + '</h2>' +
+      (hasSeat
+        ? '<div class="kiosk-seat">' +
+            '<div><span>Table</span><strong>' + escHtmlV(guest.table_number) + '</strong></div>' +
+            (person.seat ? '<div><span>Seat</span><strong>' + escHtmlV(person.seat) + '</strong></div>' : '') +
+          '</div>' +
+          '<p class="kiosk-note">Please make your way to the Vientiane Ballroom.</p>'
+        : '<p class="kiosk-note">Your table is being finalised — please ask a member of our team, who will seat you.</p>') +
+      '<button class="kiosk-done" onclick="kioskClear()">Done</button>' +
+    '</div>';
+  el.classList.add('show');
+  kioskResetTimer();
+}
+
+function kioskShowMessage(msg) {
+  const el = document.getElementById('kiosk-answer');
+  if (!el) return;
+  el.innerHTML = '<div class="kiosk-card"><p class="kiosk-note" style="margin:0;">' + escHtmlV(msg) + '</p>' +
+    '<button class="kiosk-done" onclick="kioskClear()">Close</button></div>';
+  el.classList.add('show');
+  kioskResetTimer();
+}
+
+// Nobody's details should linger for the next person in the queue.
+function kioskResetTimer() {
+  clearTimeout(_kioskClearTimer);
+  _kioskClearTimer = setTimeout(kioskClear, KIOSK_CLEAR_MS);
+}
+
+function kioskClear() {
+  clearTimeout(_kioskClearTimer);
+  const el = document.getElementById('kiosk-answer');
+  if (el) { el.classList.remove('show'); el.innerHTML = ''; }
+  const inp = document.getElementById('kiosk-input');
+  if (inp) inp.value = '';
+  const box = document.getElementById('kiosk-results');
+  if (box) box.innerHTML = '';
+  window._kioskHits = [];
 }
 
 function enterMonitorMode() {
