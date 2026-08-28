@@ -6691,7 +6691,22 @@ function parseTicketQRPayload(data) {
 
 let _qrScanResultToken = 0;
 
+// Whatever happens on one scan, the scanner must still work for the
+// next guest. Without this, a single unexpected error leaves the
+// cooldown flag stuck and the door stops working entirely.
 function handleQRScanResult(data) {
+  try {
+    handleQRScanResultInner(data);
+  } catch (err) {
+    const el = document.getElementById('qr-scanner-result');
+    if (el) el.innerHTML = '<div class="qr-scanner-error">⚠️ Couldn\'t read that code. Try again, or check the guest in by name.</div>';
+    try { playScanFeedback('error'); } catch (e) {}
+    _qrScannerCooldown = true;
+    setTimeout(function() { _qrScannerCooldown = false; }, 1200);
+  }
+}
+
+function handleQRScanResultInner(data) {
   const parsed = parseTicketQRPayload(data);
   const resultEl = document.getElementById('qr-scanner-result');
   if (!resultEl) return;
@@ -6707,21 +6722,33 @@ function handleQRScanResult(data) {
     if (!guest) {
       resultEl.innerHTML = '<div class="qr-scanner-error">⚠️ Guest not found — try resyncing the dashboard first.</div>';
       playScanFeedback('error');
+    } else if (idx >= (1 + parseAdditionalGuestsDetail(guest).length)) {
+      // The code names someone who isn't in this booking. A genuine
+      // ticket can't do that, so it's either tampered with or stale
+      // from before the party shrank — either way, don't invent a guest.
+      resultEl.innerHTML = '<div class="qr-scanner-error">⚠️ This ticket refers to a guest who is no longer in this booking. Check them in by name instead.</div>';
+      playScanFeedback('error');
     } else {
       const personName = resolvePersonName(guest, idx);
       const checkins = parseIndividualCheckins(guest);
       const alreadyIn = !!(checkins[idx] && checkins[idx].checked_in);
+      // Names come from the sheet, which staff can edit — escape them
+      // so a stray angle bracket can never become markup on screen.
       const seatHtml = guest.table_number
-        ? `<span class="qr-scanner-result-seat">🪑 Table ${guest.table_number}${guest.seat_number ? ' · Seat ' + guest.seat_number : ''}</span>`
+        ? `<span class="qr-scanner-result-seat">🪑 Table ${escHtmlV(guest.table_number)}${guest.seat_number ? ' · Seat ' + escHtmlV(guest.seat_number) : ''}</span>`
         : `<span class="qr-scanner-result-noseat">No table assigned yet</span>`;
 
       if (alreadyIn) {
         const atIso = checkins[idx].checked_in_at;
-        const atTime = atIso ? new Date(atIso).toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'}) : '';
-        resultEl.innerHTML = `<div class="qr-scanner-warn">ℹ️ ${personName} is already checked in${atTime ? ' (' + atTime + ')' : ''}.${seatHtml}</div>`;
+        let atTime = '';
+        try {
+          const d = new Date(atIso);
+          if (atIso && !isNaN(d.getTime())) atTime = d.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
+        } catch (e) {}
+        resultEl.innerHTML = `<div class="qr-scanner-warn">ℹ️ ${escHtmlV(personName)} is already checked in${atTime ? ' (' + atTime + ')' : ''}.${seatHtml}</div>`;
         playScanFeedback('warning');
       } else {
-        resultEl.innerHTML = `<div class="qr-scanner-success">✓ ${personName} checked in!${seatHtml}</div>`;
+        resultEl.innerHTML = `<div class="qr-scanner-success">✓ ${escHtmlV(personName)} checked in!${seatHtml}</div>`;
         playScanFeedback('success');
         markGuestCheckedIn(ts, true, idx, personName);
         updateDoorsCounter();
