@@ -1151,6 +1151,10 @@ body.gplan-active #dashboard-view,body.gplan-active .login-modal-backdrop{displa
 .gplan-none{font-size:clamp(12px,.95vw,16px);color:rgba(250,247,240,.5);line-height:1.6;}
 .gplan-foot{flex-shrink:0;text-align:center;padding:clamp(10px,1.4vh,20px);font-size:clamp(11px,.85vw,15px);color:rgba(250,247,240,.35);letter-spacing:.05em;border-top:1px solid rgba(201,168,76,.16);}
 @media (max-width:1000px){.gplan-body{grid-template-columns:1fr;}.gplan-head{flex-wrap:wrap;}.gplan-search{width:100%;}}
+
+#display-mode-notice{position:fixed;bottom:18px;right:18px;z-index:999997;background:rgba(10,40,24,.94);border:1px solid rgba(201,168,76,.45);color:var(--gold-light);font-size:13px;font-weight:700;padding:10px 18px;border-radius:100px;font-family:'DM Sans',sans-serif;opacity:0;pointer-events:none;transition:opacity .3s ease;backdrop-filter:blur(6px);}
+#display-mode-notice.show{opacity:1;}
+#display-mode-notice span{display:block;font-weight:400;font-size:11.5px;color:rgba(250,247,240,.55);margin-top:2px;}
 </style>
 </head>
 <body>
@@ -1214,7 +1218,7 @@ body.gplan-active #dashboard-view,body.gplan-active .login-modal-backdrop{displa
       <button class="dash-btn" onclick="openCommandPalette()" title="Search guests or jump to a tab (Ctrl/Cmd+K)">🔍 Search</button>
       <button class="dash-btn dash-btn-doors" onclick="enterDoorsMode()">🚪 Doors Mode</button>
       <button class="dash-btn" onclick="chooseMonitorLane()" title="Opens a full-screen 'Welcome' display for a screen at the door">📺 Open Monitor</button>
-      <button class="dash-btn-logout" onclick="dashLogout()">Log Out</button>
+      <button class="dash-btn-logout" onclick="dashLogout(true)">Log Out</button>
     </div>
   </div>
 
@@ -1781,6 +1785,21 @@ document.addEventListener('DOMContentLoaded', function() {
     if (params.get('admin') === '1') {
       setTimeout(function() { openLoginModal(); }, 300);
     }
+    // ── Display modes (guest screen, kiosk, reception monitor) ──
+    // These run unattended on a TV, so they must pick up the saved
+    // session BEFORE they start fetching. Previously they launched
+    // here while the session was only restored much later in startup,
+    // so their first request went out with no token, came back
+    // Unauthorized, and threw a "session expired" prompt onto a public
+    // screen. Restoring first removes the race entirely.
+    const _displayMode = params.get('floorplan') === '1' ||
+                         params.get('kiosk') === '1' ||
+                         params.get('monitor') === '1';
+    if (_displayMode) {
+      _isDisplayMode = true;
+      try { restoreSavedSession(); } catch (e) {}
+    }
+
     if (params.get('floorplan') === '1') {
       enterGuestFloorPlan();
     }
@@ -3120,20 +3139,36 @@ function stopAutoSync() {
   if (_autoSyncTimer) { clearInterval(_autoSyncTimer); _autoSyncTimer = null; }
 }
 
-function dashLogout() {
-  // Let the server drop the session too, so the token can't be reused
-  // if it was captured. Fire-and-forget — logging out locally must not
-  // depend on the network succeeding.
-  if (_sessionToken) {
+// deliberate === true only when a person actually pressed Log Out.
+//
+// This distinction matters more than it looks. The session token is
+// shared by every screen signed in on this account — both desks, both
+// TVs, the kiosk. Revoking it on the server kills ALL of them. When
+// that revocation was fired on any "Unauthorized" response, a single
+// transient error on one tab logged out the entire event.
+//
+// So: a person pressing Log Out revokes the token. Anything else only
+// clears this tab.
+function dashLogout(deliberate) {
+  if (deliberate && _sessionToken) {
     try { postToSheets({ action: 'logout', session_token: _sessionToken }); } catch (e) {}
   }
   document.body.classList.remove('dashboard-active');
   document.body.classList.remove('role-marketing');
   _currentUser = null;
   _sessionToken = null;
+  // Must be cleared too. openLoginModal() treats a future expiry as
+  // "still signed in" and bounces straight back into the dashboard, so
+  // leaving this set meant an expired session showed the toast and then
+  // silently refused to show the login box — the staff member was told
+  // to log in again with no way to do it.
+  _sessionExpiry = 0;
   stopAutoSync();
   exitDoorsMode();
-  try { localStorage.removeItem('legacy_session'); } catch(e){}
+  // Same reasoning: the saved session is shared by every tab on this
+  // device, so only a real logout should erase it. Otherwise a blip in
+  // one tab would stop the others recovering after a refresh.
+  if (deliberate) { try { localStorage.removeItem('legacy_session'); } catch(e){} }
   const badge = document.getElementById('dash-user-badge');
   if(badge) badge.remove();
   const notice = document.getElementById('dash-marketing-notice');
@@ -3267,6 +3302,7 @@ async function fetchDashboardGuests(opts) {
       _consecutiveSyncFails = 0;
       setSyncStatus('● Live · ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }));
       hideDashSyncErrorBanner();
+      clearDisplayModeNotice();
       return true;
     }
     if (r === 'unauthorized') { handleExpiredSession(); return false; }
@@ -3295,12 +3331,80 @@ async function fetchDashboardGuests(opts) {
 // the dashboard out cleanly and prompt a fresh login, same as if
 // they'd clicked "Log Out" themselves.
 let _handledExpiredSession = false;
+// Set when the page is running as an unattended screen rather than a
+// staff dashboard.
+let _isDisplayMode = false;
+
 function handleExpiredSession() {
+  // A guest screen, kiosk or monitor has nobody standing at it to log
+  // in, and a login box on a 65" screen in front of guests is worse
+  // than a stale plan. So these show a discreet notice and keep
+  // retrying quietly instead of tearing down the session.
+  if (_isDisplayMode) {
+    showDisplayModeNotice();
+    return;
+  }
   if (_handledExpiredSession) return;
   _handledExpiredSession = true;
-  dashLogout();
-  showDashToast('⏱ Your session expired — please log in again.');
-  setTimeout(() => { openLoginModal(); _handledExpiredSession = false; }, 400);
+
+  // Confirm before acting. A single "Unauthorized" can come from a
+  // truncated response or a momentary server hiccup, and tearing down
+  // a working session on that basis is far more damaging than waiting
+  // a couple of seconds to be sure.
+  verifySessionReallyExpired().then(function(reallyExpired) {
+    if (!reallyExpired) {
+      _handledExpiredSession = false;
+      return;                       // false alarm — carry on
+    }
+    dashLogout(false);              // clear this tab only
+    showDashToast('⏱ Your session expired — please log in again.');
+    setTimeout(function() { openLoginModal(); _handledExpiredSession = false; }, 400);
+  });
+}
+
+// Asks the server once more, after a short pause. Only two matching
+// rejections count as a genuinely dead session.
+function verifySessionReallyExpired() {
+  return new Promise(function(resolve) {
+    setTimeout(async function() {
+      if (!_sessionToken) return resolve(true);
+      try {
+        const url = SHEETS_URL + '?action=getLegacyGuests&token=' +
+          encodeURIComponent(_sessionToken) + '&_=' + Date.now();
+        const res = await fetch(url);
+        const j = await res.json();
+        if (j.status === 'ok' && Array.isArray(j.guests)) {
+          // It was fine after all — take the data while we have it.
+          _dashGuestsCache = j.guests;
+          try { saveGuestSnapshot(j.guests); } catch (e) {}
+          return resolve(false);
+        }
+        resolve(j.status === 'error' && j.message === 'Unauthorized');
+      } catch (e) {
+        resolve(false);             // network problem, not an auth problem
+      }
+    }, 1800);
+  });
+}
+
+function showDisplayModeNotice() {
+  let el = document.getElementById('display-mode-notice');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'display-mode-notice';
+    el.innerHTML = 'Reconnecting… <span>the plan below may be a few minutes old</span>';
+    document.body.appendChild(el);
+  }
+  el.classList.add('show');
+  clearTimeout(el._t);
+  // Hides itself once a sync succeeds, or after a while regardless, so
+  // it never becomes permanent furniture on the screen.
+  el._t = setTimeout(function() { el.classList.remove('show'); }, 20000);
+}
+
+function clearDisplayModeNotice() {
+  const el = document.getElementById('display-mode-notice');
+  if (el) el.classList.remove('show');
 }
 
 // A tiny "● Sync Error" label in the topbar is easy to miss — this
@@ -5353,6 +5457,7 @@ const KIOSK_MIN_CHARS = 3;
 let _gplanSelected = null;
 let _gplanIdleTimer = null;
 let _gplanHighlight = null;     // table lit up by a search
+let _gplanRefreshTimer = null;
 const GPLAN_IDLE_MS = 45000;
 
 function enterGuestFloorPlan() {
@@ -5371,7 +5476,10 @@ function enterGuestFloorPlan() {
   renderGuestFloorPlan();
 
   // Keep the plan current if seating changes while the screen is up.
-  setInterval(function() {
+  // Guarded: entering the screen twice would otherwise stack intervals
+  // and make it re-render several times a cycle.
+  if (_gplanRefreshTimer) clearInterval(_gplanRefreshTimer);
+  _gplanRefreshTimer = setInterval(function() {
     if (document.getElementById('gplan-view').classList.contains('active') && _gplanSelected === null) {
       renderGuestFloorPlan();
     }
