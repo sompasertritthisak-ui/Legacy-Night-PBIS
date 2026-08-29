@@ -1083,6 +1083,74 @@ body.role-usher .cat-chip,body.role-manager .cat-chip{cursor:default;}
 
 #hw-scan-ping{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(14px);z-index:999998;background:var(--navy);color:var(--gold-light);font-size:12.5px;font-weight:700;padding:9px 18px;border-radius:100px;font-family:'DM Sans',sans-serif;opacity:0;pointer-events:none;transition:opacity .18s ease,transform .18s ease;box-shadow:0 6px 20px rgba(0,0,0,.3);}
 #hw-scan-ping.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* ── Guest floor plan (65" touchscreen) ── */
+#gplan-view{display:none;position:fixed;inset:0;z-index:900;background:linear-gradient(168deg,#0b2a19 0%,#050f0a 62%,#0a2818 100%);color:var(--cream);overflow:hidden;flex-direction:column;}
+#gplan-view.active{display:flex;}
+body.gplan-active #dashboard-view,body.gplan-active .login-modal-backdrop{display:none!important;}
+.gplan-head{display:flex;align-items:center;gap:clamp(18px,2vw,34px);padding:clamp(16px,2.2vh,30px) clamp(22px,2.6vw,48px);border-bottom:1px solid rgba(201,168,76,.28);flex-shrink:0;}
+.gplan-crest{width:clamp(66px,5vw,104px);height:clamp(66px,5vw,104px);object-fit:contain;flex-shrink:0;}
+.gplan-title{flex:1;min-width:0;}
+.gplan-eyebrow{font-size:clamp(10px,.85vw,14px);letter-spacing:.2em;text-transform:uppercase;color:var(--gold);font-weight:700;}
+.gplan-title h1{font-family:'Cinzel',serif;font-size:clamp(26px,2.9vw,54px);font-weight:700;color:var(--gold-light);line-height:1.1;margin-top:4px;}
+.gplan-title h1 span{color:rgba(250,247,240,.5);font-weight:400;}
+.gplan-sub{font-size:clamp(12px,1vw,18px);color:rgba(250,247,240,.55);margin-top:5px;}
+.gplan-search{position:relative;flex-shrink:0;width:clamp(240px,24vw,420px);}
+#gplan-input{width:100%;padding:clamp(13px,1.4vh,20px) clamp(16px,1.4vw,24px);border-radius:100px;border:2px solid rgba(201,168,76,.45);background:rgba(255,255,255,.07);color:var(--cream);font-size:clamp(15px,1.15vw,21px);font-family:'DM Sans',sans-serif;}
+#gplan-input:focus{outline:none;border-color:var(--gold-light);background:rgba(255,255,255,.12);}
+#gplan-input::placeholder{color:rgba(250,247,240,.38);}
+#gplan-hits{position:absolute;top:calc(100% + 10px);left:0;right:0;z-index:5;display:flex;flex-direction:column;gap:7px;}
+.gplan-hit{display:flex;flex-direction:column;gap:3px;text-align:left;padding:clamp(12px,1.3vh,18px) clamp(14px,1.2vw,20px);border-radius:12px;border:1.5px solid rgba(201,168,76,.4);background:#0d2416;color:var(--cream);cursor:pointer;font-family:'DM Sans',sans-serif;}
+.gplan-hit:hover,.gplan-hit:active{background:rgba(232,201,110,.18);border-color:var(--gold-light);}
+.gplan-hit span{font-size:clamp(14px,1.05vw,19px);font-weight:700;}
+.gplan-hit em{font-style:normal;font-size:clamp(11.5px,.85vw,15px);color:var(--gold);}
+.gplan-body{flex:1;display:grid;grid-template-columns:1fr clamp(280px,25vw,460px);gap:clamp(14px,1.6vw,30px);padding:clamp(14px,1.8vh,28px) clamp(22px,2.6vw,48px);min-height:0;}
+.gplan-canvas{background:rgba(250,247,240,.04);border:1px solid rgba(201,168,76,.22);border-radius:18px;display:flex;align-items:center;justify-content:center;padding:clamp(8px,1vw,18px);min-height:0;}
+.gp-svg{width:100%;height:100%;max-height:100%;display:block;}
+.gp-bg{fill:transparent;}
+.gp-section{fill:rgba(250,247,240,.045);stroke:rgba(201,168,76,.14);stroke-width:1;}
+.gp-section.alt{fill:rgba(250,247,240,.075);}
+.gp-section-label{font-family:'DM Sans',sans-serif;font-size:15px;fill:rgba(232,201,110,.5);text-anchor:end;letter-spacing:.08em;font-weight:700;}
+.gp-outline{fill:none;stroke:rgba(201,168,76,.55);stroke-width:2;}
+.gp-pre{fill:rgba(250,247,240,.03);stroke:rgba(201,168,76,.16);stroke-width:1;}
+.gp-pre-label{font-family:'DM Sans',sans-serif;font-size:14px;fill:rgba(250,247,240,.4);text-anchor:middle;letter-spacing:.08em;}
+.gp-door{fill:var(--gold);rx:8;}
+.gp-door-label{font-family:'DM Sans',sans-serif;font-size:14px;font-weight:800;fill:var(--deep);text-anchor:middle;letter-spacing:.1em;}
+.gp-stage{fill:rgba(232,201,110,.14);stroke:var(--gold);stroke-width:1.5;rx:6;}
+.gp-stage-label{font-family:'Cinzel',serif;font-size:17px;fill:var(--gold-light);text-anchor:middle;dominant-baseline:middle;letter-spacing:.28em;font-weight:700;}
+.gp-table{cursor:pointer;}
+.gp-hit{fill:transparent;}
+.gp-disc{fill:rgba(250,247,240,.1);stroke:var(--gold);stroke-width:2.5;transition:fill .18s ease,stroke .18s ease;}
+.gp-disc.cocktail{stroke:rgba(140,190,160,.8);stroke-dasharray:4 3;}
+.gp-table:active .gp-disc,.gp-table.sel .gp-disc{fill:var(--gold);stroke:#fff6d6;}
+.gp-table.hi .gp-disc{fill:var(--gold-light);stroke:#fff;}
+.gp-num{font-family:'Cinzel',serif;font-size:19px;font-weight:700;fill:var(--cream);text-anchor:middle;pointer-events:none;}
+.gp-table.sel .gp-num,.gp-table.hi .gp-num{fill:var(--deep);}
+.gp-chair{fill:rgba(250,247,240,.14);stroke:rgba(250,247,240,.3);stroke-width:1.5;pointer-events:none;}
+.gp-chair.taken{fill:#2d9e5f;stroke:#8fe0b4;}
+.gp-chair.mine{fill:#fff6d6;stroke:var(--gold);stroke-width:3;}
+.gp-ring{fill:none;stroke:var(--gold-light);stroke-width:3;stroke-dasharray:8 6;opacity:.9;}
+@keyframes gpPulse{0%,100%{opacity:.5;}50%{opacity:1;}}
+.gp-table.hi .gp-ring{animation:gpPulse 1.6s ease-in-out infinite;}
+.gplan-side{background:rgba(250,247,240,.05);border:1px solid rgba(201,168,76,.22);border-radius:18px;padding:clamp(16px,1.8vw,30px);overflow-y:auto;min-height:0;}
+.gplan-intro{text-align:center;padding-top:clamp(20px,4vh,60px);}
+.gplan-intro-icon{font-size:clamp(38px,4vw,68px);margin-bottom:14px;}
+.gplan-intro h3{font-family:'Cinzel',serif;font-size:clamp(20px,1.7vw,32px);color:var(--gold-light);margin-bottom:12px;}
+.gplan-intro p{font-size:clamp(13px,1vw,18px);color:rgba(250,247,240,.6);line-height:1.65;}
+.gplan-stat{margin-top:clamp(18px,2.4vh,32px);padding-top:clamp(16px,2vh,26px);border-top:1px solid rgba(201,168,76,.22);}
+.gplan-stat strong{color:var(--gold-light);font-size:1.35em;}
+.gplan-card-eyebrow{font-size:clamp(10px,.8vw,13px);letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:700;}
+.gplan-card h2{font-family:'Cinzel',serif;font-size:clamp(28px,2.6vw,50px);font-weight:700;color:var(--gold-light);line-height:1.1;margin:6px 0 clamp(14px,2vh,24px);}
+.gplan-found{background:rgba(45,158,95,.18);border:1.5px solid #2d9e5f;border-radius:12px;padding:11px 16px;font-size:clamp(13px,1vw,18px);font-weight:700;color:#8fe0b4;margin-bottom:14px;}
+.gplan-seats{display:flex;flex-direction:column;gap:8px;}
+.gplan-seat{display:flex;align-items:center;gap:14px;padding:clamp(11px,1.3vh,17px) clamp(12px,1vw,18px);border-radius:12px;background:rgba(250,247,240,.06);border:1.5px solid transparent;}
+.gplan-seat.me{background:rgba(232,201,110,.2);border-color:var(--gold-light);}
+.gplan-seat-no{flex-shrink:0;width:clamp(32px,2.4vw,44px);height:clamp(32px,2.4vw,44px);border-radius:9px;background:var(--gold);color:var(--deep);font-family:'Cinzel',serif;font-weight:700;font-size:clamp(15px,1.2vw,21px);display:flex;align-items:center;justify-content:center;}
+.gplan-seat-name{font-size:clamp(14px,1.1vw,20px);font-weight:600;color:var(--cream);}
+.gplan-close{margin-top:clamp(18px,2.4vh,30px);width:100%;padding:clamp(13px,1.5vh,19px);border:none;border-radius:100px;background:linear-gradient(135deg,var(--gold),var(--gold-light));color:var(--deep);font-size:clamp(14px,1.1vw,19px);font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;}
+.gplan-none{font-size:clamp(12px,.95vw,16px);color:rgba(250,247,240,.5);line-height:1.6;}
+.gplan-foot{flex-shrink:0;text-align:center;padding:clamp(10px,1.4vh,20px);font-size:clamp(11px,.85vw,15px);color:rgba(250,247,240,.35);letter-spacing:.05em;border-top:1px solid rgba(201,168,76,.16);}
+@media (max-width:1000px){.gplan-body{grid-template-columns:1fr;}.gplan-head{flex-wrap:wrap;}.gplan-search{width:100%;}}
 </style>
 </head>
 <body>
@@ -1608,6 +1676,37 @@ body.role-usher .cat-chip,body.role-manager .cat-chip{cursor:default;}
      visitor. Results clear themselves so one guest's details are
      never left on screen for the next person.
 ════════════════════════════════════════════════════════════════ -->
+<!-- ══════════════════════════════════════════════════════════════
+     GUEST FLOOR PLAN — 65" touchscreen
+     A seating chart guests can use themselves: tap a table to see who
+     is sitting there, or search a name to have their table lit up.
+     Reads the same saved floor plan and seat allocations the Tables
+     tab writes, so it can never disagree with the room.
+     Opened with ?floorplan=1 from a device staff have logged in.
+════════════════════════════════════════════════════════════════ -->
+<div id="gplan-view">
+  <div class="gplan-head">
+    <img class="gplan-crest js-logo" src="" alt="PBIS 25th Anniversary">
+    <div class="gplan-title">
+      <p class="gplan-eyebrow">Panyathip British International School</p>
+      <h1>Legacy Night <span>&mdash; Find Your Table</span></h1>
+      <p class="gplan-sub">Tap a table to see who is seated there, or search for your name</p>
+    </div>
+    <div class="gplan-search">
+      <input type="text" id="gplan-input" placeholder="Type your name…" autocomplete="off"
+             autocorrect="off" spellcheck="false" oninput="gplanSearch(this.value)">
+      <div id="gplan-hits"></div>
+    </div>
+  </div>
+
+  <div class="gplan-body">
+    <div class="gplan-canvas" id="gplan-canvas"></div>
+    <aside class="gplan-side" id="gplan-side"></aside>
+  </div>
+
+  <p class="gplan-foot">25 Years of Excellence &middot; Friday 25 September 2026 &middot; Holiday Inn &amp; Suites Vientiane</p>
+</div>
+
 <div id="kiosk-view">
   <div class="kiosk-inner">
     <div class="kiosk-head">
@@ -1681,6 +1780,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const params = new URLSearchParams(window.location.search);
     if (params.get('admin') === '1') {
       setTimeout(function() { openLoginModal(); }, 300);
+    }
+    if (params.get('floorplan') === '1') {
+      enterGuestFloorPlan();
     }
     if (params.get('kiosk') === '1') {
       enterKioskMode();
@@ -5226,6 +5328,226 @@ let _kioskLastScan = 0;
 const KIOSK_CLEAR_MS = 25000;   // how long an answer stays up
 const KIOSK_MIN_CHARS = 3;
 
+/* ══════════════════════════════════════════════════════════════════
+   GUEST FLOOR PLAN — a seating chart for a 65" touchscreen
+   ──────────────────────────────────────────────────────────────────
+   Reads exactly what the Tables tab saved: the same floor plan, the
+   same table numbers, the same per-person seats. There is no second
+   copy of the seating anywhere, so this screen cannot drift out of
+   step with the room or with the registration desk.
+
+   Built for touch on a large screen, which is a different problem
+   from the admin view:
+     · everything is tap-driven — nothing depends on hover, since a
+       finger has no hover state
+     · targets are large, and tables carry an invisible oversized hit
+       area so a fingertip doesn't have to be precise
+     · type is sized to be read standing a metre back
+     · it returns to the overview by itself, so it's never left
+       showing one guest's table to the next person
+
+   Guest-facing, so it shows names, table and seat — the same
+   information a printed seating board would carry — and nothing else.
+   No contact details, no dietary notes, no VIP markers.
+══════════════════════════════════════════════════════════════════ */
+let _gplanSelected = null;
+let _gplanIdleTimer = null;
+let _gplanHighlight = null;     // table lit up by a search
+const GPLAN_IDLE_MS = 45000;
+
+function enterGuestFloorPlan() {
+  const el = document.getElementById('gplan-view');
+  if (!el) return;
+  el.classList.add('active');
+  document.body.classList.add('gplan-active');
+  try { document.querySelectorAll('img.js-logo').forEach(function(i) { i.src = LOGO; }); } catch (e) {}
+
+  // Same data the admin Tables tab uses — loaded, not duplicated.
+  if (typeof loadDashboardData === 'function') loadDashboardData();
+  if (typeof startAutoSync === 'function') startAutoSync();
+  if (!_fpLoaded) {
+    loadFloorPlan().then(function() { renderGuestFloorPlan(); });
+  }
+  renderGuestFloorPlan();
+
+  // Keep the plan current if seating changes while the screen is up.
+  setInterval(function() {
+    if (document.getElementById('gplan-view').classList.contains('active') && _gplanSelected === null) {
+      renderGuestFloorPlan();
+    }
+  }, 15000);
+}
+
+function gplanResetIdle() {
+  clearTimeout(_gplanIdleTimer);
+  _gplanIdleTimer = setTimeout(function() {
+    _gplanSelected = null;
+    _gplanHighlight = null;
+    const inp = document.getElementById('gplan-input');
+    if (inp) inp.value = '';
+    const hits = document.getElementById('gplan-hits');
+    if (hits) hits.innerHTML = '';
+    renderGuestFloorPlan();
+  }, GPLAN_IDLE_MS);
+}
+
+function gplanSelectTable(n) {
+  _gplanSelected = (_gplanSelected === n) ? null : n;
+  renderGuestFloorPlan();
+  gplanResetIdle();
+}
+
+function gplanSearch(qRaw) {
+  const q = String(qRaw || '').trim().toLowerCase();
+  const box = document.getElementById('gplan-hits');
+  if (!box) return;
+  gplanResetIdle();
+  if (q.length < 3) { box.innerHTML = ''; _gplanHighlight = null; renderGuestFloorPlan(); return; }
+
+  const hits = [];
+  (_dashGuestsCache || []).forEach(function(g) {
+    if (!g.table_number) return;
+    seatedPartyMembers(g).forEach(function(p) {
+      if (String(p.name || '').toLowerCase().indexOf(q) !== -1) hits.push({ p: p, g: g });
+    });
+  });
+  if (!hits.length) {
+    box.innerHTML = '<p class="gplan-none">No match — try a little more of your name, or ask our team.</p>';
+    return;
+  }
+  window._gplanHits = hits.slice(0, 5);
+  box.innerHTML = window._gplanHits.map(function(h, i) {
+    return '<button class="gplan-hit" onclick="gplanPick(' + i + ')">' +
+      '<span>' + escHtmlV(h.p.name) + '</span>' +
+      '<em>Table ' + escHtmlV(h.g.table_number) + (h.p.seat ? ' · Seat ' + escHtmlV(h.p.seat) : '') + '</em>' +
+    '</button>';
+  }).join('');
+}
+
+function gplanPick(i) {
+  const h = (window._gplanHits || [])[i];
+  if (!h) return;
+  _gplanHighlight = { table: parseInt(h.g.table_number, 10), name: h.p.name, seat: h.p.seat };
+  _gplanSelected = parseInt(h.g.table_number, 10);
+  const box = document.getElementById('gplan-hits');
+  if (box) box.innerHTML = '';
+  const inp = document.getElementById('gplan-input');
+  if (inp) inp.value = '';
+  renderGuestFloorPlan();
+  gplanResetIdle();
+}
+
+// Opens the guest screen in its own tab, so the desk keeps the
+// dashboard while the TV shows the plan.
+function openGuestFloorPlan() {
+  const base = window.location.origin + window.location.pathname;
+  window.open(base + '?floorplan=1', '_blank');
+}
+
+function renderGuestFloorPlan() {
+  const canvas = document.getElementById('gplan-canvas');
+  const side = document.getElementById('gplan-side');
+  if (!canvas || !side) return;
+
+  if (!_fpLoaded || !_floorPlan) {
+    canvas.innerHTML = '<p class="gplan-none" style="padding:40px;">Loading the seating plan…</p>';
+    return;
+  }
+
+  const tables = _floorPlan.tables || [];
+  const R = 30, CHAIR_R = 44;
+
+  const sections = FP.sections.map(function(s, i) {
+    return '<rect x="' + FP.ball.x + '" y="' + s.y + '" width="' + FP.ball.w + '" height="' + s.h + '" class="gp-section' + (i % 2 ? ' alt' : '') + '"/>' +
+      '<text x="' + (FP.ball.x + FP.ball.w - 14) + '" y="' + (s.y + 26) + '" class="gp-section-label">' + s.key + '</text>';
+  }).join('');
+
+  const tableEls = tables.map(function(t) {
+    const cocktail = isCocktail(t);
+    const tR = cocktail ? 20 : R;
+    const people = fpPeopleAtTable(t.n);
+    const isSel = _gplanSelected === t.n;
+    const isHi = _gplanHighlight && _gplanHighlight.table === t.n;
+    const occupied = people.length;
+
+    const chairs = fpChairs(t.x, t.y, t.seats, cocktail ? 30 : CHAIR_R).map(function(ch, i) {
+      const taken = people.some(function(item) { return parseInt(item.p.seat, 10) === i + 1; });
+      const mine = _gplanHighlight && parseInt(_gplanHighlight.seat, 10) === i + 1 && isHi;
+      return '<circle class="gp-chair' + (taken ? ' taken' : '') + (mine ? ' mine' : '') + '" cx="' + ch.x.toFixed(1) + '" cy="' + ch.y.toFixed(1) + '" r="' + (mine ? 11 : 8) + '"/>';
+    }).join('');
+
+    return '<g class="gp-table' + (isSel ? ' sel' : '') + (isHi ? ' hi' : '') + '" onclick="gplanSelectTable(' + t.n + ')">' +
+      (isHi ? '<circle class="gp-ring" cx="' + t.x + '" cy="' + t.y + '" r="' + (CHAIR_R + 22) + '"/>' : '') +
+      chairs +
+      '<circle class="gp-disc' + (cocktail ? ' cocktail' : '') + '" cx="' + t.x + '" cy="' + t.y + '" r="' + tR + '"/>' +
+      '<text class="gp-num" x="' + t.x + '" y="' + (t.y + (cocktail ? 2 : 3)) + '">' + fpLabel(t) + '</text>' +
+      // An oversized invisible target, so a fingertip doesn't have to be precise.
+      '<circle class="gp-hit" cx="' + t.x + '" cy="' + t.y + '" r="' + (CHAIR_R + 14) + '"/>' +
+    '</g>';
+  }).join('');
+
+  canvas.innerHTML =
+    '<svg viewBox="0 0 ' + FP.W + ' ' + FP.H + '" class="gp-svg">' +
+      '<rect x="0" y="0" width="' + FP.W + '" height="' + FP.H + '" class="gp-bg"/>' +
+      sections +
+      '<rect x="' + FP.ball.x + '" y="' + FP.ball.y + '" width="' + FP.ball.w + '" height="' + FP.ball.h + '" class="gp-outline"/>' +
+      '<rect x="' + FP.pre.x + '" y="' + FP.pre.y + '" width="' + FP.pre.w + '" height="' + FP.pre.h + '" class="gp-pre"/>' +
+      '<text x="' + (FP.pre.x + FP.pre.w / 2) + '" y="' + (FP.pre.y + 30) + '" class="gp-pre-label">Pre-Function Area</text>' +
+      '<rect x="' + (FP.pre.x + 24) + '" y="' + (FP.pre.y + 470) + '" width="152" height="52" class="gp-door"/>' +
+      '<text x="' + (FP.pre.x + FP.pre.w / 2) + '" y="' + (FP.pre.y + 502) + '" class="gp-door-label">ENTRANCE</text>' +
+      '<rect x="' + FP.stage.x + '" y="' + FP.stage.y + '" width="' + FP.stage.w + '" height="' + FP.stage.h + '" class="gp-stage"/>' +
+      '<text x="' + (FP.stage.x + FP.stage.w / 2) + '" y="' + (FP.stage.y + FP.stage.h / 2) + '" class="gp-stage-label" transform="rotate(-90 ' + (FP.stage.x + FP.stage.w / 2) + ' ' + (FP.stage.y + FP.stage.h / 2) + ')">STAGE</text>' +
+      tableEls +
+    '</svg>';
+
+  // ── Side panel ──
+  if (_gplanSelected !== null) {
+    const t = tables.find(function(x) { return x.n === _gplanSelected; });
+    if (t) {
+      const people = fpPeopleAtTable(t.n).slice().sort(function(a, b) {
+        const an = parseInt(a.p.seat, 10), bn = parseInt(b.p.seat, 10);
+        if (isNaN(an) && isNaN(bn)) return 0;
+        if (isNaN(an)) return 1; if (isNaN(bn)) return -1;
+        return an - bn;
+      });
+      side.innerHTML =
+        '<div class="gplan-card">' +
+          (_gplanHighlight && _gplanHighlight.table === t.n
+            ? '<p class="gplan-found">Welcome, ' + escHtmlV(_gplanHighlight.name) + '</p>' : '') +
+          '<p class="gplan-card-eyebrow">' + escHtmlV(fpZoneAt(t.y, t.x)) + '</p>' +
+          '<h2>' + (isCocktail(t) ? 'Cocktail ' : 'Table ') + escHtmlV(fpLabel(t)) + '</h2>' +
+          (people.length
+            ? '<div class="gplan-seats">' + people.map(function(item) {
+                const me = _gplanHighlight && catKeySafe(item.p.name) === catKeySafe(_gplanHighlight.name);
+                return '<div class="gplan-seat' + (me ? ' me' : '') + '">' +
+                  '<span class="gplan-seat-no">' + (item.p.seat ? escHtmlV(item.p.seat) : '–') + '</span>' +
+                  '<span class="gplan-seat-name">' + escHtmlV(item.p.name) + '</span>' +
+                '</div>';
+              }).join('') + '</div>'
+            : '<p class="gplan-none">No guests seated here yet.</p>') +
+          '<button class="gplan-close" onclick="gplanSelectTable(' + t.n + ')">Close</button>' +
+        '</div>';
+      return;
+    }
+  }
+
+  const seatedPeople = (_dashGuestsCache || []).filter(function(g) { return g.table_number; })
+    .reduce(function(s, g) { return s + partyMembers(g).length; }, 0);
+  side.innerHTML =
+    '<div class="gplan-intro">' +
+      '<div class="gplan-intro-icon">🪑</div>' +
+      '<h3>Tap any table</h3>' +
+      '<p>Touch a table on the plan to see who is seated there. Or type your name in the box above and we will light up your table for you.</p>' +
+      '<p class="gplan-stat"><strong>' + seatedPeople + '</strong> guests seated across <strong>' +
+        tables.filter(function(t) { return fpPeopleAtTable(t.n).length; }).length + '</strong> tables</p>' +
+    '</div>';
+}
+
+// Loose name comparison for highlighting the searched guest's own row.
+function catKeySafe(n) {
+  return String(n || '').replace(/\s+/g, ' ').trim().toLowerCase();
+}
+
 function enterKioskMode() {
   const el = document.getElementById('kiosk-view');
   if (!el) return;
@@ -7936,7 +8258,8 @@ function renderTablesTab() {
           '<button class="fp-mode' + (_tablesView === 'list' ? ' active' : '') + '" onclick="setTablesView(\'list\')">☰ List</button>' +
           '<button class="fp-mode' + (_tablesView === 'plan' ? ' active' : '') + '" onclick="setTablesView(\'plan\')">▦ Floor plan</button>' +
         '</span>' +
-        '<button class="dash-btn" onclick="openSeatingSheet()" style="margin-left:10px;">🖨 Print Sheet</button>' +
+        '<button class="dash-btn" onclick="openGuestFloorPlan()" style="margin-left:8px;" title="Opens the guest-facing seating chart for a touchscreen">📺 Guest Screen</button>' +
+        '<button class="dash-btn" onclick="openSeatingSheet()" style="margin-left:8px;">🖨 Print Sheet</button>' +
       '</div>' +
       '<p style="margin:0 0 14px;font-size:13px;color:var(--gray-mid);line-height:1.7;">' +
         'Set these to match the venue once the final layout is confirmed. Saved on this device.</p>' +
