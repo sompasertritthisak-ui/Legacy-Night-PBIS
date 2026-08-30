@@ -3,6 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<!-- Lets staff add the dashboard to their home screen and open it
+     full-screen, without an address bar eating vertical space and
+     without hunting for a URL at the start of a shift. -->
+<meta name="theme-color" content="#0a2818">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Legacy Night">
+<meta name="format-detection" content="telephone=no">
 <title>PBIS Legacy Night — 25th Anniversary Gala | Panyathip British International School</title>
 <meta name="description" content="Staff admin dashboard for PBIS Legacy Night — check-in, guest management, and event operations.">
 <meta name="robots" content="noindex, nofollow">
@@ -1155,6 +1164,100 @@ body.gplan-active #dashboard-view,body.gplan-active .login-modal-backdrop{displa
 #display-mode-notice{position:fixed;bottom:18px;right:18px;z-index:999997;background:rgba(10,40,24,.94);border:1px solid rgba(201,168,76,.45);color:var(--gold-light);font-size:13px;font-weight:700;padding:10px 18px;border-radius:100px;font-family:'DM Sans',sans-serif;opacity:0;pointer-events:none;transition:opacity .3s ease;backdrop-filter:blur(6px);}
 #display-mode-notice.show{opacity:1;}
 #display-mode-notice span{display:block;font-weight:400;font-size:11.5px;color:rgba(250,247,240,.55);margin-top:2px;}
+
+/* ── Touch ergonomics ──────────────────────────────────────────────
+   Apple and Google both put the minimum comfortable target at around
+   44–48px. A few controls sat well under that, which is fine with a
+   mouse and unpleasant with a thumb at a door in low light. */
+.login-eye-btn{min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;}
+.login-cancel{min-height:44px;padding:12px;}
+.dash-btn-logout{min-height:40px;padding:9px 18px;}
+.site-signature a{display:inline-block;padding:4px 2px;}
+@media (hover:none){
+  /* Fingers, not cursors: give the small row icons real room. */
+  .dash-row-action,.dash-row-action-view,.dash-row-action-delete{min-width:42px;min-height:42px;}
+  .dash-vip-star{min-width:42px;min-height:42px;}
+  .seat-remove,.fp-seat-clear{min-width:38px;min-height:38px;}
+  .dash-tab{padding-top:14px;padding-bottom:14px;}
+}
+/* Momentum scrolling on the horizontal tab strip, and a hint that it
+   scrolls rather than the last tab just being cut off. */
+.dash-tabs{-webkit-overflow-scrolling:touch;scroll-behavior:smooth;}
+/* Stops iOS double-tap-to-zoom firing on controls, which otherwise
+   makes a quick second tap feel like it did nothing. */
+button,.dash-tab,.fp-chip,.cat-chip,.kiosk-hit,.gplan-hit{touch-action:manipulation;}
+
+#sw-update-bar{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:999999;background:var(--navy);color:var(--cream);border:1px solid rgba(201,168,76,.5);border-radius:100px;padding:10px 12px 10px 20px;display:flex;align-items:center;gap:10px;font-size:13px;font-family:'DM Sans',sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.35);max-width:calc(100vw - 32px);}
+#sw-update-bar button{border:none;border-radius:100px;padding:8px 16px;font-size:12.5px;font-weight:700;font-family:inherit;cursor:pointer;background:linear-gradient(135deg,var(--gold),var(--gold-light));color:var(--deep);min-height:36px;}
+#sw-update-bar button.later{background:transparent;color:rgba(250,247,240,.55);}
+
+/* ══════════════════════════════════════════════════════════════════
+   PHONE LANDSCAPE
+   A phone on its side has very little height — often under 400px —
+   and the default stacked layout pushes the useful controls below the
+   fold. This reclaims vertical space rather than rearranging things:
+   shorter headers, tighter rows, and the scanner side-by-side with
+   the search instead of above it.
+══════════════════════════════════════════════════════════════════ */
+@media (max-height:500px) and (orientation:landscape){
+  .dash-topbar{padding-top:6px;padding-bottom:6px;}
+  .dash-topbar-title h1{font-size:15px;}
+  .dash-topbar-title p{display:none;}
+  .dash-tab{padding-top:9px;padding-bottom:9px;font-size:12.5px;}
+  .dash-panel{padding:14px 16px;margin-bottom:12px;}
+  .dash-stats-row{gap:8px;}
+  .dash-stat-card{padding:10px 12px;}
+  .dash-stat-value{font-size:22px;}
+  .dash-stat-label{font-size:9.5px;}
+  .stat-note{display:none;}
+  .site-signature{padding:16px 20px 18px;}
+  .site-signature .sig-help{margin-top:6px;}
+
+  /* Doors Mode: scanner and search side by side so both are reachable
+     without scrolling, which is the whole point at a door. */
+  .doors-body{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;}
+  .doors-scan-btn{margin:0;padding:16px;font-size:15px;}
+  .doors-header{padding:8px 14px;}
+  .doors-lane-picker{margin-bottom:10px;}
+
+  /* Kiosk and guest screen already use a two-column grid; just trim. */
+  .kiosk-head{padding-bottom:12px;margin-bottom:14px;}
+  .kiosk-crest{width:52px;height:52px;}
+  .gplan-head{padding-top:8px;padding-bottom:8px;}
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   ONE-HANDED DOORS MODE
+   An usher holds a phone in one hand and a guest's ticket in the
+   other. The top of a modern phone is out of thumb reach, so the
+   actions that matter — scan, and the search box — sit in the lower
+   half where a thumb naturally rests, and the results list grows
+   upward from there.
+
+   Only applied on touch devices in portrait: on a desktop or tablet
+   there's no reach problem and the normal layout reads better.
+══════════════════════════════════════════════════════════════════ */
+@media (hover:none) and (orientation:portrait) and (max-width:520px){
+  #doors-mode-view.active{display:flex;flex-direction:column;}
+  .doors-header{flex-shrink:0;}
+  .doors-body{
+    /* column-reverse runs bottom-to-top, so flex-START is the bottom
+       edge — which is where the controls need to sit for a thumb. */
+    flex:1;display:flex;flex-direction:column-reverse;justify-content:flex-start;
+    padding-bottom:calc(18px + env(safe-area-inset-bottom,0px));
+  }
+  /* column-reverse puts the scan button at the bottom, the search
+     above it, and results above that — closest thing to hand is the
+     thing used most. */
+  .doors-scan-btn{
+    position:sticky;bottom:0;margin:0;padding:20px;font-size:18px;
+    border-radius:16px;box-shadow:0 -6px 18px rgba(5,15,10,.4);
+  }
+  .doors-search{margin-bottom:12px;padding:16px;font-size:16px;border-radius:14px;}
+  .doors-lane-picker{order:99;margin:12px 0 0;}
+  #doors-results{max-height:44vh;overflow-y:auto;}
+  .doors-result{padding:14px 16px;min-height:56px;}
+}
 </style>
 </head>
 <body>
@@ -1799,6 +1902,8 @@ document.addEventListener('DOMContentLoaded', function() {
       _isDisplayMode = true;
       try { restoreSavedSession(); } catch (e) {}
     }
+
+    registerOfflineSupport();
 
     if (params.get('floorplan') === '1') {
       enterGuestFloorPlan();
@@ -3951,7 +4056,7 @@ function renderCategoriesTab() {
           : 'View only — your account cannot change categories.') +
       '</p>' +
       '<div class="dash-search-row">' +
-        '<input type="text" placeholder="Find someone on the board…" value="' + escHtmlV(_catSearch) + '" oninput="setCatSearch(this.value)">' +
+        '<input type="text" placeholder="Find someone on the board…" value="' + escHtmlV(_catSearch) + '" id=\'search-categories\' oninput=\'searchInputChanged(this,function(v){_catSearch=v;},renderCategoriesTab,"categories")\'>' +
       '</div>' +
     '</div>' +
 
@@ -4474,6 +4579,47 @@ function setGuestSort(mode) {
   renderGuestListTab();
 }
 
+/* ══════════════════════════════════════════════════════════════════
+   TYPE-AHEAD SEARCH THAT DOESN'T FIGHT THE TYPIST
+   ──────────────────────────────────────────────────────────────────
+   The search boxes re-render their whole tab on every keystroke,
+   which replaces the tab's innerHTML — and that destroys the very
+   input being typed into. The browser then has nowhere to put focus,
+   so it lands back on the page body: you type one letter, the field
+   goes dead, and you have to tap back in for the next one.
+
+   At a door, with a queue, that turns a five-second lookup into a
+   fight. It matters most on Check-In, which is the manual fallback
+   when a QR code won't scan.
+
+   Rather than rewrite six tabs to update in place — a large change
+   this close to the event — this preserves the caret across the
+   re-render: remember which field had focus and where the cursor was,
+   let the tab rebuild, then put both back. The typist never notices.
+
+   Also debounced, so a fast typist triggers one render rather than
+   one per character. Together these make the field feel normal.  */
+const _searchDebounce = {};
+
+function searchInputChanged(el, stateSetter, renderFn, key) {
+  stateSetter(el.value);
+
+  const id = el.id;
+  const start = el.selectionStart;
+  const end = el.selectionEnd;
+
+  clearTimeout(_searchDebounce[key]);
+  _searchDebounce[key] = setTimeout(function () {
+    renderFn();
+    // The element the caret was in no longer exists — find its
+    // replacement by id and restore both focus and cursor position.
+    const fresh = id ? document.getElementById(id) : null;
+    if (!fresh) return;
+    if (document.activeElement !== fresh) fresh.focus({ preventScroll: true });
+    try { fresh.setSelectionRange(start, end); } catch (e) { /* not a text input */ }
+  }, 160);
+}
+
 function renderGuestListTab() {
   const el = document.getElementById('dash-tab-content-guestlist');
   const guests = _dashGuestsCache;
@@ -4571,7 +4717,7 @@ function renderGuestListTab() {
         <button class="dash-btn" id="export-csv-btn" onclick="exportGuestListCSV(false)">⬇ Export CSV</button>
       </div>
       <div class="dash-search-row">
-        <input type="text" placeholder="Search by name or email…" value="${_guestSearchTerm}" oninput="_guestSearchTerm=this.value;renderGuestListTab();">
+        <input type="text" placeholder="Search by name or email…" value="${_guestSearchTerm}" id="search-guestlist" oninput="searchInputChanged(this,function(v){_guestSearchTerm=v;},renderGuestListTab,'guestlist')">
         <select class="dash-sort-select" onchange="setGuestSort(this.value)" title="Sort guest list">
           <option value="newest" ${_guestSortMode === 'newest' ? 'selected' : ''}>Newest first</option>
           <option value="az" ${_guestSortMode === 'az' ? 'selected' : ''}>Name A → Z</option>
@@ -4795,7 +4941,7 @@ function renderCheckInTab() {
         <button class="dash-btn-gold" onclick="openQRScanner()" style="margin-left:auto;">📷 Scan QR Code</button>
       </div>
       <div class="dash-search-row">
-        <input type="text" placeholder="Search guest name to check in…" value="${_checkinSearchTerm}" oninput="_checkinSearchTerm=this.value;renderCheckInTab();">
+        <input type="text" placeholder="Search guest name to check in…" value="${_checkinSearchTerm}" id="search-checkin" oninput="searchInputChanged(this,function(v){_checkinSearchTerm=v;},renderCheckInTab,'checkin')">
       </div>
       <div class="dash-table-wrap">
         <table class="dash-table">
@@ -5145,7 +5291,7 @@ function renderOverdueTab() {
       <div class="dash-overdue-warn">Guests here RSVP'd but haven't checked in yet. Once the evening has wrapped up, mark anyone who never arrived as a <strong>No-Show</strong> — if they turn up later and get checked in at the door, their mark clears automatically.</div>
       <div class="dash-panel-title">Awaiting Arrival <span>${pendingGuests.length} guest${pendingGuests.length===1?'':'s'}</span></div>
       <div class="dash-search-row">
-        <input type="text" placeholder="Search by name…" value="${_overdueSearchTerm}" oninput="_overdueSearchTerm=this.value;renderOverdueTab();">
+        <input type="text" placeholder="Search by name…" value="${_overdueSearchTerm}" id="search-overdue" oninput="searchInputChanged(this,function(v){_overdueSearchTerm=v;},renderOverdueTab,'overdue')">
       </div>
       <div class="dash-table-wrap">
         <table class="dash-table">
@@ -5461,6 +5607,7 @@ let _gplanRefreshTimer = null;
 const GPLAN_IDLE_MS = 45000;
 
 function enterGuestFloorPlan() {
+  requestWakeLock();
   const el = document.getElementById('gplan-view');
   if (!el) return;
   el.classList.add('active');
@@ -5657,6 +5804,7 @@ function catKeySafe(n) {
 }
 
 function enterKioskMode() {
+  requestWakeLock();
   const el = document.getElementById('kiosk-view');
   if (!el) return;
   el.classList.add('active');
@@ -5819,6 +5967,7 @@ function kioskClear() {
 }
 
 function enterMonitorMode() {
+  requestWakeLock();
   const el = document.getElementById('monitor-view');
   if (!el) return; // monitor view only exists on admin.html
   try {
@@ -6508,7 +6657,7 @@ function renderApprovalsTab() {
       <div class="followup-warn">Approving a guest sends their official Legacy Night ticket by email — attach their invitation card and/or unique QR code, write a message, then approve. Each guest's ticket is unique to them, so like Follow Up, this is done one at a time rather than in bulk.</div>
       <div class="dash-panel-title">Awaiting Approval <span>${pendingGuests.length} guest${pendingGuests.length===1?'':'s'}</span></div>
       <div class="dash-search-row">
-        <input type="text" placeholder="Search by name or email…" value="${_approveSearchTerm}" oninput="_approveSearchTerm=this.value;renderApprovalsTab();">
+        <input type="text" placeholder="Search by name or email…" value="${_approveSearchTerm}" id="search-approvals" oninput="searchInputChanged(this,function(v){_approveSearchTerm=v;},renderApprovalsTab,'approvals')">
       </div>
       <div class="dash-table-wrap">
         <table class="dash-table">
@@ -7317,7 +7466,92 @@ if (!document._hwScannerBound) {
   document.addEventListener('keydown', hwScannerKeydown, true);
 }
 
+/* ══════════════════════════════════════════════════════════════════
+   KEEP THE SCREEN AWAKE
+   ──────────────────────────────────────────────────────────────────
+   A phone locking itself mid-shift is the single most disruptive
+   thing that happens at a door: the camera closes, the staff member
+   unlocks, reopens the scanner, and the queue waits. The same applies
+   to the TVs — a monitor that sleeps shows a black screen to guests.
+
+   The Screen Wake Lock API prevents it while these screens are open,
+   with no setting for anyone to remember. It's re-acquired after the
+   tab is backgrounded, because the browser drops the lock when you
+   switch away and does not restore it by itself.
+
+   Not supported everywhere (notably older iOS), so it's requested
+   defensively and the "set Auto-Lock to Never" advice still stands as
+   the fallback.
+══════════════════════════════════════════════════════════════════ */
+let _wakeLock = null;
+
+/* ── OFFLINE INSTALL ───────────────────────────────────────────────
+   Registers the service worker so the dashboard opens without a
+   network. Registration is deliberately conditional: it only runs on
+   a real https origin, because a service worker cached from a file://
+   or a test copy would be a liability rather than a help.
+
+   If registration fails for any reason the dashboard carries on
+   exactly as before — offline support is an enhancement, never a
+   dependency.                                                      */
+function registerOfflineSupport() {
+  if (!('serviceWorker' in navigator)) return;
+  if (location.protocol !== 'https:') return;   // not on file:// or plain http
+  navigator.serviceWorker.register('sw.js').then(function (reg) {
+    // If a new version is waiting, tell the user rather than swapping
+    // code underneath them mid-check-in.
+    reg.addEventListener('updatefound', function () {
+      const sw = reg.installing;
+      if (!sw) return;
+      sw.addEventListener('statechange', function () {
+        if (sw.state === 'installed' && navigator.serviceWorker.controller) {
+          showUpdateAvailable();
+        }
+      });
+    });
+  }).catch(function () { /* offline support simply unavailable */ });
+}
+
+function showUpdateAvailable() {
+  if (document.getElementById('sw-update-bar')) return;
+  const bar = document.createElement('div');
+  bar.id = 'sw-update-bar';
+  bar.innerHTML = '<span>A newer version of the dashboard is ready.</span>' +
+    '<button onclick="location.reload()">Reload now</button>' +
+    '<button class="later" onclick="this.parentNode.remove()">Later</button>';
+  document.body.appendChild(bar);
+}
+
+async function requestWakeLock() {
+  try {
+    if (!('wakeLock' in navigator)) return false;
+    _wakeLock = await navigator.wakeLock.request('screen');
+    _wakeLock.addEventListener('release', function() { _wakeLock = null; });
+    return true;
+  } catch (e) { return false; }
+}
+
+function releaseWakeLock() {
+  try { if (_wakeLock) { _wakeLock.release(); _wakeLock = null; } } catch (e) {}
+}
+
+// Browsers drop the lock when the tab loses focus and don't give it
+// back, so it's re-taken whenever the screen returns to the front.
+if (!document._wakeBound) {
+  document._wakeBound = true;
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState !== 'visible') return;
+    const needs = document.getElementById('doors-mode-view')?.classList.contains('active') ||
+                  document.getElementById('kiosk-view')?.classList.contains('active') ||
+                  document.getElementById('monitor-view')?.classList.contains('active') ||
+                  document.getElementById('gplan-view')?.classList.contains('active') ||
+                  document.getElementById('qr-scanner-backdrop')?.classList.contains('open');
+    if (needs && !_wakeLock) requestWakeLock();
+  });
+}
+
 function enterDoorsMode() {
+  requestWakeLock();
   document.getElementById('doors-mode-view').classList.add('active');
   document.body.style.overflow = 'hidden';
   document.getElementById('doors-search').value = '';
@@ -7330,6 +7564,7 @@ function enterDoorsMode() {
 }
 
 function exitDoorsMode() {
+  releaseWakeLock();
   document.getElementById('doors-mode-view').classList.remove('active');
   document.body.style.overflow = '';
 }
@@ -9034,7 +9269,7 @@ function renderFollowUpTab() {
       <div class="dash-panel-title">Follow-Up / Event Pass Delivery <span>${filtered.length} of ${emailable.length} guests</span></div>
       <div class="followup-warn">Each guest here gets their <strong>own individual email</strong> — click a guest, write a message, attach their invitation card and/or unique QR code (multiple files supported), then send just to them. There is no send-to-everyone button, since every guest's attachment is unique to them.</div>
       <div class="dash-search-row">
-        <input type="text" placeholder="Search by name or email…" value="${_followUpSearchTerm}" oninput="_followUpSearchTerm=this.value;renderFollowUpTab();">
+        <input type="text" placeholder="Search by name or email…" value="${_followUpSearchTerm}" id="search-followup" oninput="searchInputChanged(this,function(v){_followUpSearchTerm=v;},renderFollowUpTab,'followup')">
       </div>
       <div class="dash-table-wrap">
         <table class="dash-table">
