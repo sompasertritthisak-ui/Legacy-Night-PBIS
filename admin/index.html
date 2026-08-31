@@ -5775,6 +5775,17 @@ function gplanPick(i) {
 
 // Opens the guest screen in its own tab, so the desk keeps the
 // dashboard while the TV shows the plan.
+// Asks the backend to regenerate the "All Attendees" tab — one row per
+// person, for the caterer and the venue. It also refreshes itself
+// whenever the guest list changes, so this is only for when someone
+// wants it updated right now.
+async function rebuildAttendeeSheet() {
+  showDashToast('Refreshing the attendee sheet…');
+  const r = await postToSheetsVerified({ action: 'rebuildAttendees', session_token: _sessionToken });
+  if (r && r.status === 'error') { showDashToast('⚠️ ' + (r.message || 'Could not refresh.')); return; }
+  showDashToast('✓ Attendee sheet updated' + (r && r.count != null ? ' — ' + r.count + ' people' : ''));
+}
+
 function openGuestFloorPlan() {
   const base = window.location.origin + window.location.pathname;
   window.open(base + '?floorplan=1', '_blank');
@@ -8960,6 +8971,7 @@ function renderTablesTab() {
           '<button class="fp-mode' + (_tablesView === 'list' ? ' active' : '') + '" onclick="setTablesView(\'list\')">☰ List</button>' +
           '<button class="fp-mode' + (_tablesView === 'plan' ? ' active' : '') + '" onclick="setTablesView(\'plan\')">▦ Floor plan</button>' +
         '</span>' +
+        '<button class="dash-btn" onclick="rebuildAttendeeSheet()" style="margin-left:8px;" title="Refreshes the All Attendees tab in the spreadsheet">📋 Refresh Attendee Sheet</button>' +
         '<button class="dash-btn" onclick="openGuestFloorPlan()" style="margin-left:8px;" title="Opens the guest-facing seating chart for a touchscreen">📺 Guest Screen</button>' +
         '<button class="dash-btn" onclick="openSeatingSheet()" style="margin-left:8px;">🖨 Print Sheet</button>' +
       '</div>' +
