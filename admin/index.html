@@ -1258,6 +1258,31 @@ button,.dash-tab,.fp-chip,.cat-chip,.kiosk-hit,.gplan-hit{touch-action:manipulat
   #doors-results{max-height:44vh;overflow-y:auto;}
   .doors-result{padding:14px 16px;min-height:56px;}
 }
+
+.approve-progress{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:12px 0 4px;padding:10px 14px;background:var(--cream);border:1px solid var(--gray);border-radius:9px;}
+.approve-keepgoing{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--navy);font-weight:600;cursor:pointer;min-height:40px;}
+.approve-keepgoing input{width:18px;height:18px;accent-color:var(--gold);cursor:pointer;}
+.approve-remaining{font-size:12px;font-weight:700;color:var(--gold);background:rgba(201,168,76,.16);padding:4px 11px;border-radius:100px;white-space:nowrap;}
+
+/* ── Bulk approval ── */
+.bulk-panel{border:1.5px solid var(--gold);border-radius:12px;padding:18px 20px;margin:16px 0;background:rgba(201,168,76,.05);}
+.bulk-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;flex-wrap:wrap;}
+.bulk-head h4{font-family:'Cinzel',serif;font-size:16px;color:var(--navy);font-weight:700;}
+.bulk-head p{font-size:13px;color:var(--gray-mid);line-height:1.6;margin-top:5px;max-width:56ch;}
+.bulk-msg-label{display:block;margin-top:14px;font-size:11px;letter-spacing:.11em;text-transform:uppercase;color:var(--gray-mid);font-weight:700;}
+#bulk-message{display:block;width:100%;margin-top:7px;padding:11px 14px;border:1.5px solid var(--gray);border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;color:var(--navy);}
+#bulk-message:focus{outline:none;border-color:var(--gold);}
+.bulk-note{font-size:12px;color:var(--gray-mid);margin-top:9px;font-style:italic;}
+.bulk-bar{height:10px;border-radius:100px;background:rgba(201,168,76,.18);overflow:hidden;margin-top:16px;}
+.bulk-bar-fill{height:100%;border-radius:100px;background:linear-gradient(90deg,var(--gold),var(--gold-light));transition:width .3s ease;}
+.bulk-row{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-top:10px;}
+.bulk-count{font-size:13px;color:var(--navy);}
+.bulk-count strong{font-size:17px;}
+.bulk-count em{font-style:normal;color:#a4453e;font-weight:700;}
+.bulk-failed{margin-top:14px;padding:12px 14px;background:rgba(192,80,77,.08);border:1px solid rgba(192,80,77,.3);border-radius:9px;font-size:12.5px;color:var(--navy);}
+.bulk-failed div{margin-top:6px;}
+.bulk-failed span{color:#a4453e;font-size:11.5px;}
+.bulk-hint{margin-top:9px;font-size:12px;color:var(--gray-mid);font-style:italic;}
 </style>
 </head>
 <body>
@@ -1604,6 +1629,7 @@ button,.dash-tab,.fp-chip,.cat-chip,.kiosk-hit,.gplan-hit{touch-action:manipulat
       <input type="hidden" id="approve-modal-ts">
 
       <div class="followup-warn">Approving sends <strong id="approve-modal-recipient-count">1</strong> separate ticket email(s) to this guest's address — one per person in the party, each with their own name and unique QR code.</div>
+      <div id="approve-progress" class="approve-progress"></div>
 
       <label style="display:block;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--navy);margin-bottom:8px;">Individual QR Codes <span style="text-transform:none;font-weight:400;color:var(--gray-mid);">(one per person, auto-generated)</span></label>
       <div id="approve-qr-list"></div>
@@ -2647,6 +2673,56 @@ function loginRequest(data) {
     return res.json();
   }).catch(function(err) {
     clearTimeout(timeoutId);
+    return { status: 'error', message: (err && err.message) || 'Could not reach the server.' };
+  });
+}
+
+/* ── VERIFIED WRITE ────────────────────────────────────────────────
+   postToSheets() below sends with mode:'no-cors', which makes the
+   reply unreadable — it reports success whenever the request merely
+   LEAVES the device. For most actions that is tolerable.
+
+   For a CHECK-IN it is not. If the server rejects the write — the
+   record lock timing out during a rush, an invalid index, a role
+   restriction — the door would show "✓ checked in" for a guest who
+   was never saved, and nobody would find out until the guest list was
+   reconciled after the event.
+
+   This sends the same request as a normal readable fetch and checks
+   what the server actually said. The login flow already reads replies
+   from this endpoint, so the path is proven.
+
+   If the reply genuinely can't be read (a browser or network quirk
+   rather than a server error) it retries, then reports failure — at
+   which point the check-in goes into the retry queue rather than
+   being lost. Erring toward "queue it" is right: a duplicate write is
+   harmless because check-in is idempotent server-side, while a
+   silently dropped arrival is not recoverable.                     */
+function postToSheetsVerified(data, _attempt) {
+  const attempt = _attempt || 0;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(function () { controller.abort(); }, 15000);
+
+  return fetch(SHEETS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(data),
+    signal: controller.signal
+  }).then(function (res) {
+    clearTimeout(timeoutId);
+    return res.json();
+  }).then(function (j) {
+    if (j && j.status === 'error') {
+      return { status: 'error', message: j.message || 'The server rejected this check-in.' };
+    }
+    return { status: 'ok', person_name: j && j.person_name };
+  }).catch(function (err) {
+    clearTimeout(timeoutId);
+    if (attempt < 2) {
+      return new Promise(function (resolve) {
+        setTimeout(function () { resolve(postToSheetsVerified(data, attempt + 1)); }, 1200);
+      });
+    }
     return { status: 'error', message: (err && err.message) || 'Could not reach the server.' };
   });
 }
@@ -4989,7 +5065,10 @@ function confirmManualCheckIn(ts, checkedIn, idx, personName) {
 
   const seatEl = document.getElementById('confirm-checkin-seat');
   if (checkedIn && guest && guest.table_number) {
-    seatEl.textContent = '🪑 Table ' + guest.table_number + (guest.seat_number ? ' · Seat ' + guest.seat_number : '');
+    // This person's own seat, not the party's whole list.
+    const member = seatedPartyMembers(guest)[idx];
+    const mySeat = member ? member.seat : '';
+    seatEl.textContent = '🪑 Table ' + guest.table_number + (mySeat ? ' · Seat ' + mySeat : '');
   } else {
     seatEl.textContent = '';
   }
@@ -5095,7 +5174,9 @@ async function flushCheckInQueue() {
 
   let result;
   try {
-    result = await postToSheets(item.payload);
+    // Verified too — otherwise a queued item could be dropped from the
+    // queue on a write the server actually refused.
+    result = await postToSheetsVerified(item.payload);
   } catch (e) {
     result = { status: 'error', message: 'Network error' };
   }
@@ -5205,7 +5286,7 @@ function markGuestCheckedIn(ts, checkedIn, idx, personName) {
   const payload = { action: 'markCheckedIn', ts: ts, checked_in: checkedIn, idx: idx, lane: _doorsLane, session_token: _sessionToken, staff_name: _currentUser ? _currentUser.name : '' };
   if (clearingNoShow) payload.clear_no_show = true;
 
-  postToSheets(payload).then((result) => {
+  postToSheetsVerified(payload).then((result) => {
     if (result.status === 'error') {
       const msg = String(result.message || '');
       // A definitive rejection (bad session, guest genuinely gone,
@@ -6654,7 +6735,22 @@ function renderApprovalsTab() {
     </div>
 
     <div class="dash-panel">
-      <div class="followup-warn">Approving a guest sends their official Legacy Night ticket by email — attach their invitation card and/or unique QR code, write a message, then approve. Each guest's ticket is unique to them, so like Follow Up, this is done one at a time rather than in bulk.</div>
+      <div class="followup-warn">Approving sends each guest their official Legacy Night ticket by email — one per person in the party, each with their own name and unique QR code. Open a guest to attach an invitation card, or use <strong>Send All</strong> below to work through everyone waiting.</div>
+
+      <div class="bulk-panel">
+        <div class="bulk-head">
+          <div>
+            <h4>Send tickets to everyone waiting</h4>
+            <p>Processes one guest at a time so a single failure can't stop the rest. Anyone already approved is skipped, so it's safe to run again.</p>
+          </div>
+          <button class="dash-btn-gold" onclick="startBulkApproval()">🎫 Send All</button>
+        </div>
+        <label class="bulk-msg-label">Message for every email
+          <input type="text" id="bulk-message" value="Your Legacy Night Ticket" placeholder="Subject line for the ticket emails">
+        </label>
+        <p class="bulk-note">Attachments aren't included in a bulk send — if a guest needs an invitation card attached, open them individually.</p>
+        <div id="bulk-progress"></div>
+      </div>
       <div class="dash-panel-title">Awaiting Approval <span>${pendingGuests.length} guest${pendingGuests.length===1?'':'s'}</span></div>
       <div class="dash-search-row">
         <input type="text" placeholder="Search by name or email…" value="${_approveSearchTerm}" id="search-approvals" oninput="searchInputChanged(this,function(v){_approveSearchTerm=v;},renderApprovalsTab,'approvals')">
@@ -7313,8 +7409,15 @@ function handleQRScanResultInner(data) {
       const alreadyIn = !!(checkins[idx] && checkins[idx].checked_in);
       // Names come from the sheet, which staff can edit — escape them
       // so a stray angle bracket can never become markup on screen.
+      // Show only THIS person's seat. guest.seat_number holds the whole
+      // party's allocation ("3,4,5"), so using it directly told a guest
+      // at the door "Seat 3,4,5" — three numbers, none of them clearly
+      // theirs. seatedPartyMembers() splits that list across the party
+      // in order, so index 2 gets seat 5.
+      const _thisPerson = seatedPartyMembers(guest)[idx];
+      const _mySeat = _thisPerson ? _thisPerson.seat : '';
       const seatHtml = guest.table_number
-        ? `<span class="qr-scanner-result-seat">🪑 Table ${escHtmlV(guest.table_number)}${guest.seat_number ? ' · Seat ' + escHtmlV(guest.seat_number) : ''}</span>`
+        ? `<span class="qr-scanner-result-seat">🪑 Table ${escHtmlV(guest.table_number)}${_mySeat ? ' · Seat ' + escHtmlV(_mySeat) : ''}</span>`
         : `<span class="qr-scanner-result-noseat">No table assigned yet</span>`;
 
       if (alreadyIn) {
@@ -7622,13 +7725,222 @@ function doorsCheckIn(ts, idx, name) {
   confirmManualCheckIn(ts, true, idx, name);
 }
 
-function openApproveModal(ts) {
+/* ══════════════════════════════════════════════════════════════════
+   BULK APPROVAL — sending a hundred-plus tickets in one sitting
+   ──────────────────────────────────────────────────────────────────
+   Approving one guest at a time is fine for a handful. For a full
+   guest list it is an hour of clicking, and any interruption loses
+   your place.
+
+   DESIGN CHOICE: guests are processed ONE REQUEST AT A TIME from the
+   browser, not handed to the server as a single job.
+
+   Sending each guest separately costs a little throughput but buys
+   the properties that matter for something irreversible:
+     · Apps Script kills any single execution at six minutes. A
+       hundred-plus emails with attachments would risk hitting that
+       and leaving the batch half-done with no record of where.
+     · One guest failing (a bad address, a transient error) must not
+       stop the other ninety-nine.
+     · Progress is real and visible, and the run can be paused or
+       stopped without losing what has already been sent.
+     · Each send is verified, so the count of "sent" is true rather
+       than the count of "requests fired".
+
+   Already-approved guests are skipped, so re-running after a stop
+   picks up exactly where it left off and never double-sends.
+══════════════════════════════════════════════════════════════════ */
+let _bulkState = null;   // { queue, done, failed, skipped, stopped, paused }
+
+function bulkApprovableGuests() {
+  return _dashGuestsCache.filter(function (g) { return !g.approved && g.email; });
+}
+
+async function startBulkApproval() {
+  if (_bulkState && !_bulkState.stopped) { showDashToast('A batch is already running.'); return; }
+
+  const targets = bulkApprovableGuests();
+  if (!targets.length) { showDashToast('✓ Everyone with an email address is already approved.'); return; }
+
+  const noEmail = _dashGuestsCache.filter(function (g) { return !g.approved && !g.email; }).length;
+  const totalEmails = targets.reduce(function (s, g) {
+    return s + 1 + parseAdditionalGuestsDetail(g).length;
+  }, 0);
+
+  const message = (document.getElementById('bulk-message') || {}).value || 'Your Legacy Night Ticket';
+
+  const ok = await appConfirm({
+    title: 'Send tickets to ' + targets.length + ' guests?',
+    message: 'This sends <strong>' + totalEmails + ' ticket emails</strong> across <strong>' +
+             targets.length + ' bookings</strong> — one per person, each with their own QR code.',
+    sub: 'Sent one guest at a time so a single failure can\'t stop the rest. You can pause or stop at any point, ' +
+         'and anyone already approved is skipped.' +
+         (noEmail ? ' <strong>' + noEmail + '</strong> guest(s) have no email address and will be left for the QR Generator tab.' : ''),
+    confirmLabel: '🎫 Send ' + totalEmails + ' tickets',
+  });
+  if (!ok) return;
+
+  _bulkState = { queue: targets.slice(), total: targets.length, done: 0, failed: [], stopped: false, paused: false, message: message };
+  renderBulkProgress();
+  runBulkApproval();
+}
+
+function pauseBulkApproval()  { if (_bulkState) { _bulkState.paused = true;  renderBulkProgress(); } }
+function resumeBulkApproval() { if (_bulkState) { _bulkState.paused = false; renderBulkProgress(); runBulkApproval(); } }
+function stopBulkApproval()   { if (_bulkState) { _bulkState.stopped = true; renderBulkProgress(); } }
+
+async function runBulkApproval() {
+  const st = _bulkState;
+  if (!st) return;
+
+  while (st.queue.length && !st.stopped && !st.paused) {
+    const guest = st.queue.shift();
+
+    // Re-check: another device may have approved this guest while the
+    // batch was running.
+    const live = _dashGuestsCache.find(function (g) { return g.ts === guest.ts; });
+    if (!live || live.approved) { st.done++; renderBulkProgress(); continue; }
+
+    try {
+      const result = await approveOneGuest(live, st.message);
+      if (result.status === 'error') {
+        st.failed.push({ name: ((live.fname || '') + ' ' + (live.lname || '')).trim(), reason: result.message });
+      } else {
+        live.approved = true;
+        live.approved_at = new Date().toISOString();
+      }
+    } catch (e) {
+      st.failed.push({ name: ((live.fname || '') + ' ' + (live.lname || '')).trim(), reason: e.message || 'Unexpected error' });
+    }
+
+    st.done++;
+    renderBulkProgress();
+    renderApprovalsTab();
+
+    // A short gap between guests. Gmail and Apps Script both behave
+    // better with a little space than with a tight loop, and it keeps
+    // the interface responsive enough to press Pause.
+    await new Promise(function (r) { setTimeout(r, 350); });
+  }
+
+  if (!st.queue.length || st.stopped) {
+    const failed = st.failed.length;
+    showDashToast(
+      st.stopped
+        ? '⏹ Stopped — ' + st.done + ' processed, ' + failed + ' failed'
+        : '✓ Finished — ' + (st.done - failed) + ' sent' + (failed ? ', ' + failed + ' failed' : '')
+    );
+    renderBulkProgress();
+    renderOverviewTab();
+  }
+}
+
+// Generates this guest's QR codes and sends their tickets. Mirrors the
+// single-guest path exactly, so both routes produce identical emails.
+async function approveOneGuest(guest, message) {
+  const fullName = ((guest.fname || '') + ' ' + (guest.lname || '')).trim() || 'Guest';
+  const additional = parseAdditionalGuestsDetail(guest);
+  const people = [{ idx: 0, name: fullName }].concat(
+    additional.map(function (g, i) { return { idx: i + 1, name: g.name || ('Guest ' + (i + 2)) }; })
+  );
+
+  const recipients = [];
+  for (const person of people) {
+    const blob = await generateQRBlobFor(guest.ts, person.idx);
+    recipients.push({
+      idx: person.idx,
+      name: person.name,
+      qr_filename: person.name.replace(/[^a-z0-9]/gi, '_') + '-QR-Code.png',
+      qr_base64: await blobToBase64(blob)
+    });
+  }
+
+  return postToSheetsVerified({
+    action: 'approveGuest',
+    ts: guest.ts,
+    approve: true,
+    message: message,
+    recipients: recipients,
+    extra_files: [],
+    session_token: _sessionToken,
+    staff_name: _currentUser ? _currentUser.name : ''
+  });
+}
+
+// Renders one QR off-screen and hands back a PNG blob.
+function generateQRBlobFor(ts, idx) {
+  return new Promise(function (resolve, reject) {
+    ensureQRGenLibLoaded(function () {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = 640; canvas.height = 640;
+        const payload = 'https://legacynight.pbis.edu.la/?ticket=1&ts=' + encodeURIComponent(ts) + '&idx=' + idx;
+        const qr = qrcode(0, 'M');
+        qr.addData(payload);
+        qr.make();
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, 640, 640);
+        const count = qr.getModuleCount();
+        const size = Math.floor(560 / count);
+        const off = Math.floor((640 - size * count) / 2);
+        ctx.fillStyle = '#000';
+        for (let r = 0; r < count; r++) {
+          for (let cc = 0; cc < count; cc++) {
+            if (qr.isDark(r, cc)) ctx.fillRect(off + cc * size, off + r * size, size, size);
+          }
+        }
+        canvas.toBlob(function (blob) {
+          blob ? resolve(blob) : reject(new Error('Could not render the QR code'));
+        }, 'image/png');
+      } catch (e) { reject(e); }
+    });
+  });
+}
+
+function renderBulkProgress() {
+  const el = document.getElementById('bulk-progress');
+  if (!el) return;
+  const st = _bulkState;
+  if (!st) { el.innerHTML = ''; return; }
+
+  const pct = st.total ? Math.round((st.done / st.total) * 100) : 0;
+  const finished = st.stopped || !st.queue.length;
+  const sent = st.done - st.failed.length;
+
+  el.innerHTML =
+    '<div class="bulk-bar"><div class="bulk-bar-fill" style="width:' + pct + '%;"></div></div>' +
+    '<div class="bulk-row">' +
+      '<span class="bulk-count"><strong>' + st.done + '</strong> of ' + st.total + ' bookings · ' +
+        sent + ' sent' + (st.failed.length ? ' · <em>' + st.failed.length + ' failed</em>' : '') + '</span>' +
+      (finished
+        ? '<button class="dash-btn" onclick="_bulkState=null;renderBulkProgress();">Clear</button>'
+        : (st.paused
+            ? '<span><button class="dash-btn-gold" onclick="resumeBulkApproval()">Resume</button>' +
+              '<button class="dash-btn" style="margin-left:8px;" onclick="stopBulkApproval()">Stop</button></span>'
+            : '<span><button class="dash-btn" onclick="pauseBulkApproval()">Pause</button>' +
+              '<button class="dash-btn" style="margin-left:8px;" onclick="stopBulkApproval()">Stop</button></span>')) +
+    '</div>' +
+    (st.failed.length
+      ? '<div class="bulk-failed"><strong>Not sent — please retry these:</strong>' +
+        st.failed.slice(0, 12).map(function (f) {
+          return '<div>' + escHtmlV(f.name) + ' <span>' + escHtmlV(f.reason) + '</span></div>';
+        }).join('') +
+        (st.failed.length > 12 ? '<div><span>+ ' + (st.failed.length - 12) + ' more</span></div>' : '') +
+        '<p class="bulk-hint">Run the batch again — anyone already sent is skipped automatically.</p></div>'
+      : '');
+}
+
+function openApproveModal(ts, opts) {
+  opts = opts || {};
   const guest = _dashGuestsCache.find(g => g.ts === ts);
   if (!guest) return;
   if (!guest.email) { showDashToast('⚠️ This guest has no email address on file.'); return; }
 
   _approveTargetTs = ts;
-  _approveFiles = [];
+  // Attachments are usually the same invitation card for everyone, so
+  // when moving straight to the next guest they're carried over rather
+  // than re-picked a hundred times.
+  if (!opts.keepFiles) _approveFiles = [];
   _approveRecipients = [];
 
   const fullName = `${guest.fname||''} ${guest.lname||''}`.trim() || 'Guest';
@@ -7638,10 +7950,21 @@ function openApproveModal(ts) {
   document.getElementById('approve-modal-recipient').textContent = `To: ${guest.email}`;
   document.getElementById('approve-modal-recipient-count').textContent = 1 + additionalGuests.length;
   document.getElementById('approve-modal-ts').value = ts;
-  document.getElementById('approve-modal-message').value = 'Your Legacy Night Ticket';
+  // Carry the previous message forward when working through the list.
+  document.getElementById('approve-modal-message').value = opts.message || 'Your Legacy Night Ticket';
   document.getElementById('approve-modal-file-input').value = '';
   renderApproveFileList();
   generateAllApproveQRs(ts, fullName, additionalGuests);
+
+  // Progress indicator + the option to stop auto-advancing.
+  const remaining = _dashGuestsCache.filter(function (g) { return !g.approved && g.email; }).length;
+  const prog = document.getElementById('approve-progress');
+  if (prog) {
+    prog.innerHTML = '<label class="approve-keepgoing">' +
+      '<input type="checkbox" ' + (_approveKeepGoing ? 'checked' : '') +
+      ' onchange="setApproveKeepGoing(this.checked)"> Keep going to the next guest after sending</label>' +
+      '<span class="approve-remaining">' + remaining + ' still to approve</span>';
+  }
 
   const sendBtn = document.getElementById('approve-modal-send-btn');
   sendBtn.textContent = '🎫 Approve & Send Ticket(s)';
@@ -7651,11 +7974,12 @@ function openApproveModal(ts) {
   document.body.style.overflow = 'hidden';
 }
 
-function closeApproveModal() {
+function closeApproveModal(opts) {
+  opts = opts || {};
   document.getElementById('approve-modal-backdrop').classList.remove('open');
-  document.body.style.overflow = '';
+  if (!opts.keepFiles) document.body.style.overflow = '';
   _approveTargetTs = null;
-  _approveFiles = [];
+  if (!opts.keepFiles) _approveFiles = [];
   _approveRecipients = [];
   _approveExpectedCount = 0;
 }
@@ -7719,6 +8043,22 @@ function updateApproveButtonState() {
   btn.disabled = !(message && allQrsReady);
 }
 
+// Approvals are worked through in list order, so "next" means the next
+// one still waiting after the one just done — not simply the first in
+// the list, which would bounce back and forth.
+let _approveKeepGoing = true;
+
+function setApproveKeepGoing(v) { _approveKeepGoing = !!v; }
+
+function nextUnapprovedGuest(afterTs) {
+  const list = _dashGuestsCache.filter(function (g) { return !g.approved && g.email; });
+  if (!list.length) return null;
+  const i = list.findIndex(function (g) { return g.ts === afterTs; });
+  // If the one just approved was in the list, take the following entry;
+  // otherwise start from the top.
+  return (i >= 0 ? list[i + 1] : list[0]) || list[0] || null;
+}
+
 async function submitApproveGuest() {
   const ts = _approveTargetTs;
   const guest = _dashGuestsCache.find(g => g.ts === ts);
@@ -7772,10 +8112,14 @@ async function submitApproveGuest() {
       session_token: _sessionToken,
       staff_name: _currentUser ? _currentUser.name : ''
     };
-    const result = await postToSheets(payload);
+    // Verified, not fire-and-forget. Sending tickets is irreversible
+    // and slow (Gmail, per recipient), so it is exactly the action
+    // where a false "sent" is most damaging: staff move on believing a
+    // guest has their QR code when the server actually refused.
+    const result = await postToSheetsVerified(payload);
 
     if (result.status === 'error') {
-      showDashToast('⚠️ Could not reach the server — tickets were NOT sent. Check your connection and try again.');
+      showDashToast('⚠️ Tickets were NOT sent — ' + (result.message || 'the server rejected the request.'));
       btn.disabled = false;
       btn.textContent = '🎫 Approve & Send Ticket(s)';
       return;
@@ -7785,9 +8129,24 @@ async function submitApproveGuest() {
     guest.approved_at = new Date().toISOString();
 
     showDashToast(`🎫 ${partyCount} ticket${partyCount === 1 ? '' : 's'} sent to ${guest.email}`);
-    closeApproveModal();
     renderApprovalsTab();
     renderOverviewTab();
+
+    // With a hundred guests to approve, closing the dialog and making
+    // someone hunt for the next name turns a five-second job into a
+    // twenty-second one, a hundred times over. If "keep going" is on,
+    // jump straight to the next guest still waiting, carrying the same
+    // message and attachments forward.
+    if (_approveKeepGoing) {
+      const next = nextUnapprovedGuest(ts);
+      if (next) {
+        closeApproveModal({ keepFiles: true });
+        setTimeout(function () { openApproveModal(next.ts, { message: message }); }, 220);
+        return;
+      }
+      showDashToast('✓ Everyone with an email address has been approved.');
+    }
+    closeApproveModal();
   } catch (e) {
     showDashToast('⚠️ Something went wrong preparing the tickets — please try again.');
     btn.disabled = false;
