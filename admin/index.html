@@ -1283,6 +1283,14 @@ button,.dash-tab,.fp-chip,.cat-chip,.kiosk-hit,.gplan-hit{touch-action:manipulat
 .bulk-failed div{margin-top:6px;}
 .bulk-failed span{color:#a4453e;font-size:11.5px;}
 .bulk-hint{margin-top:9px;font-size:12px;color:var(--gray-mid);font-style:italic;}
+
+/* ── Monitor: continue control + dwell timer ── */
+.monitor-controls{display:flex;flex-direction:column;align-items:center;gap:16px;margin-top:clamp(28px,4vh,52px);}
+.monitor-continue{padding:clamp(13px,1.6vh,19px) clamp(30px,3vw,52px);border:2px solid rgba(232,201,110,.6);border-radius:100px;background:rgba(232,201,110,.14);color:var(--gold-light);font-size:clamp(14px,1.2vw,19px);font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;transition:background .18s ease,border-color .18s ease;}
+.monitor-continue:hover,.monitor-continue:active{background:var(--gold);border-color:var(--gold-light);color:var(--deep);}
+.monitor-continue span{display:inline-block;margin-left:9px;font-size:.78em;font-weight:600;opacity:.75;}
+.monitor-timer{width:clamp(180px,22vw,320px);height:4px;border-radius:100px;background:rgba(250,247,240,.14);overflow:hidden;}
+.monitor-timer-fill{height:100%;width:100%;border-radius:100px;background:linear-gradient(90deg,var(--gold),var(--gold-light));}
 </style>
 </head>
 <body>
@@ -1346,6 +1354,7 @@ button,.dash-tab,.fp-chip,.cat-chip,.kiosk-hit,.gplan-hit{touch-action:manipulat
       <button class="dash-btn" onclick="openCommandPalette()" title="Search guests or jump to a tab (Ctrl/Cmd+K)">🔍 Search</button>
       <button class="dash-btn dash-btn-doors" onclick="enterDoorsMode()">🚪 Doors Mode</button>
       <button class="dash-btn" onclick="chooseMonitorLane()" title="Opens a full-screen 'Welcome' display for a screen at the door">📺 Open Monitor</button>
+      <button class="dash-btn" onclick="openSelfCheckInKiosk()" title="Opens the self-service screen where a guest can scan or type their own name">🙋 Guest Kiosk</button>
       <button class="dash-btn-logout" onclick="dashLogout(true)">Log Out</button>
     </div>
   </div>
@@ -5895,6 +5904,14 @@ function catKeySafe(n) {
   return String(n || '').replace(/\s+/g, ' ').trim().toLowerCase();
 }
 
+// Opens the self-service kiosk in its own tab. Missing until now —
+// the mode existed but there was no way to launch it from the
+// dashboard, so it could only be reached by typing the URL.
+function openSelfCheckInKiosk() {
+  const base = window.location.origin + window.location.pathname;
+  window.open(base + '?kiosk=1', '_blank');
+}
+
 function enterKioskMode() {
   requestWakeLock();
   const el = document.getElementById('kiosk-view');
@@ -6083,7 +6100,11 @@ function enterMonitorMode() {
   // screen keeps pace with the door, and the request is tiny — it
   // sends the timestamp of the last arrival already shown, so an idle
   // poll returns an empty list rather than the whole recent history.
-  _monitorPollInterval = setInterval(pollForRecentCheckIn, 1000);
+  // 400ms rather than 1s. The request is tiny — it sends the timestamp
+  // of the last name shown, so an idle poll returns an empty list — and
+  // the difference is the gap between a guest seeing their name as they
+  // step away from the desk versus a beat too late.
+  _monitorPollInterval = setInterval(pollForRecentCheckIn, 400);
 }
 
 async function pollForRecentCheckIn() {
@@ -6106,7 +6127,9 @@ async function pollForRecentCheckIn() {
       // If several people arrive at once, don't let the backlog grow
       // into a long parade of stale names — keep it current.
       if (_monitorQueue.length > 8) _monitorQueue = _monitorQueue.slice(-8);
-      drainMonitorQueue();
+      // A fresh arrival replaces whoever is on screen straight away —
+      // the guest at the desk right now matters more than the previous one.
+      drainMonitorQueue(true);
     }
   } catch (e) {
     // Silent — the monitor keeps showing whatever it last showed and
@@ -6117,14 +6140,30 @@ async function pollForRecentCheckIn() {
 // Shows queued arrivals one after another, so two guests checking in
 // seconds apart both get their moment on screen instead of the second
 // one instantly replacing the first.
-function drainMonitorQueue() {
-  if (_monitorShowing || !_monitorQueue.length) return;
+/* Each guest holds the screen for up to MONITOR_DWELL_MS. Three things
+   can end it early, all of them correct:
+     · another guest checks in — the newest arrival is what the person
+       standing at the desk needs to see, so it takes over at once
+     · a staff member presses Continue
+     · the dwell expires
+   Nobody has to wait behind a name that is no longer relevant.       */
+const MONITOR_DWELL_MS = 20000;
+
+function drainMonitorQueue(force) {
+  if (!_monitorQueue.length) return;
+  if (_monitorShowing && !force) return;
   const next = _monitorQueue.shift();
   _monitorShowing = true;
-  // Shorter dwell when people are backed up, so the display keeps pace
-  // with the door instead of falling further behind.
-  const dwell = _monitorQueue.length >= 3 ? 2600 : (_monitorQueue.length >= 1 ? 3800 : 6000);
-  showMonitorWelcome(next.name, next.table, next.seat, dwell);
+  showMonitorWelcome(next.name, next.table, next.seat, MONITOR_DWELL_MS);
+}
+
+// Skips the guest currently on screen and moves to the next, or back
+// to the waiting screen if nobody is queued.
+function monitorContinue() {
+  if (_monitorResetTimeout) clearTimeout(_monitorResetTimeout);
+  _monitorShowing = false;
+  if (_monitorQueue.length) drainMonitorQueue();
+  else resetMonitorToWaiting();
 }
 
 function showMonitorWelcome(name, table, seat, dwell) {
@@ -6133,13 +6172,31 @@ function showMonitorWelcome(name, table, seat, dwell) {
   const seatLine = table
     ? `<p class="monitor-seat">Table ${table}${seat ? ' &middot; Seat ' + seat : ''}</p>`
     : '';
+  const queued = _monitorQueue.length;
   el.innerHTML = `
     <div class="monitor-welcome">
       <div class="monitor-check"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></div>
       <h1>Welcome,</h1>
-      <h2>${name}</h2>
+      <h2>${escHtmlV(name)}</h2>
       ${seatLine}
+      <div class="monitor-controls">
+        <button class="monitor-continue" onclick="monitorContinue()">
+          Continue${queued ? ' <span>' + queued + ' waiting</span>' : ''}
+        </button>
+        <div class="monitor-timer"><div class="monitor-timer-fill" id="monitor-timer-fill"></div></div>
+      </div>
     </div>`;
+  // A slim bar draining over the dwell, so staff can see at a glance
+  // how long is left rather than guessing whether it has frozen.
+  const fill = document.getElementById('monitor-timer-fill');
+  if (fill) {
+    fill.style.transition = 'none';
+    fill.style.width = '100%';
+    requestAnimationFrame(function () {
+      fill.style.transition = 'width ' + (dwell || MONITOR_DWELL_MS) + 'ms linear';
+      fill.style.width = '0%';
+    });
+  }
   _monitorResetTimeout = setTimeout(function() {
     _monitorShowing = false;
     if (_monitorQueue.length) {
@@ -6884,14 +6941,29 @@ function generateAllApproveQRs(ts, primaryName, additionalGuests) {
         qr.make();
         const moduleCount = qr.getModuleCount();
         const size = canvas.width;
-        const cellSize = size / moduleCount;
+
+        // ── QUIET ZONE ──────────────────────────────────────────────
+        // The QR spec requires a clear margin of four modules around
+        // the code. Previously the pattern ran edge to edge, and the
+        // white page behind the email supplied that margin by accident.
+        // In a dark-mode inbox there is no white page — the code sits
+        // straight on a dark background with no border, and scanners
+        // cannot find its edges. Baking the margin into the image makes
+        // it scan the same in either mode.
+        const QUIET = 4;
+        const total = moduleCount + QUIET * 2;
+        const cellSize = size / total;
+
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, size, size);
-        ctx.fillStyle = '#0a2818';
+        // Pure black rather than brand green: maximum contrast is what
+        // a camera needs, and the difference isn't visible at this size.
+        ctx.fillStyle = '#000000';
         for (let row = 0; row < moduleCount; row++) {
           for (let col = 0; col < moduleCount; col++) {
             if (qr.isDark(row, col)) {
-              ctx.fillRect(col * cellSize, row * cellSize, Math.ceil(cellSize), Math.ceil(cellSize));
+              ctx.fillRect((col + QUIET) * cellSize, (row + QUIET) * cellSize,
+                           Math.ceil(cellSize), Math.ceil(cellSize));
             }
           }
         }
@@ -7891,9 +7963,14 @@ function generateQRBlobFor(ts, idx) {
         qr.make();
         const ctx = canvas.getContext('2d');
         ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, 640, 640);
+        // Same quiet-zone reasoning as the single-guest path: the white
+        // margin is part of the image so the code scans on any
+        // background, light or dark.
         const count = qr.getModuleCount();
-        const size = Math.floor(560 / count);
-        const off = Math.floor((640 - size * count) / 2);
+        const QUIET = 4;
+        const total = count + QUIET * 2;
+        const size = Math.floor(640 / total);
+        const off = Math.floor((640 - size * total) / 2) + size * QUIET;
         ctx.fillStyle = '#000';
         for (let r = 0; r < count; r++) {
           for (let cc = 0; cc < count; cc++) {
