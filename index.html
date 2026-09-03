@@ -916,7 +916,7 @@ body.role-usher .dash-btn-doors{display:none;}
         </div>
       </div>
     </div>
-    <button class="nav-cta" onclick="openRsvpClosed()">RSVP Now</button>
+    <button class="nav-cta" onclick="openRSVP()">RSVP Now</button>
   </div>
 </nav>
 
@@ -938,8 +938,8 @@ body.role-usher .dash-btn-doors{display:none;}
     <div class="hero-meta-item">🕔 <b>4:30 PM</b></div>
     <div class="hero-meta-item">📍 <b>Holiday Inn & Suites Vientiane</b></div>
   </div>
-  <button class="hero-cta" onclick="openRsvpClosed()">RSVP Now</button>
-  <p class="hero-note">Kindly RSVP by <strong>1 September 2026</strong> so we can prepare a seat for you.</p>
+  <button class="hero-cta" onclick="openRSVP()">RSVP Now</button>
+  <p class="hero-note">Kindly RSVP by <strong>7 September 2026</strong> so we can prepare a seat for you.</p>
   <div class="hero-scroll"><span>Scroll</span><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
 </section>
 <div class="section-wave-standalone section-wave-cream"><svg viewBox="0 0 1440 60" preserveAspectRatio="none"><path d="M0,32 C360,60 1080,0 1440,28 L1440,60 L0,60 Z"/></svg></div>
@@ -1025,7 +1025,7 @@ body.role-usher .dash-btn-doors{display:none;}
         <div class="detail-icon">✉️</div>
         <div class="deadline-text">
           <h4>Kindly RSVP By</h4>
-          <p>Tuesday, 1 September 2026</p>
+          <p>Monday, 7 September 2026</p>
           <span>So we can confirm catering and seating for you</span>
         </div>
       </div>
@@ -1036,7 +1036,7 @@ body.role-usher .dash-btn-doors{display:none;}
 <!-- FINAL CTA -->
 <section class="final-cta">
   <h2>We Look Forward to Celebrating With You</h2>
-  <button class="hero-cta" onclick="openRsvpClosed()">RSVP Now</button>
+  <button class="hero-cta" onclick="openRSVP()">RSVP Now</button>
   <div class="section-wave section-wave-white"><svg viewBox="0 0 1440 60" preserveAspectRatio="none"><path d="M0,28 C360,0 1080,60 1440,32 L1440,60 L0,60 Z"/></svg></div>
 </section>
 
@@ -1160,7 +1160,7 @@ body.role-usher .dash-btn-doors{display:none;}
         <div id="rsvp-step-1">
           <div class="rsvp-deadline-banner">
             <span style="font-size:16px;">✉️</span>
-            <span>Please RSVP by <strong>Tuesday, 1 September 2026</strong> so we can confirm catering and seating.</span>
+            <span>Please RSVP by <strong>Monday, 7 September 2026</strong> so we can confirm catering and seating.</span>
           </div>
           <div class="form-row two">
             <div>
@@ -1329,9 +1329,9 @@ let _sessionToken = null;
 // RSVP deadline — one place, used by every mention on the page so
 // they can never drift apart. RSVP_DEADLINE_TS is end-of-day so the
 // 1st itself still counts as on time.
-const RSVP_DEADLINE_TEXT = 'Tuesday, 1 September 2026';
-const RSVP_DEADLINE_SHORT = '1 September 2026';
-const RSVP_DEADLINE_TS = new Date('2026-09-01T23:59:59+07:00').getTime();
+const RSVP_DEADLINE_TEXT = 'Monday, 7 September 2026';
+const RSVP_DEADLINE_SHORT = '7 September 2026';
+const RSVP_DEADLINE_TS = new Date('2026-09-07T23:59:59+07:00').getTime();
 // Single source of truth for the event date/time — used by both the public
 // countdown timer and the admin dashboard's "Days Until Legacy Night" stat.
 // Change it here once and both stay in sync.
@@ -2305,15 +2305,7 @@ function resetRsvpDynamicFields() {
 }
 
 function handleRSVPSubmit(e) {
-  // Second line of defence. The buttons no longer open the form, but a
-  // cached page or a direct call could still reach here, and a guest
-  // must never be shown a confirmation for a booking that was refused.
-  if (e && e.preventDefault) e.preventDefault();
-  closeRSVP();
-  openRsvpClosed();
-  return false;
 
-  /* eslint-disable no-unreachable */
   e.preventDefault();
 
   if (!document.getElementById('rsvp-consent-check').checked) return;
@@ -2389,7 +2381,6 @@ function handleRSVPSubmit(e) {
     }
     finishRsvpSendingThen(function() { celebrateRsvpSuccess(guest.fname); });
   });
-  /* eslint-enable no-unreachable */
 }
 
 /* ── RSVP SENDING STATE ────────────────────────────────────────────
