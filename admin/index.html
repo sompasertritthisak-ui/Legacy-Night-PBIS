@@ -1296,6 +1296,15 @@ button,.dash-tab,.fp-chip,.cat-chip,.kiosk-hit,.gplan-hit{touch-action:manipulat
 .kiosk-status.warn{background:rgba(232,201,110,.18);color:var(--gold-light);border-color:var(--gold);}
 .kiosk-checkin{display:block;margin:clamp(20px,3vh,32px) auto 0;padding:clamp(15px,2vh,21px) clamp(32px,4vw,58px);border:none;border-radius:100px;background:linear-gradient(135deg,#2d9e5f,#3fbf78);color:#fff;font-size:clamp(15px,1.5vw,21px);font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;}
 .kiosk-checkin:active{transform:scale(.98);}
+
+/* ── Help overlay ── */
+.help-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--gray);}
+.help-tab{padding:9px 15px;border-radius:100px;border:1.5px solid var(--gray);background:var(--white);color:var(--gray-mid);font-size:12.5px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .16s ease;min-height:40px;}
+.help-tab:hover{border-color:var(--gold);}
+.help-tab.active{background:var(--navy);border-color:var(--navy);color:var(--gold-light);}
+.help-note{background:rgba(201,168,76,.1);border-left:3px solid var(--gold);border-radius:0 8px 8px 0;padding:11px 15px;font-size:13px;color:var(--navy);line-height:1.6;margin:14px 0;}
+.help-note b{color:#7a5f1c;}
+.help-row code{background:rgba(201,168,76,.18);padding:1px 6px;border-radius:4px;font-size:12px;font-family:'DM Mono',monospace;color:#7a5f1c;}
 </style>
 </head>
 <body>
@@ -1792,35 +1801,79 @@ button,.dash-tab,.fp-chip,.cat-chip,.kiosk-hit,.gplan-hit{touch-action:manipulat
 <!-- HELP OVERLAY — shown automatically on first login per browser,
      re-openable anytime from the ❓ Help button -->
 <div class="modal-backdrop notranslate" translate="no" id="help-backdrop" onclick="if(event.target===this)closeHelpOverlay()">
-  <div class="modal" style="max-width:540px;">
+  <div class="modal" style="max-width:660px;">
     <div class="modal-header">
       <button class="modal-close" aria-label="Close" onclick="closeHelpOverlay()">✕</button>
-      <h2>Welcome to the Legacy Night Dashboard</h2>
-      <p>A quick guide to what each tab does</p>
+      <h2>Legacy Night — Quick Guide</h2>
+      <p>What each part does, and where to find it</p>
     </div>
     <div class="edit-guest-body">
-      <div class="help-list">
-        <div class="help-row"><span class="help-icon">📊</span><div><b>Overview</b><p>Live stats, charts, and reports — including the catering sheet.</p></div></div>
-        <div class="help-row"><span class="help-icon">📋</span><div><b>Guest List</b><p>Every RSVP. Search, edit, delete, export, or add someone manually.</p></div></div>
-        <div class="help-row"><span class="help-icon">🎫</span><div><b>Approvals</b><p>Approve each guest and send their ticket — a unique QR code is generated automatically.</p></div></div>
-        <div class="help-row"><span class="help-icon">✅</span><div><b>Check-In</b><p>Day-of arrivals — scan a QR code or search by name.</p></div></div>
-        <div class="help-row"><span class="help-icon">⏰</span><div><b>Overdue</b><p>Mark guests who never arrived as a No-Show, after the event.</p></div></div>
-        <div class="help-row"><span class="help-icon">📧</span><div><b>Follow Up</b><p>Send a one-off message to an individual guest, with attachments.</p></div></div>
-        <div class="help-row"><span class="help-icon">🍽️</span><div><b>Tables</b><p>Assign guests to numbered tables for the seating chart.</p></div></div>
-        <div class="help-row"><span class="help-icon">🕐</span><div><b>Activity Log</b><p>Who did what, and when — every check-in, approval, and edit.</p></div></div>
-        <div class="help-row"><span class="help-icon">🚪</span><div><b>Doors Mode</b><p>A simplified, large-button view for whoever is at the door on the night.</p></div></div>
-        <div class="help-row"><span class="help-icon">🔍</span><div><b>Search</b><p>Press <kbd>Ctrl</kbd>/<kbd>Cmd</kbd> + <kbd>K</kbd> anytime to jump straight to a guest or tab.</p></div></div>
+
+      <div class="help-tabs">
+        <button class="help-tab active" onclick="showHelpSection('night',this)">On the night</button>
+        <button class="help-tab" onclick="showHelpSection('before',this)">Before the event</button>
+        <button class="help-tab" onclick="showHelpSection('screens',this)">Screens</button>
+        <button class="help-tab" onclick="showHelpSection('trouble',this)">If something breaks</button>
       </div>
-      <button class="form-submit" onclick="closeHelpOverlay()">Got it</button>
+
+      <!-- ── ON THE NIGHT ── -->
+      <div class="help-section" id="help-night">
+        <div class="help-note">Three ways to check a guest in. All three do exactly the same thing behind the scenes, so you can mix them freely.</div>
+        <div class="help-list">
+          <div class="help-row"><span class="help-icon">📱</span><div><b>Doors Mode — phone camera</b><p>Pick your lane (1, 2 or 3), then scan. The guest's table and seat appear immediately. Your phone won't sleep while this is open.</p></div></div>
+          <div class="help-row"><span class="help-icon">⌨️</span><div><b>Hardware scanner</b><p>Plug a USB or Bluetooth scanner into the desk PC — no setup needed. It works alongside the camera, so each desk has two independent ways to scan. A "⌨ Scanner" badge confirms each read.</p></div></div>
+          <div class="help-row"><span class="help-icon">✅</span><div><b>Check-In tab — by name</b><p>For anyone without a working QR code. Search their name, confirm, done. Companions are searchable too, so the +1 can arrive first.</p></div></div>
+        </div>
+        <div class="help-note">A guest can also check themselves in at the <b>Guest Kiosk</b> screen — useful when no one is free.</div>
+        <div class="help-list">
+          <div class="help-row"><span class="help-icon">🆔</span><div><b>Track ID</b><p>Every guest has a short reference like <code>LN-4KX7</code>, sent with their ticket. If a name is hard to catch, ask for this instead — it works in the Check-In search and on the kiosk.</p></div></div>
+          <div class="help-row"><span class="help-icon">⏰</span><div><b>Overdue</b><p>Who replied but hasn't arrived. Mark a no-show here once you're confident.</p></div></div>
+        </div>
+      </div>
+
+      <!-- ── BEFORE THE EVENT ── -->
+      <div class="help-section" id="help-before" style="display:none;">
+        <div class="help-list">
+          <div class="help-row"><span class="help-icon">📊</span><div><b>Overview</b><p>Live headcount, arrivals, VIPs, seating progress and catering numbers per person.</p></div></div>
+          <div class="help-row"><span class="help-icon">📋</span><div><b>Guest List</b><p>Every booking, with companions shown on their own indented row. Click any row to open it. Search covers companions and organisations.</p></div></div>
+          <div class="help-row"><span class="help-icon">🎫</span><div><b>Approvals</b><p>Sends each guest their ticket — one email per person, each with their own QR code. Use <b>Send All</b> to work through everyone waiting; it sends one at a time so a single failure can't stop the rest, and re-running only retries what failed.</p></div></div>
+          <div class="help-row"><span class="help-icon">📱</span><div><b>QR Generator</b><p>For guests with no email — builds a ticket image to send by WhatsApp.</p></div></div>
+          <div class="help-row"><span class="help-icon">🪑</span><div><b>Tables</b><p>Two views. <b>List</b> shows every person with their seat. <b>Floor plan</b> is a drag-and-drop map of the ballroom — drag a guest onto a table or a specific chair, or switch to Move mode to rearrange tables and add cocktail stands. Save the layout so every screen matches.</p></div></div>
+          <div class="help-row"><span class="help-icon">🗂</span><div><b>Categories</b><p>Drag every invited guest into their group — PBIS Parents, Diplomatic Guests and so on. A ✓ marks those who have replied, so you can see which groups are actually turning up.</p></div></div>
+          <div class="help-row"><span class="help-icon">🛡</span><div><b>Verify</b><p>Checks every RSVP against the official invitation list. Flags likely typos and anyone who replied without being invited.</p></div></div>
+          <div class="help-row"><span class="help-icon">⭐</span><div><b>VIP</b><p>Starred guests with arrival status, so you know who still needs greeting.</p></div></div>
+        </div>
+        <div class="help-note"><b>Online RSVP is closed.</b> New guests are added from the Guest List tab using <b>+ Add Guest</b>. Anyone who tries to RSVP on the public page is asked to contact us instead.</div>
+      </div>
+
+      <!-- ── SCREENS ── -->
+      <div class="help-section" id="help-screens" style="display:none;">
+        <div class="help-note">Open these from the top bar. Log in on the device once beforehand — the session lasts 14 days.</div>
+        <div class="help-list">
+          <div class="help-row"><span class="help-icon">📺</span><div><b>Open Monitor</b><p>The welcome screen behind the desk. Choose a lane so it shows only that desk's arrivals. Each name stays up to 20 seconds; <b>Continue</b> skips to the next, and a new arrival takes over immediately.</p></div></div>
+          <div class="help-row"><span class="help-icon">🙋</span><div><b>Guest Kiosk</b><p>Self-service. A guest scans their ticket to check themselves in, or types their name or Track ID to find their seat. Shows name, table and seat only.</p></div></div>
+          <div class="help-row"><span class="help-icon">🗺</span><div><b>Guest Screen</b><p>A touchscreen seating chart for guests — tap a table to see who's there, or search a name to have their table light up. Opened from the Tables tab.</p></div></div>
+          <div class="help-row"><span class="help-icon">🖨</span><div><b>Print Sheet</b><p>Paper backup for the desk: every guest by table and A–Z, with seats, meals and tick boxes. Print this before the event.</p></div></div>
+        </div>
+      </div>
+
+      <!-- ── TROUBLESHOOTING ── -->
+      <div class="help-section" id="help-trouble" style="display:none;">
+        <div class="help-list">
+          <div class="help-row"><span class="help-icon">📷</span><div><b>Camera won't open</b><p>Allow camera access when asked. If you dismissed it, close the tab and reopen. Use name search meanwhile — it checks people in the same way.</p></div></div>
+          <div class="help-row"><span class="help-icon">🔍</span><div><b>A QR code won't scan</b><p>Ask the guest to raise their screen brightness and hold the phone at arm's length rather than close. If it still won't read, search their name.</p></div></div>
+          <div class="help-row"><span class="help-icon">📶</span><div><b>"Can't reach the server"</b><p>Keep checking people in. Arrivals are saved on the device and sync automatically once the connection returns — a "⏳ pending" badge shows how many are waiting. Nothing is lost.</p></div></div>
+          <div class="help-row"><span class="help-icon">🙋</span><div><b>Someone isn't on the list</b><p>Search their companion's name and their organisation too — they may be a guest of another booking. If they genuinely aren't there, take their details on paper.</p></div></div>
+          <div class="help-row"><span class="help-icon">↩️</span><div><b>"Already checked in"</b><p>Another lane got there first, or the ticket was scanned twice. Their table and seat still show — read those out and let them through.</p></div></div>
+          <div class="help-row"><span class="help-icon">🔒</span><div><b>Approve button missing</b><p>That guest has no email address. Use the QR Generator tab and send by WhatsApp.</p></div></div>
+        </div>
+        <div class="help-note">Need a person? <b>sompasert.ritthisak@pbis.edu.la</b> · WhatsApp <b>77 489 869</b></div>
+      </div>
+
     </div>
   </div>
 </div>
 
-<!-- RECEPTION MONITOR — a passive, full-screen "Welcome" display for
-     screens at the door. Opened via ?monitor=1 in the URL on however
-     many screens you want (each just polls independently, no login
-     needed since it's read-only). Shows "Welcome, [Name]" the moment
-     a QR scan checks someone in, then resets itself automatically. -->
 <!-- ══════════════════════════════════════════════════════════════
      SELF-SERVICE KIOSK
      A screen a guest can use unaided when no staff member is free:
@@ -5515,7 +5568,21 @@ function openGuestDetailModal(ts) {
   document.body.style.overflow = 'hidden';
 }
 
+// The guide is split into four sections so a staff member at a door
+// isn't scrolling past pre-event admin to find the one thing they need.
+function showHelpSection(id, btn) {
+  ['night','before','screens','trouble'].forEach(function (s) {
+    const el = document.getElementById('help-' + s);
+    if (el) el.style.display = (s === id) ? 'block' : 'none';
+  });
+  document.querySelectorAll('.help-tab').forEach(function (b) { b.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+}
+
 function openHelpOverlay() {
+  // Always land on "On the night" — the section that matters when
+  // someone reaches for help under pressure.
+  showHelpSection('night', document.querySelector('.help-tab'));
   document.getElementById('help-backdrop').classList.add('open');
   document.body.style.overflow = 'hidden';
 }
