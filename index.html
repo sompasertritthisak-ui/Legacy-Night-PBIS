@@ -847,6 +847,30 @@ body.role-usher .dash-btn-doors{display:none;}
   .wa-float-btn{width:54px;height:54px;}
   .wa-panel{width:240px;}
 }
+
+/* ── RSVP closed panel ── */
+.rsvp-closed-modal{max-width:560px;background:linear-gradient(168deg,#0d2f1c 0%,#071a10 100%);border:1px solid rgba(201,168,76,.35);overflow:hidden;}
+.rsvp-closed-modal .modal-close{color:rgba(250,247,240,.55);}
+.rsvp-closed-modal .modal-close:hover{color:var(--gold-light);}
+.rsvp-closed-inner{padding:clamp(34px,5vw,52px) clamp(26px,4vw,46px) clamp(30px,4vw,44px);text-align:center;}
+.rsvp-closed-seal{width:64px;height:64px;margin:0 auto clamp(18px,2.5vh,26px);border-radius:50%;border:1.5px solid rgba(201,168,76,.5);background:rgba(201,168,76,.1);display:flex;align-items:center;justify-content:center;color:var(--gold-light);}
+.rsvp-closed-seal svg{width:28px;height:28px;}
+.rsvp-closed-eyebrow{font-size:10.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold);font-weight:700;}
+.rsvp-closed-inner h2{font-family:'Cinzel',serif;font-size:clamp(23px,3.4vw,33px);font-weight:700;color:var(--gold-light);line-height:1.2;margin-top:10px;}
+.rsvp-closed-rule{width:56px;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:clamp(16px,2.4vh,22px) auto;}
+.rsvp-closed-lead{font-size:15px;line-height:1.75;color:rgba(250,247,240,.72);max-width:44ch;margin:0 auto 14px;}
+.rsvp-closed-contacts{display:flex;flex-direction:column;gap:11px;margin:clamp(22px,3vh,30px) 0 clamp(16px,2vh,22px);}
+.rsvp-contact{display:flex;align-items:center;gap:15px;text-align:left;padding:15px 18px;border-radius:13px;border:1.5px solid rgba(201,168,76,.34);background:rgba(255,255,255,.045);text-decoration:none;transition:background .18s ease,border-color .18s ease,transform .12s ease;}
+.rsvp-contact:hover{background:rgba(232,201,110,.14);border-color:var(--gold-light);transform:translateY(-1px);}
+.rsvp-contact-icon{font-size:21px;flex-shrink:0;}
+.rsvp-contact-body{min-width:0;}
+.rsvp-contact-label{display:block;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);font-weight:700;}
+.rsvp-contact-value{display:block;font-size:15px;font-weight:600;color:var(--cream);margin-top:3px;word-break:break-word;}
+.rsvp-closed-foot{font-size:12.5px;color:rgba(250,247,240,.45);line-height:1.6;font-style:italic;}
+@media (max-width:520px){
+  .rsvp-contact{padding:14px;}
+  .rsvp-contact-value{font-size:13.5px;}
+}
 </style>
 </head>
 <body>
@@ -892,7 +916,7 @@ body.role-usher .dash-btn-doors{display:none;}
         </div>
       </div>
     </div>
-    <button class="nav-cta" onclick="openRSVP()">RSVP Now</button>
+    <button class="nav-cta" onclick="openRsvpClosed()">RSVP Now</button>
   </div>
 </nav>
 
@@ -914,7 +938,7 @@ body.role-usher .dash-btn-doors{display:none;}
     <div class="hero-meta-item">🕔 <b>4:30 PM</b></div>
     <div class="hero-meta-item">📍 <b>Holiday Inn & Suites Vientiane</b></div>
   </div>
-  <button class="hero-cta" onclick="openRSVP()">RSVP Now</button>
+  <button class="hero-cta" onclick="openRsvpClosed()">RSVP Now</button>
   <p class="hero-note">Kindly RSVP by <strong>1 September 2026</strong> so we can prepare a seat for you.</p>
   <div class="hero-scroll"><span>Scroll</span><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
 </section>
@@ -1012,7 +1036,7 @@ body.role-usher .dash-btn-doors{display:none;}
 <!-- FINAL CTA -->
 <section class="final-cta">
   <h2>We Look Forward to Celebrating With You</h2>
-  <button class="hero-cta" onclick="openRSVP()">RSVP Now</button>
+  <button class="hero-cta" onclick="openRsvpClosed()">RSVP Now</button>
   <div class="section-wave section-wave-white"><svg viewBox="0 0 1440 60" preserveAspectRatio="none"><path d="M0,28 C360,0 1080,60 1440,32 L1440,60 L0,60 Z"/></svg></div>
 </section>
 
@@ -1058,6 +1082,61 @@ body.role-usher .dash-btn-doors{display:none;}
 </div>
 
 <!-- RSVP MODAL -->
+<!-- ══════════════════════════════════════════════════════════════
+     RSVP CLOSED
+     Online replies are no longer accepted; the guest list is managed
+     by the team directly. This panel replaces the form so a guest who
+     clicks RSVP gets a clear next step rather than a dead button or a
+     submission that silently goes nowhere.
+     The server also refuses public submissions — see RSVP_PUBLIC_OPEN
+     in code.gs — so this cannot be bypassed by anyone technical.
+══════════════════════════════════════════════════════════════ -->
+<div class="modal-backdrop" id="rsvp-closed-backdrop" onclick="if(event.target===this)closeRsvpClosed()">
+  <div class="modal rsvp-closed-modal">
+    <button class="modal-close" onclick="closeRsvpClosed()" aria-label="Close">&times;</button>
+    <div class="rsvp-closed-inner">
+      <div class="rsvp-closed-seal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="10" rx="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+      </div>
+
+      <p class="rsvp-closed-eyebrow">PBIS Legacy Night &middot; 25th Anniversary</p>
+      <h2>Online RSVP Is Now Closed</h2>
+      <div class="rsvp-closed-rule"></div>
+      <p class="rsvp-closed-lead">
+        Our guest list is now being finalised by hand so that every place, table and dietary
+        requirement is confirmed correctly. We would still be delighted to welcome you.
+      </p>
+      <p class="rsvp-closed-lead">
+        Please contact us directly and we will add you to the guest list personally.
+      </p>
+
+      <div class="rsvp-closed-contacts">
+        <a class="rsvp-contact" href="mailto:PBISLegacynight@pbis.edu.la?subject=Legacy%20Night%20RSVP%20Request">
+          <span class="rsvp-contact-icon">✉️</span>
+          <span class="rsvp-contact-body">
+            <span class="rsvp-contact-label">Email us</span>
+            <span class="rsvp-contact-value">PBISLegacynight@pbis.edu.la</span>
+          </span>
+        </a>
+        <a class="rsvp-contact" href="https://wa.me/85677489869" target="_blank" rel="noopener">
+          <span class="rsvp-contact-icon">💬</span>
+          <span class="rsvp-contact-body">
+            <span class="rsvp-contact-label">WhatsApp</span>
+            <span class="rsvp-contact-value">77 489 869</span>
+          </span>
+        </a>
+      </div>
+
+      <p class="rsvp-closed-foot">
+        Please include your full name, organisation, and the names of anyone joining you.
+      </p>
+    </div>
+  </div>
+</div>
+
 <div class="modal-backdrop" id="rsvp-backdrop" onclick="if(event.target===this)guardedCloseRSVP()">
   <div class="modal">
     <div class="modal-header">
@@ -1646,6 +1725,25 @@ function setLanguage(langCode) {
   location.reload();
 }
 
+/* ── RSVP CLOSED ───────────────────────────────────────────────────
+   Online replies are closed. Rather than hiding the RSVP buttons —
+   which leaves a guest wondering what happened — they now open a panel
+   explaining the position and giving two direct ways to reach the
+   team. A guest is never left with nothing to do.                   */
+function openRsvpClosed() {
+  const el = document.getElementById('rsvp-closed-backdrop');
+  if (!el) return;
+  el.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeRsvpClosed() {
+  const el = document.getElementById('rsvp-closed-backdrop');
+  if (!el) return;
+  el.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
 function openRSVP() {
   document.getElementById('rsvp-backdrop').classList.add('open');
   document.body.style.overflow = 'hidden';
@@ -2207,6 +2305,15 @@ function resetRsvpDynamicFields() {
 }
 
 function handleRSVPSubmit(e) {
+  // Second line of defence. The buttons no longer open the form, but a
+  // cached page or a direct call could still reach here, and a guest
+  // must never be shown a confirmation for a booking that was refused.
+  if (e && e.preventDefault) e.preventDefault();
+  closeRSVP();
+  openRsvpClosed();
+  return false;
+
+  /* eslint-disable no-unreachable */
   e.preventDefault();
 
   if (!document.getElementById('rsvp-consent-check').checked) return;
@@ -2282,6 +2389,7 @@ function handleRSVPSubmit(e) {
     }
     finishRsvpSendingThen(function() { celebrateRsvpSuccess(guest.fname); });
   });
+  /* eslint-enable no-unreachable */
 }
 
 /* ── RSVP SENDING STATE ────────────────────────────────────────────
