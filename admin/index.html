@@ -1291,6 +1291,11 @@ button,.dash-tab,.fp-chip,.cat-chip,.kiosk-hit,.gplan-hit{touch-action:manipulat
 .monitor-continue span{display:inline-block;margin-left:9px;font-size:.78em;font-weight:600;opacity:.75;}
 .monitor-timer{width:clamp(180px,22vw,320px);height:4px;border-radius:100px;background:rgba(250,247,240,.14);overflow:hidden;}
 .monitor-timer-fill{height:100%;width:100%;border-radius:100px;background:linear-gradient(90deg,var(--gold),var(--gold-light));}
+
+.kiosk-status{display:inline-block;font-size:clamp(13px,1.5vw,18px);font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:8px 20px;border-radius:100px;background:rgba(45,158,95,.2);color:#8fe0b4;border:1.5px solid #2d9e5f;margin-bottom:14px;}
+.kiosk-status.warn{background:rgba(232,201,110,.18);color:var(--gold-light);border-color:var(--gold);}
+.kiosk-checkin{display:block;margin:clamp(20px,3vh,32px) auto 0;padding:clamp(15px,2vh,21px) clamp(32px,4vw,58px);border:none;border-radius:100px;background:linear-gradient(135deg,#2d9e5f,#3fbf78);color:#fff;font-size:clamp(15px,1.5vw,21px);font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;}
+.kiosk-checkin:active{transform:scale(.98);}
 </style>
 </head>
 <body>
@@ -1555,37 +1560,46 @@ button,.dash-tab,.fp-chip,.cat-chip,.kiosk-hit,.gplan-hit{touch-action:manipulat
         </div>
       </div>
       <div class="form-row">
-        <label>Email *</label>
-        <input type="email" id="add-email" required>
+        <label>Email <span style="text-transform:none;">(optional)</span></label>
+        <input type="email" id="add-email" placeholder="Leave blank if none — they'll get a WhatsApp ticket instead">
       </div>
       <div class="form-row">
         <label>Phone *</label>
         <input type="tel" id="add-phone" required>
       </div>
       <div class="form-row">
-        <label>Organization</label>
-        <input type="text" id="add-organization">
+        <label>Organisation *</label>
+        <input type="text" id="add-organization" required>
       </div>
       <div class="form-row two">
-        <div>
-          <label>Party Size <span style="text-transform:none;">(incl. this guest, max 3)</span></label>
-          <input type="number" id="add-guest-count" min="1" max="3" step="1" value="1">
-        </div>
-        <div>
-          <label>Additional Guest Names</label>
-          <input type="text" id="add-additional-guests" placeholder="Comma-separated">
-        </div>
       </div>
+
+      <div class="form-row">
+        <label>Main Course</label>
+        <select id="add-course-main">
+          <option value="">Not chosen yet</option>
+          <option value="Australian Wagyu Beef (Meat)">Australian Wagyu Beef (Meat)</option>
+          <option value="Pan Seared Barramundi (Fish)">Pan Seared Barramundi (Fish)</option>
+          <option value="Pan Seared Mushrooms (Vegetarian)">Pan Seared Mushrooms (Vegetarian)</option>
+        </select>
+      </div>
+
+      <div class="edit-section-divider"><span>Additional Guests</span></div>
+      <div id="add-additional-list"></div>
+      <button type="button" class="edit-add-guest-btn" id="add-add-guest-btn" onclick="addNewGuestRow()">+ Add Guest</button>
+
+      <div class="edit-section-divider"><span>Internal — not shown to the guest</span></div>
       <div class="form-row two">
         <div>
-          <label>Dietary Preferences</label>
-          <input type="text" id="add-dietary-preferences" placeholder="e.g. Vegetarian, Halal">
+          <label>Table Number</label>
+          <input type="number" id="add-table-number" min="1" placeholder="e.g. 5">
         </div>
         <div>
-          <label>Dietary Restrictions</label>
-          <input type="text" id="add-dietary-restrictions" placeholder="e.g. peanut allergy">
+          <label>Seat Number(s)</label>
+          <input type="text" id="add-seat-number" placeholder="e.g. 3 or 3-4">
         </div>
       </div>
+
       <div class="form-row">
         <label>Message <span style="text-transform:none;">(optional)</span></label>
         <textarea id="add-notes"></textarea>
@@ -1854,8 +1868,8 @@ button,.dash-tab,.fp-chip,.cat-chip,.kiosk-hit,.gplan-hit{touch-action:manipulat
     <div class="kiosk-head">
       <img class="kiosk-crest js-logo" src="" alt="PBIS">
       <div>
-        <h1>Find Your Table</h1>
-        <p>Scan your ticket, or type your name below</p>
+        <h1>Check In &amp; Find Your Table</h1>
+        <p>Scan your ticket to check in, or type your name to find your seat</p>
       </div>
     </div>
 
@@ -5987,9 +6001,25 @@ function kioskHandleScan(data) {
   if (!parsed) { kioskShowMessage("That doesn't look like a Legacy Night ticket. Please type your name below."); return; }
   const guest = _dashGuestsCache.find(function(g) { return String(g.ts) === String(parsed.ts); });
   if (!guest) { kioskShowMessage("We couldn't find that ticket. Please ask a member of our team."); return; }
+
   const members = seatedPartyMembers(guest);
-  const person = members[parsed.idx] || members[0];
-  kioskShowAnswer(person, guest);
+  if (parsed.idx >= members.length) {
+    kioskShowMessage("This ticket refers to a guest who is no longer in the booking. Please ask a member of our team.");
+    return;
+  }
+  const person = members[parsed.idx];
+
+  // Scanning a ticket here IS an arrival — the guest is standing at the
+  // door with their ticket out. Checking them in from the kiosk means a
+  // queue can move even when no staff member is free, and it goes
+  // through the same markGuestCheckedIn() the door scanners use, so it
+  // reaches the monitor, the retry queue and the sheet identically.
+  const checks = parseIndividualCheckins(guest);
+  const already = !!(checks[parsed.idx] && checks[parsed.idx].checked_in);
+  if (!already) {
+    try { markGuestCheckedIn(guest.ts, true, parsed.idx, person.name); } catch (e) {}
+  }
+  kioskShowAnswer(person, guest, { checkedIn: true, already: already });
 }
 
 // Search is intentionally narrow: whole-word-ish matching on names and
@@ -6028,12 +6058,25 @@ function kioskPick(i) {
   if (h) kioskShowAnswer(h.p, h.g);
 }
 
-function kioskShowAnswer(person, guest) {
+function kioskShowAnswer(person, guest, opts) {
+  opts = opts || {};
   const el = document.getElementById('kiosk-answer');
   if (!el) return;
   const hasSeat = guest.table_number;
+
+  // A name typed into the box is only a LOOKUP — someone might be
+  // checking where a colleague is sitting. So arriving is an explicit
+  // action here, unlike a scan, which is unambiguous.
+  const checks = parseIndividualCheckins(guest);
+  const isIn = opts.checkedIn || !!(checks[person.idx] && checks[person.idx].checked_in);
+  const safeTs = String(guest.ts).replace(/'/g, "\\'");
+
   el.innerHTML =
     '<div class="kiosk-card">' +
+      (opts.checkedIn
+        ? '<p class="kiosk-status' + (opts.already ? ' warn' : '') + '">' +
+            (opts.already ? 'Already checked in' : '✓ Checked in') + '</p>'
+        : '') +
       '<p class="kiosk-hello">Welcome,</p>' +
       '<h2>' + escHtmlV(person.name) + '</h2>' +
       (hasSeat
@@ -6043,10 +6086,24 @@ function kioskShowAnswer(person, guest) {
           '</div>' +
           '<p class="kiosk-note">Please make your way to the Vientiane Ballroom.</p>'
         : '<p class="kiosk-note">Your table is being finalised — please ask a member of our team, who will seat you.</p>') +
+      (isIn
+        ? ''
+        : '<button class="kiosk-checkin" onclick="kioskCheckInPerson(\'' + safeTs + '\', ' + person.idx + ')">✓ I have arrived — check me in</button>') +
       '<button class="kiosk-done" onclick="kioskClear()">Done</button>' +
     '</div>';
   el.classList.add('show');
   kioskResetTimer();
+}
+
+// Checks in one person from the kiosk. Uses the same path as the door
+// scanners, so it queues on failure and reaches the monitor identically.
+function kioskCheckInPerson(ts, idx) {
+  const guest = _dashGuestsCache.find(function (g) { return String(g.ts) === String(ts); });
+  if (!guest) return;
+  const person = seatedPartyMembers(guest)[idx];
+  if (!person) return;
+  try { markGuestCheckedIn(ts, true, idx, person.name); } catch (e) {}
+  kioskShowAnswer(person, guest, { checkedIn: true, already: false });
 }
 
 function kioskShowMessage(msg) {
@@ -6518,11 +6575,18 @@ function closeEditGuestModal() {
    it's a real RSVP that just happened to be typed in by staff instead
    of the guest themselves. */
 function openAddGuestModal() {
-  ['add-fname','add-lname','add-email','add-phone','add-organization','add-additional-guests','add-dietary-preferences','add-dietary-restrictions','add-notes'].forEach(id => {
+  _addAdditional = [];
+  setTimeout(renderAddAdditional, 0);
+  // Field list must match the rebuilt form. The old list referenced
+  // inputs that no longer exist, and the unguarded add-guest-count line
+  // below threw before the modal could open.
+  ['add-fname','add-lname','add-email','add-phone','add-organization',
+   'add-table-number','add-seat-number','add-notes'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
-  document.getElementById('add-guest-count').value = 1;
+  const course = document.getElementById('add-course-main');
+  if (course) course.value = '';
 
   const btn = document.getElementById('add-guest-save-btn');
   btn.disabled = false;
@@ -6537,31 +6601,120 @@ function closeAddGuestModal() {
   document.body.style.overflow = '';
 }
 
+/* ── ADDITIONAL GUESTS IN THE ADD MODAL ────────────────────────────
+   Mirrors the Edit modal exactly. The markup for these rows existed
+   but the functions driving them did not, so the "+ Add Guest" button
+   did nothing and companions could not be entered at all.            */
+let _addAdditional = [];
+
+function renderAddAdditional() {
+  const el = document.getElementById('add-additional-list');
+  if (!el) return;
+  el.innerHTML = _addAdditional.length
+    ? _addAdditional.map(function (g, i) { return addGuestRowHTML(i, g); }).join('')
+    : '<p class="edit-guest-empty">No additional guests — this is a party of one.</p>';
+  const btn = document.getElementById('add-add-guest-btn');
+  if (btn) btn.style.display = _addAdditional.length >= MAX_EDIT_ADDITIONAL ? 'none' : 'block';
+}
+
+function addGuestRowHTML(idx, g) {
+  const opts = EDIT_COURSE_OPTIONS.map(function (o) {
+    return '<option value="' + o[0] + '"' + ((g.main_course || '') === o[0] ? ' selected' : '') + '>' + o[1] + '</option>';
+  }).join('');
+  return '<div class="edit-guest-row" data-idx="' + idx + '">' +
+    '<div class="edit-guest-row-head"><strong>Guest ' + (idx + 2) + '</strong>' +
+      '<button type="button" class="edit-guest-row-remove" onclick="removeNewGuestRow(' + idx + ')" title="Remove">✕</button></div>' +
+    '<div class="form-row two">' +
+      '<div><label>First Name</label><input type="text" class="ag-fname" value="' + escAttr(g.fname || '') + '"></div>' +
+      '<div><label>Last Name</label><input type="text" class="ag-lname" value="' + escAttr(g.lname || '') + '"></div>' +
+    '</div>' +
+    '<div class="form-row"><label>Main Course</label><select class="ag-course">' + opts + '</select></div>' +
+    '<div class="form-row"><label>Message</label><input type="text" class="ag-message" value="' + escAttr(g.message || '') + '" placeholder="Anything we should know"></div>' +
+  '</div>';
+}
+
+// Reads whatever is currently typed, so nothing is lost when a row is
+// added or removed mid-entry.
+function collectAddGuestRows() {
+  return Array.from(document.querySelectorAll('#add-additional-list .edit-guest-row')).map(function (r) {
+    const fn = (r.querySelector('.ag-fname').value || '').trim();
+    const ln = (r.querySelector('.ag-lname').value || '').trim();
+    return {
+      fname: fn, lname: ln,
+      name: (fn + ' ' + ln).trim(),
+      main_course: r.querySelector('.ag-course').value,
+      message: (r.querySelector('.ag-message').value || '').trim(),
+    };
+  });
+}
+
+function addNewGuestRow() {
+  _addAdditional = collectAddGuestRows();
+  if (_addAdditional.length >= MAX_EDIT_ADDITIONAL) return;
+  _addAdditional.push({ fname: '', lname: '', name: '', main_course: '', message: '' });
+  renderAddAdditional();
+}
+
+function removeNewGuestRow(idx) {
+  _addAdditional = collectAddGuestRows();
+  _addAdditional.splice(idx, 1);
+  renderAddAdditional();
+}
+
 function submitAddGuest() {
   const get = id => document.getElementById(id).value;
   const fname = get('add-fname').trim();
   const lname = get('add-lname').trim();
   const email = get('add-email').trim();
   const phone = get('add-phone').trim();
+  const organization = get('add-organization').trim();
 
-  if (!fname || !lname || !email || !phone) {
-    showDashToast('⚠️ First name, last name, email, and phone are required.');
+  // Email is optional here, matching the public form and the Edit
+  // modal — plenty of guests have no address and get their ticket by
+  // WhatsApp instead.
+  if (!fname || !lname || !phone || !organization) {
+    showDashToast('⚠️ First name, last name, phone and organisation are required.');
     return;
   }
 
-  const guestCount = Math.max(1, Math.min(3, parseInt(get('add-guest-count'), 10) || 1));
+  // The form was rebuilt to match the Edit modal — meal choice, proper
+  // additional-guest rows, table and seat — but this function was still
+  // reading the OLD field ids, which no longer exist. Every one of them
+  // returned nothing, so a guest added here arrived with no meal, no
+  // companions and no seat, and had to be corrected by editing them
+  // straight afterwards.
+  const additional = collectAddGuestRows().filter(function (g) { return g.name; });
+  const courseMain = get('add-course-main');
+
+  // Dietary preference is derived from the meal exactly as the public
+  // form does it, so catering figures stay consistent no matter where
+  // a guest was entered.
+  const dietFromCourse = function (course) {
+    const s = String(course || '').toLowerCase();
+    if (s.indexOf('beef') !== -1 || s.indexOf('wagyu') !== -1) return 'Meat';
+    if (s.indexOf('barramundi') !== -1 || s.indexOf('fish') !== -1) return 'Fish';
+    if (s.indexOf('mushroom') !== -1 || s.indexOf('veg') !== -1) return 'Vegetarian';
+    return '';
+  };
+
   const ts = new Date().toISOString();
 
   const payload = {
     action: 'newLegacyGuest',
     fname, lname, email, phone,
-    organization: get('add-organization').trim(),
-    guest_count: guestCount,
-    additional_guests: get('add-additional-guests').trim(),
-    dietary_preferences: get('add-dietary-preferences').trim(),
-    dietary_restrictions: get('add-dietary-restrictions').trim(),
+    organization: organization,
+    course_main: courseMain,
+    dietary_preferences: dietFromCourse(courseMain),
+    guest_count: 1 + additional.length,
+    additional_guests: additional.map(function (g) { return g.name; }).join(', '),
+    additional_guests_detail: JSON.stringify(additional),
+    table_number: get('add-table-number').trim(),
+    seat_number: get('add-seat-number').trim(),
     notes: get('add-notes').trim(),
     ts: ts,
+    // Required now that public RSVPs are closed: the server allows a new
+    // guest only from a signed-in staff member.
+    session_token: _sessionToken,
     staff_name: _currentUser ? _currentUser.name : ''
   };
 
@@ -6569,20 +6722,27 @@ function submitAddGuest() {
   btn.disabled = true;
   btn.textContent = 'Adding…';
 
-  postToSheets(payload).then((result) => {
+  postToSheetsVerified(payload).then((result) => {
     if (result.status === 'error') {
-      showDashToast('⚠️ Could not reach the server — this guest was NOT added. Check your connection and try again.');
+      showDashToast('⚠️ This guest was NOT added — ' + (result.message || 'the server rejected the request.'));
       btn.disabled = false;
       btn.textContent = '➕ Add Guest';
       return;
     }
+    // Mirror what was actually sent, so the row appears in the list
+    // exactly as it will after the next sync — including the meal,
+    // companions and seat that the old code silently dropped.
     _dashGuestsCache.push({
       ts, fname, lname, email, phone,
       organization: payload.organization,
-      guest_count: guestCount,
+      guest_count: payload.guest_count,
       additional_guests: payload.additional_guests,
+      additional_guests_detail: payload.additional_guests_detail,
+      course_main: payload.course_main,
       dietary_preferences: payload.dietary_preferences,
-      dietary_restrictions: payload.dietary_restrictions,
+      table_number: payload.table_number,
+      seat_number: payload.seat_number,
+      individual_checkins: '{}',
       notes: payload.notes,
       status: 'Confirmed',
       checked_in: false, checked_in_at: '',
