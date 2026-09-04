@@ -871,6 +871,17 @@ body.role-usher .dash-btn-doors{display:none;}
   .rsvp-contact{padding:14px;}
   .rsvp-contact-value{font-size:13.5px;}
 }
+
+/* One-person notice on the confirm step */
+.rsvp-one-person{display:flex;align-items:flex-start;gap:11px;background:rgba(201,168,76,.09);
+  border:1px solid rgba(201,168,76,.34);border-radius:10px;padding:14px 16px;margin-bottom:18px;
+  font-size:13.5px;line-height:1.65;color:var(--gray-mid);}
+/* The icon is the only flex child; the sentence lives in its own block
+   so <strong> doesn't become a separate flex item and split the text
+   into columns. */
+.rsvp-one-person .rop-icon{font-size:16px;line-height:1.35;flex-shrink:0;}
+.rsvp-one-person .rop-text{flex:1;min-width:0;}
+.rsvp-one-person strong{color:var(--navy);}
 </style>
 </head>
 <body>
@@ -1220,14 +1231,16 @@ body.role-usher .dash-btn-doors{display:none;}
             <input type="checkbox" id="rsvp-consent-check" onchange="toggleRsvpFinalSubmit()">
             <span>Thank you for your RSVP. Please note that admission is valid only for the name you have just registered and may not be transferred to another guest. We look forward to welcoming you to the event.</span>
           </label>
-          <div class="form-row">
-            <label>Additional Guests <span style="text-transform:none;">(optional)</span></label>
-            <p class="form-hint" style="margin-top:0;margin-bottom:12px;">If your invitation is addressed to two guests, please click the Add Guest button below to register the additional attendee. If only one guest is named, you may proceed directly to complete your RSVP.</p>
-            <span class="party-size-chip" id="party-size-chip">👥 Party of 1</span>
-            <div id="additional-guests-list"></div>
-            <button type="button" class="add-guest-btn" id="add-guest-btn" onclick="addGuestRow()">
-              <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Add a Guest
-            </button>
+          <!-- Additional guests are no longer collected here. Each RSVP
+               registers exactly one person, matching the consent text
+               above: admission is valid only for the name given and is
+               not transferable. Anyone attending with a guest is added
+               by the team from the dashboard, which still supports
+               companions in full. -->
+          <div class="rsvp-one-person">
+            <span class="rop-icon">👤</span>
+            <span class="rop-text">This RSVP registers <strong>one guest</strong>. If your invitation
+            includes someone else, please mention it when you contact us and we will add them for you.</span>
           </div>
           <button type="button" class="form-submit" id="rsvp-submit-btn" onclick="handleRSVPSubmit(event)" disabled>RSVP Now</button>
           <button type="button" class="form-back-link" onclick="backToRsvpFormStep()">← Back to edit my details</button>
@@ -2226,6 +2239,11 @@ let _additionalGuestCount = 0;
 const MAX_ADDITIONAL_GUESTS = 1;
 
 function addGuestRow() {
+  // The public form registers one person only, so this is no longer
+  // reachable — the button was removed. Kept as a guarded no-op rather
+  // than deleted, so nothing throws if an old cached page still calls
+  // it, and so the capability is easy to restore if you reopen it.
+  if (!document.getElementById('additional-guests-list')) return;
   if (_additionalGuestCount >= MAX_ADDITIONAL_GUESTS) return;
   _additionalGuestCount++;
   const n = _additionalGuestCount;
@@ -2358,9 +2376,12 @@ function handleRSVPSubmit(e) {
     email: sanitize(get('rsvp-email')),
     phone: sanitize(get('rsvp-phone')),
     organization: sanitize(get('rsvp-organization')),
-    guest_count: 1 + additionalGuestsDetail.length,
-    additional_guests: additionalGuestsDetail.map(g => g.name).join(', '),
-    additional_guests_detail: JSON.stringify(additionalGuestsDetail),
+    // Fixed at one. Removing the UI alone would leave the old array in
+    // place if anything ever repopulated it, so the payload is pinned
+    // here too — the form can only ever register a single person.
+    guest_count: 1,
+    additional_guests: '',
+    additional_guests_detail: '[]',
     dietary_preferences: derivedDietaryPreference,
     course_main: sanitize(get('rsvp-course-main')),
     notes: sanitize(get('rsvp-notes')),
