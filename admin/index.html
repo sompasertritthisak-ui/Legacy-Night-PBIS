@@ -10027,6 +10027,125 @@ async function sendPostEventEmail(subject, message, audience, recipientCount) {
   if (btn) { btn.disabled = false; btn.textContent = '💌 Review & Send'; }
 }
 
+/* ══════════════════════════════════════════════════════════════════
+   FOLLOW-UP — BULK SEND
+   ──────────────────────────────────────────────────────────────────
+   Same one-at-a-time approach as bulk approvals, and for the same
+   reasons: Apps Script kills a single execution at six minutes, one
+   bad address must not stop the rest, and the progress has to be real
+   so the run can be paused or stopped.
+
+   Unlike an admission pass, a follow-up carries no per-guest QR — it
+   is the same message to everyone — so this is genuinely a broadcast.
+   Attachments are deliberately NOT included: those are per-guest, and
+   quietly sending one guest's invitation card to two hundred people
+   is exactly the kind of mistake that can't be taken back.
+══════════════════════════════════════════════════════════════════ */
+let _fuBulk = null;
+
+function followUpRecipients() {
+  return (_dashGuestsCache || []).filter(function (g) { return g.email && g.email.trim(); });
+}
+
+async function startBulkFollowUp() {
+  if (_fuBulk && !_fuBulk.stopped) { showDashToast('A follow-up send is already running.'); return; }
+
+  const subject = (document.getElementById('fu-bulk-subject') || {}).value || '';
+  const message = (document.getElementById('fu-bulk-message') || {}).value || '';
+  if (!subject.trim()) { showDashToast('⚠️ Add a subject line first.'); return; }
+  if (!message.trim()) { showDashToast('⚠️ Write the message you want to send.'); return; }
+
+  const targets = followUpRecipients();
+  if (!targets.length) { showDashToast('No guests have an email address on file.'); return; }
+  const noEmail = (_dashGuestsCache || []).length - targets.length;
+
+  const ok = await appConfirm({
+    title: 'Send this to ' + targets.length + ' guests?',
+    message: 'Every guest with an email address receives <strong>the same message</strong>, sent individually.',
+    sub: 'Sent one at a time so a single failure can\'t stop the rest, and you can pause or stop at any point. ' +
+         'Attachments are not included in a bulk send \u2014 open a guest individually if someone needs a file.' +
+         (noEmail ? ' <strong>' + noEmail + '</strong> guest(s) have no email address and will be skipped.' : ''),
+    confirmLabel: '✉️ Send to ' + targets.length,
+  });
+  if (!ok) return;
+
+  _fuBulk = { queue: targets.slice(), total: targets.length, done: 0, failed: [],
+              stopped: false, paused: false, subject: subject, message: message };
+  renderFuBulkProgress();
+  runBulkFollowUp();
+}
+
+function pauseBulkFollowUp()  { if (_fuBulk) { _fuBulk.paused = true;  renderFuBulkProgress(); } }
+function resumeBulkFollowUp() { if (_fuBulk) { _fuBulk.paused = false; renderFuBulkProgress(); runBulkFollowUp(); } }
+function stopBulkFollowUp()   { if (_fuBulk) { _fuBulk.stopped = true; renderFuBulkProgress(); } }
+
+async function runBulkFollowUp() {
+  const st = _fuBulk;
+  if (!st) return;
+
+  while (st.queue.length && !st.stopped && !st.paused) {
+    const guest = st.queue.shift();
+    const name = ((guest.fname || '') + ' ' + (guest.lname || '')).trim() || 'Guest';
+    try {
+      const r = await postToSheetsVerified({
+        action: 'sendFollowUpEmail',
+        ts: guest.ts,
+        subject: st.subject,
+        message: st.message,
+        files: [],
+        session_token: _sessionToken,
+        staff_name: _currentUser ? _currentUser.name : ''
+      });
+      if (r && r.status === 'error') st.failed.push({ name: name, reason: r.message || 'Send failed' });
+    } catch (e) {
+      st.failed.push({ name: name, reason: e.message || 'Unexpected error' });
+    }
+    st.done++;
+    renderFuBulkProgress();
+    await new Promise(function (r) { setTimeout(r, 350); });
+  }
+
+  if (!st.queue.length || st.stopped) {
+    const failed = st.failed.length;
+    showDashToast(st.stopped
+      ? '⏹ Stopped — ' + st.done + ' processed, ' + failed + ' failed'
+      : '✓ Finished — ' + (st.done - failed) + ' sent' + (failed ? ', ' + failed + ' failed' : ''));
+    renderFuBulkProgress();
+  }
+}
+
+function renderFuBulkProgress() {
+  const el = document.getElementById('fu-bulk-progress');
+  if (!el) return;
+  const st = _fuBulk;
+  if (!st) { el.innerHTML = ''; return; }
+  const pct = st.total ? Math.round((st.done / st.total) * 100) : 0;
+  const finished = st.stopped || !st.queue.length;
+  const sent = st.done - st.failed.length;
+
+  el.innerHTML =
+    '<div class="bulk-bar"><div class="bulk-bar-fill" style="width:' + pct + '%;"></div></div>' +
+    '<div class="bulk-row">' +
+      '<span class="bulk-count"><strong>' + st.done + '</strong> of ' + st.total + ' · ' + sent + ' sent' +
+        (st.failed.length ? ' · <em>' + st.failed.length + ' failed</em>' : '') + '</span>' +
+      (finished
+        ? '<button class="dash-btn" onclick="_fuBulk=null;renderFuBulkProgress();">Clear</button>'
+        : (st.paused
+            ? '<span><button class="dash-btn-gold" onclick="resumeBulkFollowUp()">Resume</button>' +
+              '<button class="dash-btn" style="margin-left:8px;" onclick="stopBulkFollowUp()">Stop</button></span>'
+            : '<span><button class="dash-btn" onclick="pauseBulkFollowUp()">Pause</button>' +
+              '<button class="dash-btn" style="margin-left:8px;" onclick="stopBulkFollowUp()">Stop</button></span>')) +
+    '</div>' +
+    (st.failed.length
+      ? '<div class="bulk-failed"><strong>Not sent — please retry these:</strong>' +
+        st.failed.slice(0, 12).map(function (f) {
+          return '<div>' + escHtmlV(f.name) + ' <span>' + escHtmlV(f.reason) + '</span></div>';
+        }).join('') +
+        (st.failed.length > 12 ? '<div><span>+ ' + (st.failed.length - 12) + ' more</span></div>' : '') +
+      '</div>'
+      : '');
+}
+
 function renderFollowUpTab() {
   const el = document.getElementById('dash-tab-content-followup');
   const emailable = _dashGuestsCache.filter(g => g.email);
@@ -10061,7 +10180,25 @@ function renderFollowUpTab() {
     </div>
     <div class="dash-panel">
       <div class="dash-panel-title">Follow-Up / Event Pass Delivery <span>${filtered.length} of ${emailable.length} guests</span></div>
-      <div class="followup-warn">Each guest here gets their <strong>own individual email</strong> — click a guest, write a message, attach their invitation card and/or unique QR code (multiple files supported), then send just to them. There is no send-to-everyone button, since every guest's attachment is unique to them.</div>
+      <div class="followup-warn">Click a guest to write to <strong>just them</strong>, with attachments if needed. Or use <strong>Send to Everyone</strong> below to send the same message to every guest with an email address.</div>
+
+      <div class="bulk-panel">
+        <div class="bulk-head">
+          <div>
+            <h4>Send the same message to everyone</h4>
+            <p>Goes to every guest with an email address, sent one at a time so a single failure can't stop the rest. You can pause or stop at any point.</p>
+          </div>
+          <button class="dash-btn-gold" onclick="startBulkFollowUp()">✉️ Send to Everyone</button>
+        </div>
+        <label class="bulk-msg-label">Subject
+          <input type="text" id="fu-bulk-subject" placeholder="e.g. A reminder about Legacy Night">
+        </label>
+        <label class="bulk-msg-label" style="margin-top:12px;">Message
+          <textarea id="fu-bulk-message" class="followup-textarea" style="margin-top:7px;" placeholder="Write the message every guest will receive…"></textarea>
+        </label>
+        <p class="bulk-note">📎 Attachments aren't included in a bulk send — files here are unique per guest, so open someone individually if they need one.</p>
+        <div id="fu-bulk-progress"></div>
+      </div>
       <div class="dash-search-row">
         <input type="text" placeholder="Search by name or email…" value="${_followUpSearchTerm}" id="search-followup" oninput="searchInputChanged(this,function(v){_followUpSearchTerm=v;},renderFollowUpTab,'followup')">
       </div>
