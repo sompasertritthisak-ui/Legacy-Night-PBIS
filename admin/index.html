@@ -1307,6 +1307,15 @@ button,.dash-tab,.fp-chip,.cat-chip,.kiosk-hit,.gplan-hit{touch-action:manipulat
 .help-row code{background:rgba(201,168,76,.18);padding:1px 6px;border-radius:4px;font-size:12px;font-family:'DM Mono',monospace;color:#7a5f1c;}
 
 .bulk-msg-hint{font-weight:400;text-transform:none;letter-spacing:0;color:var(--gray-mid);font-size:11px;}
+
+/* QR Generator status + summary */
+.qrgen-summary{display:flex;gap:18px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--gray);font-size:12.5px;color:var(--gray-mid);}
+.qrgen-summary strong{color:var(--navy);font-size:15px;margin-right:3px;}
+.qrgen-summary .pending strong{color:#a4453e;}
+.qr-status{font-size:12px;font-weight:600;white-space:nowrap;}
+.qr-status.emailed{color:#2d9e5f;}
+.qr-status.byhand{color:#8a6a26;}
+.qr-status.pending{color:var(--gray-mid);font-weight:400;}
 </style>
 </head>
 <body>
@@ -3808,6 +3817,7 @@ let _invitedList = null;
 let _verifyLoading = false;
 let _verifyError = '';
 let _verifyFilter = 'all';
+let _verifySearchTerm = '';
 
 const VERIFY_TITLES = /^(?:h\.?e\.?|his excellency|her excellency|assoc(?:iate)?\.? prof(?:essor)?\.?|prof(?:essor)?\.?|dr\.?|mr\.?|mrs\.?|ms\.?|miss|madam|khun|dato|datuk|tan sri|phra|maechee|t\.?|teacher|ajarn)\s+/i;
 
@@ -4281,9 +4291,20 @@ function renderVerifyTab() {
   };
 
   let show = results;
+  const vfq = (_verifySearchTerm || '').trim().toLowerCase();
   if (_verifyFilter === 'matched') show = matched;
   else if (_verifyFilter === 'typo') show = typos;
   else if (_verifyFilter === 'unknown') show = unknown;
+
+  // Applied after the status chips, so search and filter combine —
+  // "show me the typos, and among those find Somdeth".
+  if (vfq) {
+    show = show.filter(function (r) {
+      const hay = [r.person.name, r.person.host || '', r.entry ? r.entry.name : '',
+                   r.entry ? r.entry.category : ''].join(' ').toLowerCase();
+      return hay.indexOf(vfq) !== -1;
+    });
+  }
 
   const rows = show.slice().sort(function(a, b) {
     const rank = { 'unmatched': 0, 'possible-typo': 1, 'matched': 2 };
@@ -4314,6 +4335,13 @@ function renderVerifyTab() {
     '</tr>';
   }).join('');
 
+  const verifySearch =
+    '<div class="dash-search-row" style="margin:14px 0 0;">' +
+      '<input type="text" id="search-verify" placeholder="Find a guest in these results…" value="' +
+        escHtmlV(_verifySearchTerm || '') + '" ' +
+        'oninput="searchInputChanged(this,function(v){_verifySearchTerm=v;},renderVerifyTab,\'verify\')">' +
+    '</div>';
+
   el.innerHTML =
     '<div class="dash-panel" style="margin-bottom:16px;">' +
       '<div class="dash-panel-title">🛡 Verify Against Invitation List' +
@@ -4330,12 +4358,13 @@ function renderVerifyTab() {
         chip('typo', '⚠ Check name', typos.length, 'warn') +
         chip('unknown', '✕ Not on list', unknown.length, 'bad') +
       '</div>' +
+      verifySearch +
     '</div>' +
     '<div class="dash-panel">' +
       '<div class="dash-panel-title">Results <span>' + show.length + ' shown</span></div>' +
       (show.length
         ? '<div class="dash-table-wrap"><table class="dash-table"><thead><tr><th>Name on RSVP</th><th>Status</th><th>Details</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
-        : '<div class="dash-empty">Nothing in this category.</div>') +
+        : '<div class="dash-empty">' + (vfq ? 'No result matches &ldquo;' + escHtmlV(_verifySearchTerm) + '&rdquo; in this category.' : 'Nothing in this category.') + '</div>') +
     '</div>' +
     '<div class="dash-panel" style="margin-top:16px;">' +
       '<div class="dash-panel-title">Invited but no RSVP yet <span>' + awaiting.length + '</span></div>' +
@@ -4933,13 +4962,36 @@ function exportGuestListCSV(selectedOnly) {
 /* ── CHECK-IN TAB ── */
 let _checkinSearchTerm = '';
 
+let _vipSearchTerm = '';
+
 function renderVipTab() {
   const el = document.getElementById('dash-tab-content-vip');
   const guests = _dashGuestsCache;
-  const vipGuests = guests.filter(g => g.vvip);
+  const allVips = guests.filter(g => g.vvip);
+  const vq = (_vipSearchTerm || '').trim().toLowerCase();
+  const vipGuests = !vq ? allVips : allVips.filter(function (g) {
+    const hay = [(g.fname||'')+' '+(g.lname||''), g.organization||'', g.email||'', g.phone||'',
+      parseAdditionalGuestsDetail(g).map(a=>a.name||'').join(' ')].join(' ').toLowerCase();
+    return hay.indexOf(vq) !== -1;
+  });
   const countEl = document.getElementById('vip-tab-count');
-  if (countEl) countEl.textContent = vipGuests.length;
+  if (countEl) countEl.textContent = allVips.length;
 
+  // Search bar rendered even when a search returns nothing, so the
+  // person can correct their typing rather than lose the box.
+  const vipSearchBar = allVips.length ? `
+    <div class="dash-panel" style="margin-bottom:16px;padding:16px 20px;">
+      <div class="dash-search-row" style="margin:0;">
+        <input type="text" id="search-vip" placeholder="Search VIP guests by name, organisation or phone…"
+          value="${escHtmlV(_vipSearchTerm)}"
+          oninput="searchInputChanged(this,function(v){_vipSearchTerm=v;},renderVipTab,'vip')">
+      </div>
+    </div>` : '';
+
+  if (!vipGuests.length && vq) {
+    el.innerHTML = vipSearchBar + `<div class="dash-panel"><div class="dash-empty">No VIP guest matches &ldquo;${escHtmlV(_vipSearchTerm)}&rdquo;.</div></div>`;
+    return;
+  }
   if (!vipGuests.length) {
     el.innerHTML = `<div class="dash-panel"><div class="dash-empty">No VIP guests yet. ${canEditOrVip() ? 'Star a guest from the Guest List to mark them VIP.' : 'Ask an authorized staff member to mark a guest as VIP.'}</div></div>`;
     return;
@@ -4968,9 +5020,9 @@ function renderVipTab() {
     </tr>`;
   }).join('');
 
-  el.innerHTML = `
+  el.innerHTML = vipSearchBar + `
     <div class="dash-panel">
-      <div class="dash-panel-title">⭐ VIP Guests <span>${vipGuests.length}</span></div>
+      <div class="dash-panel-title">⭐ VIP Guests <span>${vipGuests.length}${vq ? ' of ' + allVips.length : ''}</span></div>
       <div class="followup-warn" style="margin-bottom:16px;">VIP guests get an automatic email to the Events Team the moment they check in via QR scan — including their table, main course, and dietary notes.</div>
       <div class="dash-table-wrap">
         <table class="dash-table">
@@ -4982,6 +5034,7 @@ function renderVipTab() {
 }
 
 let _qrGenShowAll = false;
+let _qrGenSearchTerm = '';
 
 function toggleQrGenFilter(showAll) {
   _qrGenShowAll = showAll;
@@ -4995,20 +5048,52 @@ function renderQrGeneratorTab() {
   const countEl = document.getElementById('qrgen-tab-count');
   if (countEl) countEl.textContent = noEmailGuests.length;
 
-  const shown = _qrGenShowAll ? guests : noEmailGuests;
+  const base = _qrGenShowAll ? guests : noEmailGuests;
+
+  // Search across name, phone, email, organisation AND companions, so a
+  // guest can be found by whatever detail the person at the desk has.
+  const q = (_qrGenSearchTerm || '').trim().toLowerCase();
+  const shown = !q ? base : base.filter(function (g) {
+    const hay = [
+      (g.fname || '') + ' ' + (g.lname || ''),
+      g.phone || '', g.email || '', g.organization || '', g.track_id || '',
+      parseAdditionalGuestsDetail(g).map(function (a) { return a.name || ''; }).join(' ')
+    ].join(' ').toLowerCase();
+    return hay.indexOf(q) !== -1;
+  });
+
+  // How each guest received their pass. `approved` is set by both the
+  // email flow and the by-hand flow, so the presence of an email address
+  // tells them apart without needing another field in the sheet.
+  const issuedByEmail = base.filter(function (g) { return g.approved && g.email && g.email.trim(); }).length;
+  const issuedByHand  = base.filter(function (g) { return g.approved && !(g.email && g.email.trim()); }).length;
+  const notIssued     = base.filter(function (g) { return !g.approved; }).length;
 
   const filterBar = `
     <div class="dash-panel" style="margin-bottom:16px;">
       <p style="margin:0 0 4px;font-size:14px;color:var(--navy);font-weight:600;">📱 Generate a ticket QR to send by hand via WhatsApp</p>
       <p style="margin:0;font-size:12.5px;color:var(--gray-mid);line-height:1.6;">For guests who left the email field blank, use this to generate a branded ticket image with their unique check-in QR code — download it and send it through the guest's WhatsApp number. Scanning it checks them in exactly like an emailed ticket.</p>
-      <div style="margin-top:14px;display:flex;gap:8px;">
+      <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;">
         <button class="dash-btn-small ${!_qrGenShowAll ? 'dash-btn-small-active' : ''}" onclick="toggleQrGenFilter(false)">No Email Only (${noEmailGuests.length})</button>
         <button class="dash-btn-small ${_qrGenShowAll ? 'dash-btn-small-active' : ''}" onclick="toggleQrGenFilter(true)">All Guests (${guests.length})</button>
+      </div>
+      <div class="dash-search-row" style="margin-top:12px;">
+        <input type="text" id="search-qrgen" placeholder="Search by name, phone, email, organisation or reference…"
+          value="${escHtmlV(_qrGenSearchTerm || '')}"
+          oninput="searchInputChanged(this,function(v){_qrGenSearchTerm=v;},renderQrGeneratorTab,'qrgen')">
+      </div>
+      <div class="qrgen-summary">
+        <span><strong>${issuedByEmail}</strong> sent by email</span>
+        <span><strong>${issuedByHand}</strong> QR sent by hand</span>
+        <span class="pending"><strong>${notIssued}</strong> not yet issued</span>
       </div>
     </div>`;
 
   if (!shown.length) {
-    el.innerHTML = filterBar + `<div class="dash-panel"><div class="dash-empty">${_qrGenShowAll ? 'No RSVPs yet.' : '🎉 Every guest has an email on file — nobody needs a WhatsApp ticket right now.'}</div></div>`;
+    el.innerHTML = filterBar + `<div class="dash-panel"><div class="dash-empty">${
+      q ? 'No guest matches “' + escHtmlV(_qrGenSearchTerm) + '”.'
+        : (_qrGenShowAll ? 'No RSVPs yet.' : '🎉 Every guest has an email on file — nobody needs a WhatsApp ticket right now.')
+    }</div></div>`;
     return;
   }
 
@@ -5017,9 +5102,14 @@ function renderQrGeneratorTab() {
     const hasEmail = !!(g.email && g.email.trim());
     const additional = parseAdditionalGuestsDetail(g);
     const partySize = 1 + additional.length;
-    const readyLabel = g.approved
-      ? '<span style="color:#2d9e5f;font-weight:600;font-size:12px;">✓ Ticket Issued</span>'
-      : '<span style="color:var(--gray-mid);font-size:12px;">Not yet issued</span>';
+    // Distinguishes HOW the pass reached them — the two routes look
+    // identical on the guest record otherwise, and staff need to know
+    // whether a WhatsApp send still has to happen.
+    const readyLabel = !g.approved
+      ? '<span class="qr-status pending">Not yet issued</span>'
+      : (hasEmail
+          ? '<span class="qr-status emailed">✓ Sent by email</span>'
+          : '<span class="qr-status byhand">✓ QR sent by hand</span>');
     return `
     <tr>
       <td style="font-weight:600;color:var(--navy);">${fullName}${partySize>1?` <span class="dash-party-pill">👥 ${partySize}</span>`:''}</td>
@@ -9170,7 +9260,21 @@ function renderTablesTab() {
   const canEdit = !(_currentUser && _currentUser.role === 'usher');
 
   // ── Table cards: every PERSON listed, each with their own seat ──
-  const tableCards = Object.keys(tables).map(function(num) {
+  // A search narrows the chart to the tables containing a match, so
+  // "where is Somdeth sitting?" is answered without scrolling twenty
+  // cards. The whole table is kept, not just the person, because the
+  // question is usually really "who is he sitting with?".
+  const tq = (_tablesSearchTerm || '').trim().toLowerCase();
+  const tableNums = Object.keys(tables).filter(function (num) {
+    if (!tq) return true;
+    return tables[num].some(function (g) {
+      const hay = [(g.fname||'')+' '+(g.lname||''), g.organization||'', g.track_id||'',
+        parseAdditionalGuestsDetail(g).map(a=>a.name||'').join(' ')].join(' ').toLowerCase();
+      return hay.indexOf(tq) !== -1;
+    });
+  });
+
+  const tableCards = tableNums.map(function(num) {
     const partiesHere = tables[num];
     const peopleHere = [];
     partiesHere.forEach(function(g) {
@@ -9308,9 +9412,16 @@ function renderTablesTab() {
 
     (_tablesView === 'plan' ? buildFloorPlanPanel() :
     '<div class="dash-panel">' +
+      '<div class="dash-search-row" style="margin:0 0 16px;">' +
+        '<input type="text" id="search-tables" placeholder="Find a guest — jumps to their table…" value="' +
+          escHtmlV(_tablesSearchTerm || '') + '" ' +
+          'oninput="searchInputChanged(this,function(v){_tablesSearchTerm=v;},renderTablesTab,\'tables\')">' +
+      '</div>' +
       '<div class="dash-panel-title">Seating Chart ' +
         '<span style="font-weight:400;font-size:11px;color:var(--gray-mid);text-transform:none;letter-spacing:0;">— every person shown with their own seat</span></div>' +
-      '<div class="tables-grid">' + tableCards + '</div>' +
+      (tableCards
+        ? '<div class="tables-grid">' + tableCards + '</div>'
+        : '<div class="dash-empty">No seated guest matches &ldquo;' + escHtmlV(_tablesSearchTerm) + '&rdquo;.</div>') +
     '</div>');
 
   if (_tablesView === 'plan') {
@@ -9322,6 +9433,7 @@ function renderTablesTab() {
 }
 
 let _tablesView = 'list';
+let _tablesSearchTerm = '';
 function setTablesView(v) { _tablesView = v; renderTablesTab(); }
 
 // The side panel of people still to be seated, plus the plan itself.
