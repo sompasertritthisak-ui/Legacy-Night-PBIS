@@ -1305,6 +1305,8 @@ button,.dash-tab,.fp-chip,.cat-chip,.kiosk-hit,.gplan-hit{touch-action:manipulat
 .help-note{background:rgba(201,168,76,.1);border-left:3px solid var(--gold);border-radius:0 8px 8px 0;padding:11px 15px;font-size:13px;color:var(--navy);line-height:1.6;margin:14px 0;}
 .help-note b{color:#7a5f1c;}
 .help-row code{background:rgba(201,168,76,.18);padding:1px 6px;border-radius:4px;font-size:12px;font-family:'DM Mono',monospace;color:#7a5f1c;}
+
+.bulk-msg-hint{font-weight:400;text-transform:none;letter-spacing:0;color:var(--gray-mid);font-size:11px;}
 </style>
 </head>
 <body>
@@ -1667,7 +1669,7 @@ button,.dash-tab,.fp-chip,.cat-chip,.kiosk-hit,.gplan-hit{touch-action:manipulat
       <div id="approve-qr-list"></div>
 
       <label style="display:block;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--navy);margin-bottom:8px;">Message *</label>
-      <textarea class="followup-textarea" id="approve-modal-message" placeholder="Your Legacy Night Ticket" oninput="updateApproveButtonState()"></textarea>
+      <textarea class="followup-textarea" id="approve-modal-message" placeholder="Leave blank to send the standard admission pass wording. Anything typed here is added after it." oninput="updateApproveButtonState()"></textarea>
 
       <label style="display:block;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--navy);margin-bottom:8px;">Additional Attachments <span style="text-transform:none;font-weight:400;color:var(--gray-mid);">(optional — e.g. invitation card design, PDF/JPEG/PNG, included with every ticket email)</span></label>
       <div class="followup-file-row">
@@ -7030,20 +7032,20 @@ function renderApprovalsTab() {
     </div>
 
     <div class="dash-panel">
-      <div class="followup-warn">Approving sends each guest their official Legacy Night ticket by email — one per person in the party, each with their own name and unique QR code. Open a guest to attach an invitation card, or use <strong>Send All</strong> below to work through everyone waiting.</div>
+      <div class="followup-warn">Approving sends each guest their official <strong>Admission Pass</strong> by email — one per person in the party, each with their own name and unique QR code. The event programme is attached automatically. Open a guest to add an invitation card, or use <strong>Send All</strong> below to work through everyone waiting.</div>
 
       <div class="bulk-panel">
         <div class="bulk-head">
           <div>
-            <h4>Send tickets to everyone waiting</h4>
+            <h4>Send admission passes to everyone waiting</h4>
             <p>Processes one guest at a time so a single failure can't stop the rest. Anyone already approved is skipped, so it's safe to run again.</p>
           </div>
           <button class="dash-btn-gold" onclick="startBulkApproval()">🎫 Send All</button>
         </div>
-        <label class="bulk-msg-label">Message for every email
-          <input type="text" id="bulk-message" value="Your Legacy Night Ticket" placeholder="Subject line for the ticket emails">
+        <label class="bulk-msg-label">Optional extra note <span class="bulk-msg-hint">— added after the standard wording</span>
+          <input type="text" id="bulk-message" value="" placeholder="Leave blank to send the standard admission pass">
         </label>
-        <p class="bulk-note">Attachments aren't included in a bulk send — if a guest needs an invitation card attached, open them individually.</p>
+        <p class="bulk-note">📎 The event programme is attached automatically to every pass, including bulk sends. Only an <em>extra</em> attachment — an invitation card for one guest — needs opening them individually.</p>
         <div id="bulk-progress"></div>
       </div>
       <div class="dash-panel-title">Awaiting Approval <span>${pendingGuests.length} guest${pendingGuests.length===1?'':'s'}</span></div>
@@ -8077,16 +8079,18 @@ async function startBulkApproval() {
     return s + 1 + parseAdditionalGuestsDetail(g).length;
   }, 0);
 
-  const message = (document.getElementById('bulk-message') || {}).value || 'Your Legacy Night Ticket';
+  // Blank is the normal case now: the admission pass carries its own
+  // standard wording, and anything typed here is appended to it.
+  const message = (document.getElementById('bulk-message') || {}).value || '';
 
   const ok = await appConfirm({
-    title: 'Send tickets to ' + targets.length + ' guests?',
-    message: 'This sends <strong>' + totalEmails + ' ticket emails</strong> across <strong>' +
+    title: 'Send admission passes to ' + targets.length + ' guests?',
+    message: 'This sends <strong>' + totalEmails + ' admission passes</strong> across <strong>' +
              targets.length + ' bookings</strong> — one per person, each with their own QR code.',
     sub: 'Sent one guest at a time so a single failure can\'t stop the rest. You can pause or stop at any point, ' +
          'and anyone already approved is skipped.' +
          (noEmail ? ' <strong>' + noEmail + '</strong> guest(s) have no email address and will be left for the QR Generator tab.' : ''),
-    confirmLabel: '🎫 Send ' + totalEmails + ' tickets',
+    confirmLabel: '🎫 Send ' + totalEmails + ' passes',
   });
   if (!ok) return;
 
@@ -8266,7 +8270,7 @@ function openApproveModal(ts, opts) {
   document.getElementById('approve-modal-recipient-count').textContent = 1 + additionalGuests.length;
   document.getElementById('approve-modal-ts').value = ts;
   // Carry the previous message forward when working through the list.
-  document.getElementById('approve-modal-message').value = opts.message || 'Your Legacy Night Ticket';
+  document.getElementById('approve-modal-message').value = opts.message || '';
   document.getElementById('approve-modal-file-input').value = '';
   renderApproveFileList();
   generateAllApproveQRs(ts, fullName, additionalGuests);
@@ -8352,10 +8356,12 @@ function renderApproveFileList() {
 function updateApproveButtonState() {
   const btn = document.getElementById('approve-modal-send-btn');
   if (!btn) return;
-  const messageEl = document.getElementById('approve-modal-message');
-  const message = messageEl ? messageEl.value.trim() : '';
+  // The message box is now an OPTIONAL extra note — the admission pass
+  // carries its own standard wording. Requiring text here would have
+  // left the Send button permanently disabled, since blank is normal.
+  // Only the QR codes need to be ready.
   const allQrsReady = _approveExpectedCount > 0 && _approveRecipients.length === _approveExpectedCount;
-  btn.disabled = !(message && allQrsReady);
+  btn.disabled = !allQrsReady;
 }
 
 // Approvals are worked through in list order, so "next" means the next
@@ -8379,8 +8385,9 @@ async function submitApproveGuest() {
   const guest = _dashGuestsCache.find(g => g.ts === ts);
   if (!guest) { showDashToast('⚠️ Could not find this guest — try resyncing.'); return; }
 
+  // Optional now — the admission pass carries its own standard wording,
+  // and anything typed here is appended to it. Blank is the normal case.
   const message = document.getElementById('approve-modal-message').value.trim();
-  if (!message) { showDashToast('⚠️ Write a message before approving.'); return; }
   if (_approveRecipients.length !== _approveExpectedCount) { showDashToast('⚠️ QR codes are still generating — please wait a moment.'); return; }
 
   const fullName = `${guest.fname||''} ${guest.lname||''}`.trim() || 'Guest';
@@ -8390,8 +8397,8 @@ async function submitApproveGuest() {
     `One per person (${_approveRecipients.map(r => r.name).join(', ')}), each with their own QR code` +
     `${extraCount ? ' plus ' + extraCount + ' shared attachment' + (extraCount === 1 ? '' : 's') : ''}. This can't be undone once sent.`;
   const ok = await appConfirm({
-    title: 'Send Tickets?',
-    message: `Send <strong>${partyCount} separate ticket email${partyCount === 1 ? '' : 's'}</strong> to ${guest.email}?`,
+    title: 'Send Admission Pass?',
+    message: `Send <strong>${partyCount} admission pass${partyCount === 1 ? '' : 'es'}</strong> to ${guest.email}?`,
     sub: `One per person (${_approveRecipients.map(r => r.name).join(', ')}), each with their own QR code`
        + `${extraCount ? ' plus ' + extraCount + ' shared attachment' + (extraCount === 1 ? '' : 's') : ''}.`
        + " This can't be undone once sent.",
@@ -8436,14 +8443,14 @@ async function submitApproveGuest() {
     if (result.status === 'error') {
       showDashToast('⚠️ Tickets were NOT sent — ' + (result.message || 'the server rejected the request.'));
       btn.disabled = false;
-      btn.textContent = '🎫 Approve & Send Ticket(s)';
+      btn.textContent = '🎫 Approve & Send Admission Pass';
       return;
     }
 
     guest.approved = true;
     guest.approved_at = new Date().toISOString();
 
-    showDashToast(`🎫 ${partyCount} ticket${partyCount === 1 ? '' : 's'} sent to ${guest.email}`);
+    showDashToast(`🎫 ${partyCount} admission pass${partyCount === 1 ? '' : 'es'} sent to ${guest.email}`);
     renderApprovalsTab();
     renderOverviewTab();
 
