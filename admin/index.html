@@ -1668,10 +1668,10 @@ button,.dash-tab,.fp-chip,.cat-chip,.kiosk-hit,.gplan-hit{touch-action:manipulat
       <label style="display:block;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--navy);margin-bottom:8px;">Individual QR Codes <span style="text-transform:none;font-weight:400;color:var(--gray-mid);">(one per person, auto-generated)</span></label>
       <div id="approve-qr-list"></div>
 
-      <label style="display:block;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--navy);margin-bottom:8px;">Message *</label>
+      <label style="display:block;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--navy);margin-bottom:8px;">Message <span style="text-transform:none;font-weight:400;color:var(--gray-mid);">(optional)</span></label>
       <textarea class="followup-textarea" id="approve-modal-message" placeholder="Leave blank to send the standard admission pass wording. Anything typed here is added after it." oninput="updateApproveButtonState()"></textarea>
 
-      <label style="display:block;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--navy);margin-bottom:8px;">Additional Attachments <span style="text-transform:none;font-weight:400;color:var(--gray-mid);">(optional — e.g. invitation card design, PDF/JPEG/PNG, included with every ticket email)</span></label>
+      <label style="display:block;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--navy);margin-bottom:8px;">Additional Attachments <span style="text-transform:none;font-weight:400;color:var(--gray-mid);">(optional — e.g. an invitation card. The event programme is already attached automatically)</span></label>
       <div class="followup-file-row">
         <input type="file" id="approve-modal-file-input" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" multiple onchange="handleApproveFilesSelect(event)">
       </div>
@@ -7157,7 +7157,7 @@ function generateAllApproveQRs(ts, primaryName, additionalGuests) {
     card.className = 'approve-qr-preview';
     const canvasId = 'approve-qr-canvas-' + person.idx;
     card.innerHTML = `<canvas id="${canvasId}" width="640" height="640"></canvas>` +
-      `<p class="approve-qr-hint"><strong>${person.name}</strong><br>Scanned at check-in — attached to their own ticket email automatically.</p>`;
+      `<p class="approve-qr-hint"><strong>${person.name}</strong><br>Scanned at check-in — included in their own admission pass automatically.</p>`;
     listEl.appendChild(card);
 
     ensureQRGenLibLoaded(function() {
@@ -8337,7 +8337,7 @@ function removeApproveFile(index) {
 function renderApproveFileList() {
   const el = document.getElementById('approve-modal-file-list');
   if (!_approveFiles.length) {
-    el.innerHTML = `<div class="followup-file-empty">No files attached yet — at least one is required before you can approve.</div>`;
+    el.innerHTML = `<div class="followup-file-empty">No extra files — the event programme is attached automatically.</div>`;
     return;
   }
   el.innerHTML = `<div class="followup-file-list">` +
