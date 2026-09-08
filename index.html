@@ -849,18 +849,22 @@ body.role-usher .dash-btn-doors{display:none;}
 }
 
 /* ── RSVP closed panel ── */
-.rsvp-closed-modal{max-width:560px;background:linear-gradient(168deg,#0d2f1c 0%,#071a10 100%);border:1px solid rgba(201,168,76,.35);overflow:hidden;}
+/* overflow:hidden here was overriding .modal's overflow-y:auto and
+   clipping the panel instead of letting it scroll — the checklist at
+   the bottom was simply cut off on shorter screens. */
+.rsvp-closed-modal{max-width:560px;background:linear-gradient(168deg,#0d2f1c 0%,#071a10 100%);
+  border:1px solid rgba(201,168,76,.35);max-height:90vh;overflow-y:auto;overflow-x:hidden;}
 .rsvp-closed-modal .modal-close{color:rgba(250,247,240,.55);}
 .rsvp-closed-modal .modal-close:hover{color:var(--gold-light);}
-.rsvp-closed-inner{padding:clamp(34px,5vw,52px) clamp(26px,4vw,46px) clamp(30px,4vw,44px);text-align:center;}
-.rsvp-closed-seal{width:64px;height:64px;margin:0 auto clamp(18px,2.5vh,26px);border-radius:50%;border:1.5px solid rgba(201,168,76,.5);background:rgba(201,168,76,.1);display:flex;align-items:center;justify-content:center;color:var(--gold-light);}
-.rsvp-closed-seal svg{width:28px;height:28px;}
+.rsvp-closed-inner{padding:clamp(26px,3.2vw,38px) clamp(24px,3.4vw,40px) clamp(24px,3vw,32px);text-align:center;}
+.rsvp-closed-seal{width:54px;height:54px;margin:0 auto clamp(12px,1.8vh,18px);border-radius:50%;border:1.5px solid rgba(201,168,76,.5);background:rgba(201,168,76,.1);display:flex;align-items:center;justify-content:center;color:var(--gold-light);}
+.rsvp-closed-seal svg{width:24px;height:24px;}
 .rsvp-closed-eyebrow{font-size:10.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold);font-weight:700;}
-.rsvp-closed-inner h2{font-family:'Cinzel',serif;font-size:clamp(23px,3.4vw,33px);font-weight:700;color:var(--gold-light);line-height:1.2;margin-top:10px;}
-.rsvp-closed-rule{width:56px;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:clamp(16px,2.4vh,22px) auto;}
-.rsvp-closed-lead{font-size:15px;line-height:1.75;color:rgba(250,247,240,.72);max-width:44ch;margin:0 auto 14px;}
-.rsvp-closed-contacts{display:flex;flex-direction:column;gap:11px;margin:clamp(22px,3vh,30px) 0 clamp(16px,2vh,22px);}
-.rsvp-contact{display:flex;align-items:center;gap:15px;text-align:left;padding:15px 18px;border-radius:13px;border:1.5px solid rgba(201,168,76,.34);background:rgba(255,255,255,.045);text-decoration:none;transition:background .18s ease,border-color .18s ease,transform .12s ease;}
+.rsvp-closed-inner h2{font-family:'Cinzel',serif;font-size:clamp(21px,2.8vw,29px);font-weight:700;color:var(--gold-light);line-height:1.22;margin-top:8px;}
+.rsvp-closed-rule{width:52px;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:clamp(12px,1.8vh,16px) auto;}
+.rsvp-closed-lead{font-size:14.5px;line-height:1.65;color:rgba(250,247,240,.72);max-width:46ch;margin:0 auto 11px;}
+.rsvp-closed-contacts{display:flex;flex-direction:column;gap:9px;margin:clamp(16px,2.2vh,22px) 0 clamp(12px,1.6vh,16px);}
+.rsvp-contact{display:flex;align-items:center;gap:14px;text-align:left;padding:12px 16px;border-radius:13px;border:1.5px solid rgba(201,168,76,.34);background:rgba(255,255,255,.045);text-decoration:none;transition:background .18s ease,border-color .18s ease,transform .12s ease;}
 .rsvp-contact:hover{background:rgba(232,201,110,.14);border-color:var(--gold-light);transform:translateY(-1px);}
 .rsvp-contact-icon{font-size:21px;flex-shrink:0;}
 .rsvp-contact-body{min-width:0;}
@@ -884,7 +888,7 @@ body.role-usher .dash-btn-doors{display:none;}
 .rsvp-one-person strong{color:var(--navy);}
 
 .rsvp-closed-foot{text-align:left;background:rgba(255,255,255,.04);border:1px solid rgba(201,168,76,.24);
-  border-radius:12px;padding:16px 20px;}
+  border-radius:12px;padding:13px 17px;}
 .rsvp-closed-foot-lead{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);
   font-weight:700;margin-bottom:10px;}
 .rsvp-closed-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:7px;}
@@ -893,6 +897,27 @@ body.role-usher .dash-btn-doors{display:none;}
   border-radius:50%;background:var(--gold);}
 .rsvp-closed-list strong{color:var(--cream);font-weight:600;}
 .rsvp-closed-list span{color:rgba(250,247,240,.5);font-size:12.5px;}
+
+/* On short screens the panel scrolls rather than clips, which works but
+   means a guest can miss the checklist. Trimming the decorative spacing
+   below 720px of height lets the whole notice fit without scrolling —
+   the contact details and what to send are the point of the panel. */
+@media (max-height:720px){
+  .rsvp-closed-inner{padding:20px 22px 22px;}
+  .rsvp-closed-seal{width:44px;height:44px;margin-bottom:10px;}
+  .rsvp-closed-seal svg{width:20px;height:20px;}
+  .rsvp-closed-eyebrow{font-size:9.5px;letter-spacing:.18em;}
+  .rsvp-closed-inner h2{font-size:20px;margin-top:6px;}
+  .rsvp-closed-rule{margin:10px auto;}
+  .rsvp-closed-lead{font-size:13px;line-height:1.55;margin-bottom:8px;}
+  .rsvp-closed-contacts{margin:13px 0 11px;gap:8px;}
+  .rsvp-contact{padding:10px 14px;gap:12px;}
+  .rsvp-contact-icon{font-size:18px;}
+  .rsvp-contact-value{font-size:13.5px;}
+  .rsvp-closed-foot{padding:11px 14px;}
+  .rsvp-closed-list{gap:5px;}
+  .rsvp-closed-list li{font-size:12.5px;}
+}
 </style>
 </head>
 <body>
