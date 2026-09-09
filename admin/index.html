@@ -1093,6 +1093,46 @@ body.role-usher .cat-chip,body.role-manager .cat-chip{cursor:default;}
 #hw-scan-ping{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(14px);z-index:999998;background:var(--navy);color:var(--gold-light);font-size:12.5px;font-weight:700;padding:9px 18px;border-radius:100px;font-family:'DM Sans',sans-serif;opacity:0;pointer-events:none;transition:opacity .18s ease,transform .18s ease;box-shadow:0 6px 20px rgba(0,0,0,.3);}
 #hw-scan-ping.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
+/* ── HARDWARE SCANNER: keystroke capture field ──────────────────────
+   A barcode scanner is a keyboard, and a keyboard types into whatever
+   holds focus. If nothing in the page holds it, the characters go to
+   the browser's address bar instead and the URL simply opens — which
+   looks exactly like "the scanner doesn't work". This field exists to
+   always hold focus on a scanning screen so that can't happen. It is
+   invisible but must remain focusable, so it cannot use display:none
+   or visibility:hidden.                                             */
+#hw-capture{position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;border:0;padding:0;margin:0;background:transparent;color:transparent;z-index:-1;pointer-events:none;}
+
+/* ── HARDWARE SCANNER: result overlay ───────────────────────────────
+   Hardware scans used to write their result into the camera modal's
+   result panel, which is invisible when the camera isn't open. Staff
+   saw nothing at all. This overlay is the surface for every scan that
+   doesn't come from the camera, and it is deliberately large enough
+   to read across a busy reception desk.                             */
+#hw-scan-overlay{position:fixed;inset:0;z-index:999997;display:none;align-items:center;justify-content:center;padding:28px;background:rgba(6,26,20,0.94);backdrop-filter:blur(6px);}
+#hw-scan-overlay.show{display:flex;}
+#hw-scan-overlay .hw-card{width:100%;max-width:620px;text-align:center;}
+#hw-scan-overlay .hw-card .qr-scanner-success,
+#hw-scan-overlay .hw-card .qr-scanner-warn,
+#hw-scan-overlay .hw-card .qr-scanner-error{font-size:clamp(21px,3.4vw,32px);padding:34px 28px;border-radius:20px;border-width:2px;line-height:1.35;}
+#hw-scan-overlay .hw-card .qr-scanner-success{background:rgba(45,158,95,0.16);color:#8adfa6;}
+#hw-scan-overlay .hw-card .qr-scanner-warn{background:rgba(232,201,110,0.14);color:#f0d98a;}
+#hw-scan-overlay .hw-card .qr-scanner-error{background:rgba(192,80,77,0.16);color:#f0a5a3;}
+#hw-scan-overlay .qr-scanner-result-seat{font-size:clamp(24px,4vw,40px);margin-top:14px;}
+#hw-scan-overlay .qr-scanner-result-noseat{font-size:15px;margin-top:10px;}
+#hw-scan-overlay .hw-dismiss{margin-top:22px;background:rgba(255,255,255,0.1);border:1.5px solid rgba(255,255,255,0.3);color:#fff;padding:13px 30px;border-radius:100px;font-size:15px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;}
+#hw-scan-overlay .hw-next{margin-top:14px;font-size:13px;color:rgba(255,255,255,0.45);letter-spacing:0.04em;}
+
+/* ── HARDWARE SCANNER: armed/not-armed indicator ────────────────────
+   Tells whoever is on the desk, at a glance, whether keystrokes from
+   the scanner will actually reach this page. Clicking it re-arms.  */
+.doors-scanner-chip{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:6px 13px;border-radius:100px;cursor:pointer;font-family:'DM Sans',sans-serif;border:1.5px solid transparent;transition:all .2s ease;}
+.doors-scanner-chip.armed{background:rgba(45,158,95,0.16);border-color:rgba(138,223,166,0.5);color:#8adfa6;}
+.doors-scanner-chip.idle{background:rgba(232,201,110,0.16);border-color:rgba(232,201,110,0.55);color:#f0d98a;}
+.doors-scanner-chip .dot{width:8px;height:8px;border-radius:50%;background:currentColor;}
+.doors-scanner-chip.armed .dot{animation:hwPulse 2s ease-in-out infinite;}
+@keyframes hwPulse{0%,100%{opacity:1;}50%{opacity:0.35;}}
+
 /* ── Guest floor plan (65" touchscreen) ── */
 #gplan-view{display:none;position:fixed;inset:0;z-index:900;background:linear-gradient(168deg,#0b2a19 0%,#050f0a 62%,#0a2818 100%);color:var(--cream);overflow:hidden;flex-direction:column;}
 #gplan-view.active{display:flex;}
@@ -1778,6 +1818,10 @@ button,.dash-tab,.fp-chip,.cat-chip,.kiosk-hit,.gplan-hit{touch-action:manipulat
       <span class="doors-title">🚪 Doors Mode</span>
       <span class="doors-counter" id="doors-counter">0 / 0 checked in</span>
       <span id="doors-pending-badge" class="pending-badge" style="display:none;"></span>
+      <span id="doors-scanner-chip" class="doors-scanner-chip idle" style="display:none;"
+            onclick="armHardwareScanner()" title="Click to re-arm the handheld scanner">
+        <span class="dot"></span><span id="doors-scanner-chip-text">Scanner</span>
+      </span>
     </div>
     <button class="doors-exit-btn" onclick="exitDoorsMode()">✕ Exit</button>
   </div>
@@ -1969,6 +2013,16 @@ button,.dash-tab,.fp-chip,.cat-chip,.kiosk-hit,.gplan-hit{touch-action:manipulat
   </div>
 </div>
 
+
+<!-- HARDWARE SCANNER RESULT — the on-screen answer for any scan that
+     didn't come from the camera modal (handheld USB/Bluetooth gun). -->
+<div id="hw-scan-overlay" onclick="if(event.target===this)hideHwScanOverlay()">
+  <div class="hw-card">
+    <div id="hw-scan-overlay-body"></div>
+    <button type="button" class="hw-dismiss" onclick="hideHwScanOverlay()">Next guest</button>
+    <p class="hw-next">Scanning the next ticket also clears this</p>
+  </div>
+</div>
 
 <div class="dash-toast" id="dash-toast"></div>
 
@@ -7768,6 +7822,40 @@ function parseTicketQRPayload(data) {
 
 let _qrScanResultToken = 0;
 
+/* Where should the answer to a scan be written?
+
+   The camera modal owns #qr-scanner-result, and that element exists in
+   the DOM whether or not the modal is open. Handheld-scanner results
+   were therefore being written into a panel nobody could see: the
+   check-in ran, but the desk got no confirmation and it looked like
+   the scanner had done nothing at all.
+
+   So: if the camera is open, the camera panel is the surface. If it
+   isn't — a handheld gun on the desk, Doors Mode, the dashboard — the
+   full-screen overlay is. There is now no path where a scan produces
+   an invisible result.                                              */
+function scanResultSurface() {
+  const backdrop = document.getElementById('qr-scanner-backdrop');
+  const cameraOpen = !!(backdrop && backdrop.classList.contains('open'));
+  if (cameraOpen) {
+    return { el: document.getElementById('qr-scanner-result'), overlay: false };
+  }
+  return { el: document.getElementById('hw-scan-overlay-body'), overlay: true };
+}
+
+function showHwScanOverlay() {
+  const o = document.getElementById('hw-scan-overlay');
+  if (o) o.classList.add('show');
+}
+
+function hideHwScanOverlay() {
+  const o = document.getElementById('hw-scan-overlay');
+  if (o) o.classList.remove('show');
+  // Give focus straight back to the capture field, or the very next
+  // scan lands nowhere again.
+  armHardwareScanner();
+}
+
 // Whatever happens on one scan, the scanner must still work for the
 // next guest. Without this, a single unexpected error leaves the
 // cooldown flag stuck and the door stops working entirely.
@@ -7775,8 +7863,9 @@ function handleQRScanResult(data) {
   try {
     handleQRScanResultInner(data);
   } catch (err) {
-    const el = document.getElementById('qr-scanner-result');
-    if (el) el.innerHTML = '<div class="qr-scanner-error">⚠️ Couldn\'t read that code. Try again, or check the guest in by name.</div>';
+    const surface = scanResultSurface();
+    if (surface.el) surface.el.innerHTML = '<div class="qr-scanner-error">⚠️ Couldn\'t read that code. Try again, or check the guest in by name.</div>';
+    if (surface.overlay) showHwScanOverlay();
     try { playScanFeedback('error'); } catch (e) {}
     _qrScannerCooldown = true;
     setTimeout(function() { _qrScannerCooldown = false; }, 1200);
@@ -7785,8 +7874,10 @@ function handleQRScanResult(data) {
 
 function handleQRScanResultInner(data) {
   const parsed = parseTicketQRPayload(data);
-  const resultEl = document.getElementById('qr-scanner-result');
+  const surface = scanResultSurface();
+  const resultEl = surface.el;
   if (!resultEl) return;
+  if (surface.overlay) showHwScanOverlay();
   const myToken = ++_qrScanResultToken;
 
   if (!parsed) {
@@ -7851,6 +7942,13 @@ function handleQRScanResultInner(data) {
 
   setTimeout(function() {
     if (myToken !== _qrScanResultToken) return; // a newer scan already replaced this
+    if (surface.overlay) {
+      // The overlay covers the whole screen, so it must not linger —
+      // it clears itself and hands focus back to the capture field
+      // ready for the next guest in the queue.
+      hideHwScanOverlay();
+      return;
+    }
     const stillOpen = document.getElementById('qr-scanner-backdrop').classList.contains('open');
     if (stillOpen && resultEl) {
       resultEl.innerHTML = '<p class="qr-scanner-status">Point the camera at the next guest\'s QR code…</p>';
@@ -7899,55 +7997,175 @@ function closeQRScanner() {
 let _hwBuf = '';
 let _hwLastKey = 0;
 let _hwStart = 0;
-const HW_MAX_GAP_MS = 60;      // a human rarely types faster than this
+let _hwIdleTimer = null;
 const HW_MIN_LEN = 12;         // shorter than any real ticket payload
+const HW_RESET_MS = 200;       // a pause this long starts a fresh code
+const HW_IDLE_FLUSH_MS = 180;  // for scanners configured with no Enter suffix
+
+/* Is a scanning surface currently on screen?
+
+   Handheld scans used to be ignored anywhere except Doors Mode and
+   the kiosk, which meant a scan taken while the dashboard sat on the
+   Bookings tab vanished with no explanation. Any screen will now
+   accept one — the surface only decides how the result is presented. */
+function hwActiveSurface() {
+  const kiosk = document.getElementById('kiosk-view');
+  if (kiosk && kiosk.classList.contains('active')) return 'kiosk';
+  const doors = document.getElementById('doors-mode-view');
+  if (doors && doors.classList.contains('active')) return 'doors';
+  return 'dashboard';
+}
+
+/* Keep a focusable target inside the page at all times.
+
+   Without this, focus can sit in the browser's address bar (which is
+   exactly what happens right after you type a URL), and the scanner's
+   keystrokes never reach the page at all — the browser treats the
+   ticket URL as something you typed and navigates to it. The guest's
+   own ticket opens on the desk screen and nothing is checked in.
+
+   Skipped on touch-only devices: focusing a field there raises the
+   on-screen keyboard, which would make Doors Mode on a phone worse,
+   and a phone has no scanner plugged into it anyway. */
+function hwWantsCapture() {
+  try { return window.matchMedia('(any-pointer: fine)').matches; }
+  catch (e) { return true; }
+}
+
+function armHardwareScanner() {
+  if (!hwWantsCapture()) return;
+  // Only on the screens a scanner is actually pointed at. Holding
+  // focus on the ordinary dashboard would quietly break keyboard
+  // navigation for everyone not using a gun.
+  const monitor = document.getElementById('monitor-view');
+  const monitorOn = !!(monitor && monitor.classList.contains('active'));
+  if (hwActiveSurface() === 'dashboard' && !monitorOn) return;
+  let cap = document.getElementById('hw-capture');
+  if (!cap) {
+    cap = document.createElement('input');
+    cap.id = 'hw-capture';
+    cap.type = 'text';
+    cap.setAttribute('autocomplete', 'off');
+    cap.setAttribute('autocorrect', 'off');
+    cap.setAttribute('autocapitalize', 'off');
+    cap.setAttribute('spellcheck', 'false');
+    cap.setAttribute('aria-hidden', 'true');
+    cap.setAttribute('tabindex', '-1');
+    document.body.appendChild(cap);
+  }
+  const a = document.activeElement;
+  // Never steal focus from someone actually typing — a guest at the
+  // kiosk, or staff in the name-search box.
+  // Buttons are deliberately NOT treated as busy. Chrome leaves a
+  // button focused after a click, so tapping "Scan QR Code" would
+  // otherwise leave the gun disarmed until someone clicked elsewhere.
+  // These are scanning screens only, driven by touch and mouse, so
+  // nothing is lost by taking focus back from a button here.
+  const busy = a && a !== cap && a !== document.body &&
+               (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' ||
+                a.tagName === 'SELECT' || a.isContentEditable);
+  if (busy) return;
+  cap.value = '';
+  try { cap.focus({ preventScroll: true }); } catch (e) { try { cap.focus(); } catch (e2) {} }
+}
+
+/* The desk needs to know, without being told twice, whether the gun
+   will actually work right now. Green means keystrokes reach this
+   page; amber means the browser has focus somewhere else and the
+   next scan would go astray. Clicking the chip fixes it. */
+function updateScannerChip() {
+  const chip = document.getElementById('doors-scanner-chip');
+  if (!chip) return;
+  const doors = document.getElementById('doors-mode-view');
+  if (!doors || !doors.classList.contains('active') || !hwWantsCapture()) {
+    chip.style.display = 'none';
+    return;
+  }
+  chip.style.display = 'inline-flex';
+  const cap = document.getElementById('hw-capture');
+  const armed = document.hasFocus() &&
+                (document.activeElement === cap ||
+                 (document.activeElement && document.activeElement.id === 'doors-search'));
+  chip.classList.toggle('armed', armed);
+  chip.classList.toggle('idle', !armed);
+  const txt = document.getElementById('doors-scanner-chip-text');
+  if (txt) txt.textContent = armed ? 'Scanner ready' : 'Tap to arm scanner';
+}
+
+/* Act on a completed burst. Kept separate from the key handler so
+   both the Enter suffix and the no-suffix idle flush use identical
+   logic — one path, one set of behaviours to trust. */
+function hwCommitBuffer(target) {
+  const buf = _hwBuf;
+  _hwBuf = '';
+  if (_hwIdleTimer) { clearTimeout(_hwIdleTimer); _hwIdleTimer = null; }
+  if (buf.length < HW_MIN_LEN) return false;
+
+  /* The speed test used to be a hard gate: anything averaging slower
+     than 60ms a character was thrown away as human typing. That is
+     what made this fragile — a scanner with an inter-character delay
+     set, a wireless link under load, or a browser busy repainting all
+     push the average past the threshold and the scan silently
+     disappears.
+
+     It isn't needed as a gate, because the payload check below is far
+     stricter than any timing could be: the text must be a URL on our
+     own host, carrying ticket=1 plus a well-formed ts and idx. Nobody
+     types that into a search box by accident. Speed no longer decides
+     whether a scan counts. */
+  if (!parseTicketQRPayload(buf)) return false;
+
+  // Wipe whatever the scanner dumped into a visible field on its way.
+  if (target && target.value !== undefined) {
+    target.value = '';
+    if (target.id === 'doors-search' && typeof renderDoorsSearchResults === 'function') renderDoorsSearchResults();
+    if (target.id === 'kiosk-input' && typeof kioskSearch === 'function') kioskSearch('');
+  }
+  const cap = document.getElementById('hw-capture');
+  if (cap) cap.value = '';
+
+  if (hwActiveSurface() === 'kiosk') kioskHandleScan(buf);
+  else handleQRScanResult(buf);
+  showHwScannerPing();
+  return true;
+}
 
 function hwScannerKeydown(e) {
-  // Only while a scanning surface is open.
-  const doorsOpen = document.getElementById('doors-mode-view');
-  const kioskOpen = document.getElementById('kiosk-view');
-  const active = (doorsOpen && doorsOpen.classList.contains('active')) ||
-                 (kioskOpen && kioskOpen.classList.contains('active'));
-  if (!active) return;
+  // Shortcuts belong to the browser and to the command palette.
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
 
-  // Never swallow real typing. If someone is in a text field, the only
-  // thing we act on is a burst fast enough that it cannot be a person.
   const t = e.target;
-  const typing = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
-
   const now = performance.now();
-  // Start a fresh buffer the moment there's a pause. A scanner emits
-  // characters a few milliseconds apart, so anything slower than this
-  // is a new burst — without it, two scans close together can run into
-  // one another and the joined text may still parse as a valid URL,
-  // letting a forged code ride in on the back of a real one.
-  if (now - _hwLastKey > 200) { _hwBuf = ''; _hwStart = now; }
+
+  // A pause starts a fresh code. Without this, two scans arriving back
+  // to back can run together, and the joined text may still parse as a
+  // valid URL — which is how a forged code could ride in on the back
+  // of a real one.
+  if (now - _hwLastKey > HW_RESET_MS) { _hwBuf = ''; _hwStart = now; }
   _hwLastKey = now;
 
   if (e.key === 'Enter') {
-    const buf = _hwBuf;
-    const elapsed = now - _hwStart;
-    _hwBuf = '';
-    if (buf.length < HW_MIN_LEN) return;
-    const perChar = elapsed / Math.max(1, buf.length);
-    if (perChar > HW_MAX_GAP_MS) return;          // typed by a human — ignore
-    if (!parseTicketQRPayload(buf)) return;       // not one of our tickets
-    e.preventDefault();
-    if (typing && t.value !== undefined) {
-      // Clear whatever the scanner dumped into the search box.
-      t.value = '';
-      if (t.id === 'doors-search' && typeof renderDoorsSearchResults === 'function') renderDoorsSearchResults();
-      if (t.id === 'kiosk-input' && typeof kioskSearch === 'function') kioskSearch('');
-    }
-    if (kioskOpen && kioskOpen.classList.contains('active')) kioskHandleScan(buf);
-    else handleQRScanResult(buf);
-    showHwScannerPing();
+    // preventDefault before committing: if this Enter reached a form
+    // or the search box, we don't want its default action as well.
+    const looksLikeScan = _hwBuf.length >= HW_MIN_LEN;
+    if (looksLikeScan) e.preventDefault();
+    hwCommitBuffer(t);
     return;
   }
 
   if (e.key.length === 1) {
     _hwBuf += e.key;
     if (_hwBuf.length > 600) _hwBuf = _hwBuf.slice(-600);   // never grow unbounded
+
+    // Some scanners ship with no Enter suffix configured, and changing
+    // that means finding the right barcode in a paper manual on the
+    // night. If a complete, valid payload has arrived and then the
+    // keystrokes stop, treat it as finished anyway.
+    if (_hwIdleTimer) clearTimeout(_hwIdleTimer);
+    _hwIdleTimer = setTimeout(function() {
+      _hwIdleTimer = null;
+      if (_hwBuf.length >= HW_MIN_LEN && parseTicketQRPayload(_hwBuf)) hwCommitBuffer(t);
+    }, HW_IDLE_FLUSH_MS);
   }
 }
 
@@ -7969,6 +8187,16 @@ function showHwScannerPing() {
 if (!document._hwScannerBound) {
   document._hwScannerBound = true;
   document.addEventListener('keydown', hwScannerKeydown, true);
+
+  // Re-arm on every plausible moment focus could have been lost: a
+  // click anywhere, coming back to the tab, closing a modal. The
+  // interval is the backstop for everything not thought of.
+  window.addEventListener('focus', armHardwareScanner);
+  document.addEventListener('visibilitychange', function() {
+    if (!document.hidden) armHardwareScanner();
+  });
+  document.addEventListener('click', function() { setTimeout(armHardwareScanner, 0); }, true);
+  setInterval(function() { armHardwareScanner(); updateScannerChip(); }, 700);
 }
 
 /* ══════════════════════════════════════════════════════════════════
