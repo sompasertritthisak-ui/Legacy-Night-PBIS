@@ -3,9 +3,10 @@
    ──────────────────────────────────────────────────────────────────
    Purpose: if the venue network drops, opening the dashboard must
    still work rather than showing a browser error page. Combined with
-   the guest-list snapshot already held in localStorage, that means a
-   staff member can close the tab, reopen it with no signal at all,
-   and still check people in — with writes queued and sent later.
+   the guest-list snapshot in localStorage and the pending-check-in
+   queue, a staff member can close the tab, reopen it with no signal
+   at all, and still check people in — with writes queued and sent
+   later.
 
    THE STRATEGY IS NETWORK-FIRST, DELIBERATELY.
 
@@ -23,15 +24,37 @@
    API calls to Apps Script are never cached — check-in data must
    never be served from a stale copy. Those requests pass straight
    through, and the dashboard's own retry queue handles failures.
+
+   NOTE ON THE QR LIBRARIES. This worker does not cache cross-origin
+   requests, which previously meant a device reloaded offline got the
+   cached page and then silently failed to fetch jsQR from its CDN —
+   camera open, video running, nothing ever decoding. That is the
+   worst failure possible at a door, because it looks like the guest's
+   pass is bad. Both QR libraries are now inlined in the dashboard
+   itself, so they are part of the cached document and there is
+   nothing left to fetch.
 ════════════════════════════════════════════════════════════════════ */
 
-const CACHE = 'legacy-night-v1';
+/* Bump this string on every deploy that changes cached assets. The
+   activate handler deletes every cache that isn't the current name,
+   so a bump guarantees stale copies are dropped rather than lingering
+   alongside the new ones. */
+const CACHE = 'legacy-night-v2';
 
-// Only same-origin page assets. Everything else is passed through.
-const PRECACHE = [
-  './',
-  './index.html',
-];
+/* Only the scope root is precached by name.
+
+   The previous version also precached './index.html' by hand. That is
+   a guess about the deployed filename: this dashboard is built as
+   index-68.html and may be published under any name. A precache entry
+   that 404s is silently dropped, so the guess cost nothing when wrong
+   — but it also bought nothing, and it made the navigation fallback
+   below point at a file that might be the PUBLIC page rather than the
+   dashboard, which is actively misleading at a door.
+
+   Everything the dashboard actually loads is cached at runtime on the
+   first successful online load instead, whatever it happens to be
+   called. */
+const PRECACHE = ['./'];
 
 self.addEventListener('install', function (event) {
   // Take over as soon as possible so a fix reaches staff on the next
@@ -56,6 +79,31 @@ self.addEventListener('activate', function (event) {
   );
 });
 
+/* Offline fallback for a page load, in order of preference:
+     1. this exact page, ignoring ?kiosk=1 / ?monitor=1
+     2. the scope root
+     3. any cached HTML document we hold
+   Step 3 matters because it is the difference between a door device
+   opening SOMETHING usable and showing a browser error page. */
+function offlineNavigationFallback(req) {
+  return caches.open(CACHE).then(function (cache) {
+    return cache.match(req, { ignoreSearch: true }).then(function (hit) {
+      if (hit) return hit;
+      return cache.match('./', { ignoreSearch: true }).then(function (root) {
+        if (root) return root;
+        return cache.keys().then(function (reqs) {
+          for (var i = 0; i < reqs.length; i++) {
+            if (reqs[i].mode === 'navigate' || /\.html?($|\?)/i.test(reqs[i].url)) {
+              return cache.match(reqs[i]);
+            }
+          }
+          return Response.error();
+        });
+      });
+    });
+  });
+}
+
 self.addEventListener('fetch', function (event) {
   const req = event.request;
 
@@ -69,8 +117,6 @@ self.addEventListener('fetch', function (event) {
   // have their own caching that works better than ours would.
   if (url.origin !== self.location.origin) return;
 
-  // Ignore the display-mode query strings so ?kiosk=1 and ?monitor=1
-  // resolve to the same cached document as the plain page.
   event.respondWith(
     fetch(req)
       .then(function (res) {
@@ -82,15 +128,9 @@ self.addEventListener('fetch', function (event) {
         return res;
       })
       .catch(function () {
-        // Offline: fall back to whatever we have, ignoring the query
-        // string so every mode still opens.
+        if (req.mode === 'navigate') return offlineNavigationFallback(req);
         return caches.match(req, { ignoreSearch: true }).then(function (hit) {
-          if (hit) return hit;
-          // Last resort for a navigation, so the app shell still loads.
-          if (req.mode === 'navigate') {
-            return caches.match('./index.html', { ignoreSearch: true });
-          }
-          return Response.error();
+          return hit || Response.error();
         });
       })
   );
