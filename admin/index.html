@@ -687,6 +687,7 @@ body.dashboard-active #dashboard-view{display:block !important;}
 .monitor-welcome .monitor-check svg{width:52px;height:52px;stroke:#fff;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;}
 .monitor-welcome h1{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:clamp(24px,3vw,36px);color:rgba(255,255,255,0.7);margin:0 0 8px;}
 .monitor-welcome h2{font-family:'Cinzel',serif;font-weight:700;font-size:clamp(40px,7vw,84px);background-image:linear-gradient(100deg,#8a6a26 0%,var(--gold) 20%,var(--gold-light) 38%,var(--gold) 55%,#8a6a26 72%,var(--gold) 88%,#8a6a26 100%);background-size:220% auto;background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin:0;animation:goldShimmer 7s linear infinite;}
+.monitor-to{margin:10px 0 0;font-family:'Cormorant Garamond',serif;font-style:italic;font-size:clamp(20px,2.4vw,32px);color:rgba(255,255,255,0.62);letter-spacing:.01em;}
 .monitor-seat{margin:22px 0 0;font-family:'DM Sans',sans-serif;font-size:clamp(20px,3vw,34px);font-weight:700;color:var(--gold-light);letter-spacing:0.02em;}
 #doors-mode-view.active{display:flex;}
 .doors-header{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid rgba(201,168,76,0.25);flex-wrap:wrap;gap:12px;}
@@ -5424,7 +5425,11 @@ function journalRecord(ts, checkedIn, idx, personName, source) {
     lane: _doorsLane,
     by: _currentUser ? _currentUser.name : '',
     via: source || 'manual',
-    device: (function () { try { return localStorage.getItem('legacy_device_id') || ''; } catch (e) { return ''; } })(),
+    /* getDeviceId() GENERATES an id if none exists; reading the key
+       directly did not. With two lanes running, journals exported
+       from each device have to be tellable apart — a blank column
+       makes reconciliation guesswork. */
+    device: (function () { try { return getDeviceId(); } catch (e) { return ''; } })(),
   });
 }
 
@@ -6605,13 +6610,14 @@ function enterMonitorMode() {
     const p = new URLSearchParams(window.location.search);
     const l = p.get('lane');
     if (l && /^[1-9]$/.test(l)) _monitorLane = l;
+    _monitorClean = p.get('clean') === '1';
   } catch (e) {}
 
   el.classList.add('active');
   const badge = document.getElementById('monitor-lane-badge');
   if (badge) {
     badge.textContent = _monitorLane === 'all' ? 'All lanes' : 'Lane ' + _monitorLane;
-    badge.style.display = 'block';
+    badge.style.display = _monitorClean ? 'none' : 'block';
   }
   // Start from "now" so opening a monitor mid-event doesn't replay
   // everyone who already walked in.
@@ -6671,18 +6677,73 @@ async function pollForRecentCheckIn() {
    Nobody has to wait behind a name that is no longer relevant.       */
 const MONITOR_DWELL_MS = 20000;
 
+/* ── EVERY GUEST GETS A REAL MOMENT ────────────────────────────────
+   A new arrival takes over the screen immediately, which is right
+   with one desk: the person standing there matters more than the one
+   walking away.
+
+   With TWO desks checking in at once it stops being right. Arrivals
+   alternate between lanes every few seconds, so each guest is wiped
+   off after a moment and the 20-second dwell is never actually
+   reached. On a pair of large screens at a 25th anniversary, a guest
+   glimpsing their own name for half a second before it vanishes is
+   worse than a short wait — seeing their name is the entire point of
+   the screen.
+
+   So a guest holds the screen for a guaranteed minimum before anyone
+   can displace them. Newer arrivals wait in the queue and appear the
+   instant the floor expires; nothing is dropped and nothing is
+   delayed longer than it has to be. */
+/* 3.5s is deliberate arithmetic, not a guess. At this floor the screen
+   can welcome ~17 guests a minute. Two desks working a 300-guest list
+   over a 45-minute registration window average 7-11 a minute, so the
+   queue absorbs bursts and still catches up. Raising the floor much
+   further would push capacity below the arrival rate and start
+   dropping people during the rush. */
+const MONITOR_MIN_ON_SCREEN_MS = 3500;
+let _monitorShownAt = 0;
+let _monitorFloorTimer = null;
+
+// Guest-facing screens must not show staff chrome. Open a TV with
+// ?monitor=1&clean=1 to hide the Continue button, the countdown bar
+// and the lane badge.
+let _monitorClean = false;
+
 function drainMonitorQueue(force) {
   if (!_monitorQueue.length) return;
   if (_monitorShowing && !force) return;
+
+  if (_monitorShowing && force) {
+    const elapsed = Date.now() - _monitorShownAt;
+    if (elapsed < MONITOR_MIN_ON_SCREEN_MS) {
+      // Come back the moment the current guest has had their time.
+      clearTimeout(_monitorFloorTimer);
+      _monitorFloorTimer = setTimeout(function () {
+        drainMonitorQueue(true);
+      }, MONITOR_MIN_ON_SCREEN_MS - elapsed);
+      return;
+    }
+  }
+
+  clearTimeout(_monitorFloorTimer);
   const next = _monitorQueue.shift();
   _monitorShowing = true;
-  showMonitorWelcome(next.name, next.table, next.seat, MONITOR_DWELL_MS);
+
+  /* Hold a guest for the full 20 seconds only when nobody is waiting.
+     With a backlog, 20s each means the fourth guest in a queue appears
+     a minute after they walked in — by which time they are seated and
+     the screen is welcoming someone who has left the desk. When people
+     are waiting, each gets the guaranteed minimum and the queue moves
+     at that pace instead of stalling behind a long dwell. */
+  const dwell = _monitorQueue.length ? MONITOR_MIN_ON_SCREEN_MS : MONITOR_DWELL_MS;
+  showMonitorWelcome(next.name, next.table, next.seat, dwell);
 }
 
 // Skips the guest currently on screen and moves to the next, or back
 // to the waiting screen if nobody is queued.
 function monitorContinue() {
   if (_monitorResetTimeout) clearTimeout(_monitorResetTimeout);
+  clearTimeout(_monitorFloorTimer);
   _monitorShowing = false;
   if (_monitorQueue.length) drainMonitorQueue();
   else resetMonitorToWaiting();
@@ -6695,18 +6756,22 @@ function showMonitorWelcome(name, table, seat, dwell) {
     ? `<p class="monitor-seat">Table ${table}${seat ? ' &middot; Seat ' + seat : ''}</p>`
     : '';
   const queued = _monitorQueue.length;
-  el.innerHTML = `
-    <div class="monitor-welcome">
-      <div class="monitor-check"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></div>
-      <h1>Welcome,</h1>
-      <h2>${escHtmlV(name)}</h2>
-      ${seatLine}
+  const controls = _monitorClean ? '' : `
       <div class="monitor-controls">
         <button class="monitor-continue" onclick="monitorContinue()">
           Continue${queued ? ' <span>' + queued + ' waiting</span>' : ''}
         </button>
         <div class="monitor-timer"><div class="monitor-timer-fill" id="monitor-timer-fill"></div></div>
-      </div>
+      </div>`;
+  _monitorShownAt = Date.now();
+  el.innerHTML = `
+    <div class="monitor-welcome">
+      <div class="monitor-check"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></div>
+      <h1>Welcome,</h1>
+      <h2>${escHtmlV(name)}</h2>
+      <p class="monitor-to">to PBIS Legacy Night</p>
+      ${seatLine}
+      ${controls}
     </div>`;
   // A slim bar draining over the dwell, so staff can see at a glance
   // how long is left rather than guessing whether it has frozen.
@@ -8444,6 +8509,43 @@ function hwScannerKeydown(e) {
 let _hwLastFlushAt = 0;
 let _lastScanWasHardware = false;
 
+/* ── TWO SCANNERS ON ONE HOST ──────────────────────────────────────
+   Both C60s are HID keyboards. Paired to the same device they type
+   into the same buffer, so two simultaneous scans interleave and
+   nothing parses — the same visible symptom as a wrong keyboard
+   layout, but a completely different fix. Sending staff to reconfigure
+   a scanner that is set up correctly wastes the one thing they don't
+   have at a door, which is time.
+
+   The obvious test — landmarks appearing twice — does not work:
+   interleaving doesn't duplicate "legacynight", it SHREDS it into
+   "lleeggaaccyynniigghhtt". So instead, undo the interleave. Take
+   every other character at both offsets; if either half is a valid
+   pass, two devices were typing at once. Chunkier real-world
+   collisions won't alternate perfectly, so a read far longer than any
+   single pass that still carries payload landmarks counts too.
+
+   This only ever changes the MESSAGE. A collided read is never acted
+   on — recovering one of the two passes would check in one guest and
+   silently drop the other, which is worse than reporting the fault. */
+function looksLikeScannerCollision(buf) {
+  if (!buf || buf.length < 24) return false;
+
+  let even = '', odd = '';
+  for (let i = 0; i < buf.length; i++) {
+    if (i % 2) odd += buf[i]; else even += buf[i];
+  }
+  if (parseTicketQRPayload(even) || parseTicketQRPayload(odd)) return true;
+
+  // Two passes' worth of characters, still recognisably ours.
+  if (buf.length > QR_MAX_LEN) return false;              // not a scan at all
+  if (buf.length >= 120 && /legacynight|pbis|ticket/i.test(buf)) return true;
+
+  // Landmarks genuinely repeated (chunked rather than alternating).
+  return (buf.match(/ticket=1/gi) || []).length > 1 ||
+         (buf.match(/legacynight/gi) || []).length > 1;
+}
+
 function hwFlushBuffer(e, typing, t, kioskOpen) {
   clearTimeout(_hwIdleTimer);
   const buf = _hwBuf;
@@ -8481,7 +8583,14 @@ function hwFlushBuffer(e, typing, t, kioskOpen) {
        scanner set to the wrong keyboard layout mangles exactly the
        characters a URL is made of — / : ? & = — so this is the shape
        a layout mismatch takes. Say so, and point at the way through. */
-    if (/legacynight|pbis|ticket|PBIS-LEGACY/i.test(buf)) {
+    /* Order matters. The collision test has to come FIRST, because
+       interleaving destroys the very landmarks the layout test looks
+       for — "legacynight" arrives as "lleeggaaccyynniigghhtt", so a
+       collided read would otherwise be dismissed as "not a Legacy
+       Night pass" and the desk would never learn the real cause. */
+    if (looksLikeScannerCollision(buf)) {
+      showDashToast('⚠️ Two scanners appear to be sending to this device at once — their reads collided. Use one scanner per device, then scan again.');
+    } else if (/legacynight|pbis|ticket|PBIS-LEGACY/i.test(buf)) {
       showDashToast('⚠️ Scanner read a Legacy Night pass but the text came through garbled — check the scanner\'s keyboard layout is set to US English. Check this guest in by name.');
     } else {
       showDashToast('⚠️ That code isn\'t a Legacy Night pass. Check the guest in by name.');
