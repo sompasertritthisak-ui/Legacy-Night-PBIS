@@ -6325,14 +6325,16 @@ function renderGuestFloorPlan() {
   }).join('');
 
   canvas.innerHTML =
-    '<svg viewBox="0 0 ' + FP.W + ' ' + FP.H + '" class="gp-svg">' +
-      '<rect x="0" y="0" width="' + FP.W + '" height="' + FP.H + '" class="gp-bg"/>' +
+    '<svg viewBox="' + FP.X0 + ' ' + FP.Y0 + ' ' + (FP.W - FP.X0) + ' ' + (FP.H - FP.Y0) + '" class="gp-svg">' +
+      '<rect x="' + FP.X0 + '" y="' + FP.Y0 + '" width="' + (FP.W - FP.X0) + '" height="' + (FP.H - FP.Y0) + '" class="gp-bg"/>' +
       sections +
       '<rect x="' + FP.ball.x + '" y="' + FP.ball.y + '" width="' + FP.ball.w + '" height="' + FP.ball.h + '" class="gp-outline"/>' +
       '<rect x="' + FP.pre.x + '" y="' + FP.pre.y + '" width="' + FP.pre.w + '" height="' + FP.pre.h + '" class="gp-pre"/>' +
-      '<text x="' + (FP.pre.x + FP.pre.w / 2) + '" y="' + (FP.pre.y + 30) + '" class="gp-pre-label">Pre-Function Area</text>' +
-      '<rect x="' + (FP.pre.x + 24) + '" y="' + (FP.pre.y + 470) + '" width="152" height="52" class="gp-door"/>' +
-      '<text x="' + (FP.pre.x + FP.pre.w / 2) + '" y="' + (FP.pre.y + 502) + '" class="gp-door-label">ENTRANCE</text>' +
+      '<text x="' + (FP.pre.x + 14) + '" y="' + (FP.pre.y + 22) + '" class="gp-pre-label" style="text-anchor:start">Pre-Function Area</text>' +
+      '<rect x="' + (FP.pre.x + 226) + '" y="' + (FP.pre.y + 34) + '" width="248" height="44" class="gp-door" style="opacity:.55"/>' +
+      '<text x="' + (FP.pre.x + 350) + '" y="' + (FP.pre.y + 62) + '" class="gp-door-label">REGISTRATION</text>' +
+      '<rect x="' + (FP.pre.x + 226) + '" y="' + (FP.pre.y + 96) + '" width="248" height="44" class="gp-door"/>' +
+      '<text x="' + (FP.pre.x + 350) + '" y="' + (FP.pre.y + 124) + '" class="gp-door-label">ENTRANCE</text>' +
       '<rect x="' + FP.stage.x + '" y="' + FP.stage.y + '" width="' + FP.stage.w + '" height="' + FP.stage.h + '" class="gp-stage"/>' +
       '<text x="' + (FP.stage.x + FP.stage.w / 2) + '" y="' + (FP.stage.y + FP.stage.h / 2) + '" class="gp-stage-label" transform="rotate(-90 ' + (FP.stage.x + FP.stage.w / 2) + ' ' + (FP.stage.y + FP.stage.h / 2) + ')">STAGE</text>' +
       tableEls +
@@ -9375,10 +9377,25 @@ function seatedPartyMembers(g) {
    rather than mouse events so a trackpad, a mouse and a touchscreen
    all take the same path.
 ══════════════════════════════════════════════════════════════════ */
+/* The Pre-Function Area used to be drawn as a strip down the RIGHT of
+   the ballroom, which did not match the venue: guests arrive, pass the
+   registration booth, and only then reach the main entrance, which
+   opens directly onto the ballroom. Drawn side-by-side, the plan
+   implied people walked in past registration rather than through it.
+
+   It is now a band ACROSS THE TOP, in the order guests actually meet
+   it — registration furthest out, main entrance hard against the
+   ballroom wall.
+
+   CRITICALLY, the ballroom keeps its exact original coordinates
+   (40,40,700x560). The band occupies NEGATIVE y, gained by extending
+   the viewBox upward rather than by pushing the room down, so every
+   table keeps the x,y it was arranged at and not one seat moves. */
 const FP = {
-  W: 1000, H: 640,
-  ball: { x: 40, y: 40, w: 700, h: 560 },      // the ballroom itself
-  pre:  { x: 760, y: 40, w: 200, h: 560 },     // Pre-Function Area
+  X0: 0, Y0: -190,                             // viewBox origin (band lives above y=0)
+  W: 780, H: 640,
+  ball: { x: 40, y: 40, w: 700, h: 560 },      // the ballroom itself — UNCHANGED
+  pre:  { x: 40, y: -170, w: 700, h: 150 },    // Pre-Function Area, across the top
   sections: [
     { key: 'Ballroom 1', y: 40,  h: 186 },
     { key: 'Ballroom 2', y: 226, h: 187 },
@@ -9414,7 +9431,8 @@ function fpZoneAt(y, x) {
   // The Pre-Function Area is a zone in its own right — it's where the
   // cocktail tables go, and staff need it counted separately from the
   // dinner sections.
-  if (x !== undefined && x >= FP.pre.x) return 'Pre-Function Area';
+  // Anything above the ballroom wall is out in the pre-function space.
+  if (y < FP.ball.y) return 'Pre-Function Area';
   for (let i = 0; i < FP.sections.length; i++) {
     const s = FP.sections[i];
     if (y >= s.y && y < s.y + s.h) return s.key;
@@ -9432,11 +9450,11 @@ function addCocktailTable() {
   if (!_floorPlan) return;
   const existing = _floorPlan.tables.filter(isCocktail);
   const n = FP_COCKTAIL_BASE + existing.length + 1;
-  // Drop new ones into the Pre-Function Area, stacked down the strip.
+  // Drop new ones into the Pre-Function Area, spread across the band.
   _floorPlan.tables.push({
     n: n, kind: 'cocktail', seats: 4,
-    x: Math.round(FP.pre.x + FP.pre.w / 2),
-    y: Math.round(FP.pre.y + 150 + (existing.length % 6) * 52),
+    x: Math.round(FP.pre.x + 90 + (existing.length % 6) * 105),
+    y: Math.round(FP.pre.y + (existing.length % 2 ? 105 : 48)),
   });
   _fpDirty = true;
   renderTablesTab();
@@ -9485,9 +9503,41 @@ async function loadFloorPlan() {
   } catch (e) { /* fall through to a default layout */ }
 
   if (!_floorPlan) _floorPlan = fpDefaultPlan(cfg.count, cfg.capacity);
+  migrateOldPreFunctionTables();
   reconcilePlanWithConfig();
   _fpLoaded = true;
   renderTablesTab();
+}
+
+/* ── CARRY OVER ANYTHING LEFT IN THE OLD PRE-FUNCTION STRIP ────────
+   The Pre-Function Area used to be a strip down the right at x≥760.
+   That space is now outside the drawing, so a saved cocktail table
+   still sitting there would vanish off the edge of the plan — and any
+   guest seated at it would look unseated even though the data was
+   fine.
+
+   Dinner tables are never affected: they live inside the ballroom,
+   whose coordinates did not change. This only lifts tables out of the
+   retired strip and into the new band, and it only ever touches x and
+   y — table numbers, seat counts and every seated guest are untouched.
+
+   It runs on load and is self-cancelling: once a table has been moved
+   it no longer matches, so nothing is moved twice. */
+function migrateOldPreFunctionTables() {
+  if (!_floorPlan || !Array.isArray(_floorPlan.tables)) return;
+  const OLD_STRIP_X = FP.ball.x + FP.ball.w;          // 740 — past the ballroom wall
+  let moved = 0;
+  _floorPlan.tables.forEach(function (t) {
+    if (typeof t.x !== 'number' || t.x <= OLD_STRIP_X) return;
+    t.x = Math.round(FP.pre.x + 90 + (moved % 6) * 105);
+    t.y = Math.round(FP.pre.y + (moved % 2 ? 105 : 48));
+    moved++;
+  });
+  if (moved) {
+    _fpDirty = true;
+    showDashToast('ℹ️ Moved ' + moved + ' pre-function table' + (moved === 1 ? '' : 's') +
+      ' into the new entrance area — check the positions and save.');
+  }
 }
 
 // Keep the plan in step with the table count / seats setting, without
@@ -9606,17 +9656,19 @@ function buildFloorPlanSVG() {
     '</g>';
   }).join('');
 
-  return '<svg id="fp-svg" viewBox="0 0 ' + FP.W + ' ' + FP.H + '" class="fp-svg' + (_fpMode === 'move' ? ' mode-move' : '') + '">' +
-    '<rect x="0" y="0" width="' + FP.W + '" height="' + FP.H + '" class="fp-bg"/>' +
+  return '<svg id="fp-svg" viewBox="' + FP.X0 + ' ' + FP.Y0 + ' ' + (FP.W - FP.X0) + ' ' + (FP.H - FP.Y0) + '" class="fp-svg' + (_fpMode === 'move' ? ' mode-move' : '') + '">' +
+    '<rect x="' + FP.X0 + '" y="' + FP.Y0 + '" width="' + (FP.W - FP.X0) + '" height="' + (FP.H - FP.Y0) + '" class="fp-bg"/>' +
     sections +
     '<rect x="' + FP.ball.x + '" y="' + FP.ball.y + '" width="' + FP.ball.w + '" height="' + FP.ball.h + '" class="fp-ball-outline"/>' +
     // Pre-function area, entrance and registration — matches the venue plan
     '<rect x="' + FP.pre.x + '" y="' + FP.pre.y + '" width="' + FP.pre.w + '" height="' + FP.pre.h + '" class="fp-pre"/>' +
-    '<text x="' + (FP.pre.x + FP.pre.w / 2) + '" y="' + (FP.pre.y + 26) + '" class="fp-pre-label">Pre-Function Area</text>' +
-    '<rect x="' + (FP.pre.x + 26) + '" y="' + (FP.pre.y + 60) + '" width="148" height="46" class="fp-desk"/>' +
-    '<text x="' + (FP.pre.x + FP.pre.w / 2) + '" y="' + (FP.pre.y + 88) + '" class="fp-desk-label">Registration</text>' +
-    '<rect x="' + (FP.pre.x + 26) + '" y="' + (FP.pre.y + 470) + '" width="148" height="46" class="fp-desk"/>' +
-    '<text x="' + (FP.pre.x + FP.pre.w / 2) + '" y="' + (FP.pre.y + 498) + '" class="fp-desk-label">Main Entrance</text>' +
+    '<text x="' + (FP.pre.x + 14) + '" y="' + (FP.pre.y + 20) + '" class="fp-pre-label" style="text-anchor:start">Pre-Function Area</text>' +
+    // Order matters: guests meet registration first, then the entrance,
+    // which sits hard against the ballroom wall.
+    '<rect x="' + (FP.pre.x + 230) + '" y="' + (FP.pre.y + 32) + '" width="240" height="44" class="fp-desk"/>' +
+    '<text x="' + (FP.pre.x + 350) + '" y="' + (FP.pre.y + 60) + '" class="fp-desk-label">Registration</text>' +
+    '<rect x="' + (FP.pre.x + 230) + '" y="' + (FP.pre.y + 94) + '" width="240" height="44" class="fp-desk"/>' +
+    '<text x="' + (FP.pre.x + 350) + '" y="' + (FP.pre.y + 122) + '" class="fp-desk-label">Main Entrance</text>' +
     // Stage
     '<rect x="' + FP.stage.x + '" y="' + FP.stage.y + '" width="' + FP.stage.w + '" height="' + FP.stage.h + '" class="fp-stage"/>' +
     '<text x="' + (FP.stage.x + FP.stage.w / 2) + '" y="' + (FP.stage.y + FP.stage.h / 2) + '" class="fp-stage-label" transform="rotate(-90 ' + (FP.stage.x + FP.stage.w / 2) + ' ' + (FP.stage.y + FP.stage.h / 2) + ')">STAGE</text>' +
@@ -9728,7 +9780,7 @@ function fpOnPointerMove(e) {
     // Pre-Function Area, where the cocktail stands go. Clamped only to
     // the building itself so a table can't be dragged off the plan.
     const pad = isCocktail(d.t) ? 26 : 42;
-    const inPre = nx >= (FP.pre.x - 20);
+    const inPre = ny < FP.ball.y;
     if (inPre) {
       nx = Math.max(FP.pre.x + pad, Math.min(FP.pre.x + FP.pre.w - pad, nx));
       ny = Math.max(FP.pre.y + pad, Math.min(FP.pre.y + FP.pre.h - pad, ny));
