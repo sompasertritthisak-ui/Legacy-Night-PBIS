@@ -1790,6 +1790,7 @@ button,.dash-tab,.fp-chip,.cat-chip,.kiosk-hit,.gplan-hit{touch-action:manipulat
         <button type="button" onclick="setDoorsLane(2)">2</button>
         <button type="button" onclick="setDoorsLane(3)">3</button>
       </div>
+      <button type="button" onclick="openReceptionMonitor(String(_doorsLane))" title="Opens the welcome screen for this desk's lane. Drag it to the TV and press F11." style="margin-left:6px;height:44px;padding:0 16px;border-radius:10px;border:1.5px solid rgba(232,201,110,0.45);background:rgba(232,201,110,0.10);color:#e8c96e;font-weight:700;font-size:13px;cursor:pointer;">📺 Open TV screen</button>
     </div>
     <button class="doors-scan-btn" onclick="openQRScanner()">
       <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3M19 14v2M14 19h2M19 19h2v2"/></svg>
@@ -1960,12 +1961,13 @@ button,.dash-tab,.fp-chip,.cat-chip,.kiosk-hit,.gplan-hit{touch-action:manipulat
 </div>
 
 <div id="monitor-view">
+  <div id="monitor-health" style="display:none;position:absolute;bottom:18px;left:50%;transform:translateX(-50%);z-index:6;padding:8px 18px;border-radius:999px;background:rgba(0,0,0,0.45);border:1px solid rgba(232,201,110,0.35);color:rgba(255,255,255,0.78);font-size:13px;letter-spacing:0.04em;"></div>
   <div id="monitor-lane-badge" style="display:none;position:absolute;top:18px;right:24px;z-index:5;font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(232,201,110,0.65);font-weight:700;"></div>
   <div id="monitor-content">
     <div class="monitor-waiting">
       <div class="monitor-crest"><img src="" alt="PBIS" class="js-logo"></div>
       <h1>PBIS Legacy Night</h1>
-      <p>Please scan your ticket at the entrance</p>
+      <p>Please present your QR pass at registration</p>
     </div>
   </div>
 </div>
@@ -3445,9 +3447,106 @@ function startAutoSync() {
       loadDashboardData();
     }
   }, AUTO_SYNC_MS);
+  startDeskLiveFeed();
 }
 function stopAutoSync() {
   if (_autoSyncTimer) { clearInterval(_autoSyncTimer); _autoSyncTimer = null; }
+  stopDeskLiveFeed();
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   THE OTHER DESK, LIVE
+   ──────────────────────────────────────────────────────────────────
+   Each desk sees its OWN check-ins instantly — they're applied locally
+   before the network is even involved. But a guest checked in at desk
+   1 only reached desk 2 on the next full guest-list reload, every 8
+   seconds. Long enough for a guest who was waved through at one desk
+   to walk to the other and still show as "not arrived".
+
+   A full reload can't go much faster: it reads the entire sheet, and
+   two desks doing that every second would load Apps Script heavily
+   during exactly the hour it matters. But the server already keeps a
+   tiny list of the last two minutes of arrivals — the same one the
+   welcome screens use — and every entry now carries the booking id and
+   person index. So each desk also reads that list every 1.5 seconds
+   and marks those people as arrived locally. A check-in at either desk
+   appears on the other within about two seconds.
+
+   It is safe to trust: the server only publishes an arrival AFTER the
+   check-in has been written to the sheet, so nothing appears here that
+   wasn't actually saved. It only ever ADDS arrivals it doesn't already
+   know about, and never sends anything back — so it can't double-save,
+   can't journal someone else's check-in as this desk's, and can't
+   undo anything. Undos still travel on the full reload.
+
+   The cursor uses the server's own timestamps only (see the monitor's
+   clock-skew note), and the first read just catches up — the guest
+   list loaded at startup already contains anything older.           */
+const DESK_FEED_MS = 1500;
+let _deskFeedTimer = null;
+let _deskFeedCursor = 0;
+let _deskFeedPrimed = false;
+let _deskFeedBusy = false;
+
+function startDeskLiveFeed() {
+  if (_deskFeedTimer || isMonitorWindow()) return;
+  _deskFeedCursor = 0;
+  _deskFeedPrimed = false;
+  _deskFeedTimer = setInterval(pollDeskLiveFeed, DESK_FEED_MS);
+  pollDeskLiveFeed();
+}
+function stopDeskLiveFeed() {
+  if (_deskFeedTimer) { clearInterval(_deskFeedTimer); _deskFeedTimer = null; }
+}
+
+// Applies one arrival from the other desk. Returns true if it changed anything.
+function applyRemoteArrival(c) {
+  if (!c || !c.ts) return false;
+  const g = _dashGuestsCache.find(function (x) { return x.ts === c.ts; });
+  if (!g) return false;                       // not in this desk's list yet — the next full reload will bring it
+  const i = parseInt(c.idx, 10) || 0;
+  const ck = parseIndividualCheckins(g);
+  if (ck[i] && ck[i].checked_in) return false;   // already known here (including our own)
+  const when = new Date(Number(c.at) || Date.now()).toISOString();
+  ck[i] = { checked_in: true, checked_in_at: when };
+  g.individual_checkins = JSON.stringify(ck);
+  rememberLocalChange(c.ts, i, true);
+  g.checked_in = true;
+  g.checked_in_at = g.checked_in_at || when;
+  if (g.no_show) { g.no_show = false; g.no_show_at = ''; }
+  return true;
+}
+
+async function pollDeskLiveFeed() {
+  if (_deskFeedBusy || !_sessionToken || isMonitorWindow()) return;
+  if (!document.body.classList.contains('dashboard-active')) return;
+  _deskFeedBusy = true;
+  try {
+    const url = SHEETS_URL + '?action=getRecentCheckIn'
+      + '&token=' + encodeURIComponent(_sessionToken)
+      + '&lane=all&since=' + _deskFeedCursor + '&_=' + Date.now();
+    const controller = new AbortController();
+    const timer = setTimeout(function () { controller.abort(); }, 6000);
+    const res = await fetch(url, { method: 'GET', signal: controller.signal });
+    clearTimeout(timer);
+    const j = await res.json();
+    if (!j || j.status !== 'ok' || !Array.isArray(j.checkins)) return;
+
+    let changed = false;
+    j.checkins.forEach(function (c) {
+      if (c && c.at > _deskFeedCursor) _deskFeedCursor = c.at;
+      if (_deskFeedPrimed && applyRemoteArrival(c)) changed = true;
+    });
+    _deskFeedPrimed = true;
+    if (changed) {
+      scheduleCheckInRenders();
+      try { updateDoorsCounter(); } catch (e) {}
+    }
+  } catch (e) {
+    // A missed read costs nothing — the next one, or the full reload, catches up.
+  } finally {
+    _deskFeedBusy = false;
+  }
 }
 
 // deliberate === true only when a person actually pressed Log Out.
@@ -3496,6 +3595,70 @@ function showDashToast(msg) {
 
 /* ── DATA FETCH ── */
 let _dashGuestsCache = [];
+
+/* ══════════════════════════════════════════════════════════════════
+   A RELOAD MUST NEVER UN-ARRIVE SOMEBODY
+   ──────────────────────────────────────────────────────────────────
+   The background reload replaces the whole guest list with whatever
+   the sheet said when the request STARTED. A full read takes a second
+   or two, so any guest checked in during that window came back from
+   the reload as "not arrived" — on the very desk that had just checked
+   them in — and stayed that way for up to 8 seconds, until the next
+   reload. At a busy door that is a real fraction of scans, and it
+   invites staff to scan the guest again.
+
+   So every change this desk makes is remembered briefly, along with
+   anything still in the unsaved queue, and re-applied on top of every
+   reload. The sheet catches up within seconds; after 90 seconds the
+   memory is dropped because the sheet is authoritative again.
+
+   A change the server definitively REJECTED is forgotten immediately
+   (see markGuestCheckedIn), so this can never resurrect a check-in
+   that was refused.                                                */
+const _recentLocalChanges = new Map();   // "ts|idx" -> { ts, idx, checked_in, at }
+const RECENT_LOCAL_MS = 90000;
+
+function rememberLocalChange(ts, idx, checkedIn) {
+  const k = ts + '|' + idx;
+  _recentLocalChanges.delete(k);          // re-insert so iteration stays chronological
+  _recentLocalChanges.set(k, { ts: ts, idx: idx, checked_in: !!checkedIn, at: Date.now() });
+}
+function forgetLocalChange(ts, idx) { _recentLocalChanges.delete(ts + '|' + idx); }
+
+function applyCheckinState(ts, idx, checkedIn) {
+  const g = _dashGuestsCache.find(function (x) { return x.ts === ts; });
+  if (!g) return;
+  const ck = parseIndividualCheckins(g);
+  const cur = ck[idx];
+  if (checkedIn) {
+    if (cur && cur.checked_in) return;
+    ck[idx] = { checked_in: true, checked_in_at: new Date().toISOString() };
+  } else {
+    if (!cur || !cur.checked_in) return;
+    ck[idx] = { checked_in: false, checked_in_at: '' };
+  }
+  g.individual_checkins = JSON.stringify(ck);
+  const any = Object.keys(ck).some(function (k) { return ck[k] && ck[k].checked_in; });
+  g.checked_in = any;
+  g.checked_in_at = any ? (g.checked_in_at || new Date().toISOString()) : '';
+  if (checkedIn && g.no_show) { g.no_show = false; g.no_show_at = ''; }
+}
+
+function reapplyLocalOverlay() {
+  try {
+    // Unsaved first: these are not in the sheet at all yet.
+    (typeof _checkInQueue !== 'undefined' ? _checkInQueue : []).forEach(function (q) {
+      const pl = q && q.payload;
+      if (pl && pl.ts !== undefined) applyCheckinState(pl.ts, parseInt(pl.idx, 10) || 0, !!pl.checked_in);
+    });
+    // Then recent changes, oldest to newest, so the latest wins.
+    const now = Date.now();
+    _recentLocalChanges.forEach(function (c, k) {
+      if (now - c.at > RECENT_LOCAL_MS) { _recentLocalChanges.delete(k); return; }
+      applyCheckinState(c.ts, c.idx, c.checked_in);
+    });
+  } catch (e) {}
+}
 
 // Shows a brief shimmering placeholder in each tab while the first
 // fetch is in flight, instead of a blank flash before real content
@@ -3562,7 +3725,7 @@ function restoreGuestSnapshot() {
     if (!raw) return false;
     const snap = JSON.parse(raw);
     if (!snap || !Array.isArray(snap.guests) || !snap.guests.length) return false;
-    _dashGuestsCache = snap.guests;
+    _dashGuestsCache = snap.guests; reapplyLocalOverlay();
     _lastSyncOk = snap.at || 0;
     return true;
   } catch (e) { return false; }
@@ -3592,7 +3755,7 @@ async function fetchGuestsOnce(timeoutMs) {
     if (!res.ok) return 'fail';
     const j = await res.json();
     if (j.status === 'ok' && Array.isArray(j.guests)) {
-      _dashGuestsCache = j.guests;
+      _dashGuestsCache = j.guests; reapplyLocalOverlay();
       saveGuestSnapshot(j.guests);
       _lastSyncOk = Date.now();
       return 'ok';
@@ -3686,7 +3849,7 @@ function verifySessionReallyExpired() {
         const j = await res.json();
         if (j.status === 'ok' && Array.isArray(j.guests)) {
           // It was fine after all — take the data while we have it.
-          _dashGuestsCache = j.guests;
+          _dashGuestsCache = j.guests; reapplyLocalOverlay();
           try { saveGuestSnapshot(j.guests); } catch (e) {}
           return resolve(false);
         }
@@ -5701,6 +5864,25 @@ function renderDoorsLaneButtons() {
   });
 }
 
+// Coalesces the dashboard re-render after a check-in. Several scans in
+// quick succession produce one render pass, not one per scan. setTimeout
+// rather than requestAnimationFrame: rAF stops firing in a window that
+// isn't being painted, which would leave the desk's view stale.
+let _ciRenderPending = false;
+function scheduleCheckInRenders() {
+  if (_ciRenderPending) return;
+  _ciRenderPending = true;
+  setTimeout(function () {
+    _ciRenderPending = false;
+    try { renderCheckInTab(); } catch (e) {}
+    try { renderOverviewTab(); } catch (e) {}
+    try { renderGuestListTab(); } catch (e) {}
+    try { renderOverdueTab(); } catch (e) {}
+    try { renderTablesTab(); } catch (e) {}
+    try { if (typeof renderDoorsSearchResults === 'function') renderDoorsSearchResults(); } catch (e) {}
+  }, 0);
+}
+
 /* Set by whichever path is about to call markGuestCheckedIn, so the
    journal records whether an arrival came from a camera scan, a
    hardware scanner, the kiosk, or a name search. Reset after use. */
@@ -5718,6 +5900,7 @@ function markGuestCheckedIn(ts, checkedIn, idx, personName) {
   const checkins = parseIndividualCheckins(guest);
   checkins[idx] = { checked_in: checkedIn, checked_in_at: checkedIn ? new Date().toISOString() : '' };
   guest.individual_checkins = JSON.stringify(checkins);
+  rememberLocalChange(ts, idx, checkedIn);     // survives a stale reload — see reapplyLocalOverlay
 
   // Aggregate party-level status, kept in sync for every other view
   // that already reads guest.checked_in (Guest List, Overview stats).
@@ -5729,11 +5912,25 @@ function markGuestCheckedIn(ts, checkedIn, idx, personName) {
   // did show up, so any earlier no-show mark no longer applies.
   const clearingNoShow = checkedIn && guest.no_show;
   if (clearingNoShow) { guest.no_show = false; guest.no_show_at = ''; }
-  renderCheckInTab();
-  renderOverviewTab();
-  renderGuestListTab();
-  renderOverdueTab();
-  renderTablesTab();
+
+  /* ── THE TV FIRST, THE PAPERWORK AFTER ─────────────────────────────
+     This used to re-render five dashboard tabs — check-in, overview,
+     guest list, overdue and the floor plan — and only THEN tell the TV.
+     Four of those tabs aren't even on screen during check-in. With a
+     full guest list and a 25-table floor plan, that put roughly a
+     second of rendering (measured in the test harness; a fraction of
+     that in Chrome, but never zero) between the scanner beep and the
+     guest's name appearing — and the desk's own "✓ checked in" message
+     waited behind the same queue.
+
+     Now the local state is updated, the TV is told in the same tick,
+     and the tab re-renders are coalesced into one deferred pass that
+     runs straight after. Nothing is skipped; it just no longer sits
+     between the guest and their welcome. */
+  if (checkedIn) {
+    broadcastCheckIn(personName, guest.table_number || '', (parseSeatList(guest.seat_number)[idx] || ''), ts, idx, _doorsLane);
+  }
+  scheduleCheckInRenders();
 
   /* Record it locally FIRST — before the request, before anything can
      fail. From this point the arrival exists on this device whatever
@@ -5772,6 +5969,7 @@ function markGuestCheckedIn(ts, checkedIn, idx, personName) {
       const isDefinitive = /unauthorized|not found|cannot|permission|only specific|invalid|no longer/i.test(msg);
 
       if (isDefinitive) {
+        forgetLocalChange(ts, idx);          // refused — never re-apply it
         Object.assign(guest, prevState);
         renderCheckInTab(); renderOverviewTab(); renderGuestListTab(); renderOverdueTab(); renderTablesTab();
         showDashToast('⚠️ ' + (msg || 'Could not save.'));
@@ -6007,7 +6205,223 @@ function closeGuestDetailModal() {
    later — ready for the next guest without anyone touching it.
    ══════════════════════════════════════════════════════════════ */
 let _monitorPollInterval = null;
+/* ══════════════════════════════════════════════════════════════════
+   SAME-DEVICE INSTANT PATH — the PC and its TV are one machine
+   ──────────────────────────────────────────────────────────────────
+   The booth is 2 PCs, each with its own scanner dongle and its own
+   TV plugged into it as an extended display. That means the scanning
+   window and the welcome screen are two windows of the SAME BROWSER
+   on the SAME computer — not two separate devices talking over Wi-Fi.
+
+   The 400ms poll to Apps Script exists for the case where a monitor
+   is a genuinely separate device (a shared lobby screen, a manager's
+   laptop watching a lane remotely). For THIS setup it is pure waste:
+   it adds a network round trip and up to 400ms of polling delay to
+   something that can be instant, because both windows already share
+   a browser profile on the same PC.
+
+   BroadcastChannel delivers a message to every other tab/window of
+   the same origin on the same device, synchronously enough to be
+   imperceptible, with no server involved at all. So the PC tells its
+   own TV directly, in the same tick it updates its own screen — the
+   guest's name appears at the same moment the desk sees it, not a
+   third of a second later. The scanner dongle is plugged into the
+   PC, and the PC is plugged into the TV, so the whole chain — scan,
+   dashboard, screen — lives on one machine with nothing to wait on.
+
+   The network path (recordRecentCheckIn + polling) is kept as a
+   fallback for any monitor that ISN'T this PC's own TV, and so a
+   welcome is never lost if BroadcastChannel is unavailable (Safari <
+   15.4). Both paths can never double-show the same guest — see the
+   dedupe in monitorShowIfNew below. */
+const LANE_BROADCAST_NAME = 'legacy_night_lane_broadcast';
+let _laneChannel = null;
+try {
+  if ('BroadcastChannel' in window) {
+    _laneChannel = new BroadcastChannel(LANE_BROADCAST_NAME);
+    _laneChannel.onmessage = function (e) { onLaneMessage(e.data); };
+  }
+} catch (e) { _laneChannel = null; }
+
+// Fallback for browsers without BroadcastChannel: a localStorage write
+// fires a 'storage' event in every OTHER same-origin tab on this same
+// device — same guarantee, same locality, just an older mechanism.
+function laneBroadcastFallback(msg) {
+  try { localStorage.setItem('legacy_lane_ping', JSON.stringify({ msg: msg, at: Date.now(), r: Math.random() })); } catch (e) {}
+}
+window.addEventListener('storage', function (e) {
+  if (e.key !== 'legacy_lane_ping' || !e.newValue) return;
+  try {
+    const parsed = JSON.parse(e.newValue);
+    if (parsed && parsed.msg) onLaneMessage(parsed.msg);
+  } catch (err) {}
+});
+
+function lanePost(msg) {
+  if (_laneChannel) { try { _laneChannel.postMessage(msg); } catch (e) {} }
+  laneBroadcastFallback(msg);
+}
+
+function isMonitorWindow() {
+  const m = document.getElementById('monitor-view');
+  return !!(m && m.classList.contains('active'));
+}
+
+function onLaneMessage(msg) {
+  if (!msg || !msg.type) return;
+  if (msg.type === 'checkin')    { if (isMonitorWindow()) monitorReceiveBroadcast(msg); return; }
+  if (msg.type === 'scan-relay') { if (!isMonitorWindow()) deskReceiveRelayedScan(msg); return; }
+  if (msg.type === 'scan-ack')   { if (isMonitorWindow()) monitorReceiveAck(msg); return; }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   SCANS THAT LAND ON THE TV WINDOW
+   ──────────────────────────────────────────────────────────────────
+   With the TV as an extended display, the welcome screen is its own
+   browser window — and a barcode scanner types into whichever window
+   has keyboard focus. Press F11 on the TV to make it full screen, or
+   click it once for any reason, and focus stays there.
+
+   Every scan after that went to the welcome screen, which ignored it:
+   no check-in, no beep from the app, no message anywhere. To the desk
+   it is indistinguishable from a pass that doesn't work — the exact
+   failure this system was rebuilt to eliminate.
+
+   Now the TV catches the scan and hands it straight to the check-in
+   window on the same computer, which processes it exactly as if it
+   had been typed there, and replies. If nothing replies within a
+   moment — no dashboard open on this PC — the TV says so out loud
+   rather than swallowing the scan. It also tries to hand keyboard
+   focus back to the desk window, so the next scan goes direct.   */
+const _relayPending = new Map();
+const _relaySeen = new Map();
+const RELAY_ACK_MS = 1500;
+
+function relayScanToDesk(data) {
+  const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  lanePost({ type: 'scan-relay', id: id, data: data, lane: _monitorLane });
+  _relayPending.set(id, setTimeout(function () {
+    _relayPending.delete(id);
+    setMonitorHealth('nodesk');
+    try { playScanFeedback('error'); } catch (e) {}
+  }, RELAY_ACK_MS));
+  // A keystroke is a user action, so browsers usually allow this.
+  try { if (window.opener && !window.opener.closed) window.opener.focus(); } catch (e) {}
+}
+
+function monitorReceiveAck(msg) {
+  const t = _relayPending.get(msg.id);
+  if (t === undefined) return;
+  clearTimeout(t);
+  _relayPending.delete(msg.id);
+  if (_monitorHealth === 'nodesk') setMonitorHealth('ok');
+}
+
+function deskReceiveRelayedScan(msg) {
+  // Only the real check-in dashboard handles a relayed scan. Other
+  // windows on the same PC — a floor-plan display, the kiosk — also
+  // restore the login and may hold the guest list, and letting them
+  // act too would check the same guest in twice from two windows.
+  // Anything else stays silent and the TV's timer reports "no desk".
+  if (!_sessionToken || _isDisplayMode) return;
+  if (!document.body.classList.contains('dashboard-active')) return;
+  if (!Array.isArray(_dashGuestsCache) || !_dashGuestsCache.length) return;
+  // The same relay can arrive twice (channel + storage fallback).
+  const now = Date.now();
+  if (_relaySeen.has(msg.id)) return;
+  _relaySeen.set(msg.id, now);
+  if (_relaySeen.size > 100) _relaySeen.forEach(function (at, k) { if (now - at > 60000) _relaySeen.delete(k); });
+
+  lanePost({ type: 'scan-ack', id: msg.id });
+  _lastScanWasHardware = true;
+  try {
+    const kiosk = document.getElementById('kiosk-view');
+    if (kiosk && kiosk.classList.contains('active')) kioskHandleScan(msg.data);
+    else handleQRScanResult(msg.data);
+  } finally { _lastScanWasHardware = false; }
+  try { showHwScannerPing(); } catch (e) {}
+}
+
+// Called by markGuestCheckedIn the instant a check-in is confirmed
+// locally — before, and regardless of, the network request to save it.
+function broadcastCheckIn(name, table, seat, ts, idx, lane) {
+  const msg = { type: 'checkin', name: name, table: table, seat: seat, ts: ts, idx: idx, lane: lane, at: Date.now() };
+  if (_laneChannel) { try { _laneChannel.postMessage(msg); } catch (e) {} }
+  laneBroadcastFallback(msg);
+}
+
+// Same set of keys the poll path uses, so whichever arrives first —
+// the instant local broadcast or the network poll — wins, and the
+// other is silently ignored rather than shown twice.
+const _monitorShownKeys = new Map();
+const MONITOR_DEDUPE_MS = 30000;
+
+function monitorAlreadyShown(ts, idx) {
+  /* A real check-in always carries a real ts — it's a guest's booking
+     timestamp, present on every path that calls recordRecentCheckIn.
+     But dedupe is a nice-to-have layered on top of the arrival feed,
+     not something the feed should ever be at the mercy of: if ts ever
+     arrives blank (an old cache entry from before this key existed, a
+     future code path that forgets to pass it), every such arrival
+     would collide on the same "" key and everyone after the first
+     would be silently swallowed as a duplicate of a guest who isn't
+     even them. Withholding a welcome is worse than one now-and-then
+     duplicate, so a blank identity is never treated as seen before. */
+  if (!ts) return false;
+  const key = ts + '|' + idx;
+  const seenAt = _monitorShownKeys.get(key);
+  if (_monitorShownKeys.size > 200) {
+    const cutoff = Date.now() - MONITOR_DEDUPE_MS;
+    _monitorShownKeys.forEach(function (at, k) { if (at < cutoff) _monitorShownKeys.delete(k); });
+  }
+  if (seenAt !== undefined && Date.now() - seenAt < MONITOR_DEDUPE_MS) return true;
+  _monitorShownKeys.set(key, Date.now());
+  return false;
+}
+
+// Runs on the TV/monitor window when a same-device broadcast arrives.
+function monitorReceiveBroadcast(msg) {
+  if (!msg || msg.type !== 'checkin') return;
+  /* No lane filter here, deliberately. A same-device broadcast can only
+     come from the check-in window on THIS computer — the desk this TV
+     sits behind — because BroadcastChannel never crosses machines.
+     Filtering by lane added nothing and created a silent failure: open
+     the TV as lane 2 while the desk is set to lane 1 and every welcome
+     was discarded, while the screen sat on its waiting page looking
+     healthy. The network poll below still honours the lane. */
+  _monitorGotBroadcast = true;
+  if (monitorAlreadyShown(msg.ts, msg.idx)) return;
+  _monitorQueue.push(msg);
+  drainMonitorQueue(true);
+}
+
 let _monitorLastSeenAt = 0;
+let _monitorPriming = false;
+let _monitorGotBroadcast = false;   // this TV's own desk is talking to it directly
+let _monitorLastPollAt = 0;
+let _monitorLastOkAt = 0;     // local clock is fine here: it only measures elapsed time on this device
+let _monitorHealth = 'ok';
+
+/* A monitor that has stopped working looks EXACTLY like one waiting
+   for the next guest — the same crest, the same "please scan your
+   ticket". Nobody at the desk would notice for an hour. So the screen
+   now says so, discreetly, the moment it cannot reach the server or
+   has been signed out. Hidden entirely while healthy. */
+function setMonitorHealth(state) {
+  if (state === _monitorHealth) return;
+  _monitorHealth = state;
+  const el = document.getElementById('monitor-health');
+  if (!el) return;
+  if (state === 'ok') { el.style.display = 'none'; return; }
+  el.textContent = state === 'auth'   ? 'Display signed out — staff, please sign in again'
+                 : state === 'nodesk' ? 'Scan received here, but no check-in window is open on this computer — open it and scan again'
+                 : 'Reconnecting…';
+  el.style.display = 'block';
+  // The "no desk" notice is about one scan; don't leave it up forever.
+  if (state === 'nodesk') {
+    setTimeout(function () { if (_monitorHealth === 'nodesk') setMonitorHealth('ok'); }, 8000);
+  }
+}
 let _monitorResetTimeout = null;
 let _monitorLane = 'all';        // 'all' or 1/2/3
 let _monitorQueue = [];          // arrivals waiting to be shown
@@ -6023,7 +6437,17 @@ let _monitorShowing = false;
 function openReceptionMonitor(lane) {
   const base = window.location.origin + window.location.pathname;
   const q = '?monitor=1' + (lane && lane !== 'all' ? '&lane=' + lane : '');
-  window.open(base + q, '_blank');
+  /* A NAMED window, not _blank. Pressing the button twice used to open
+     a second welcome screen, and both then reacted to every check-in —
+     one on the TV, one hidden behind the dashboard. Reusing one window
+     per lane makes the button safe to press again, e.g. after someone
+     closes the TV window by accident.
+
+     Not "noopener": the TV keeps a reference back to this window so
+     that, if a scan lands on the TV by mistake, it can hand keyboard
+     focus straight back to the desk (see relayScanToDesk). */
+  const w = window.open(base + q, 'legacy-night-tv-' + (lane || 'all'));
+  try { if (w) w.focus(); } catch (e) {}
 }
 
 /* ── APP DIALOG ────────────────────────────────────────────────────
@@ -6111,6 +6535,8 @@ function chooseMonitorLane() {
     message: 'Which screen is this for?',
     sub: 'Pick a lane if the screen sits beside that queue, so guests see their own name. Choose “All lanes” for a single shared display.',
     choices: [
+      { badge: '📺', wide: true, value: String(_doorsLane), title: 'This desk’s TV — Lane ' + _doorsLane,
+        sub: 'The screen plugged into THIS computer. Use this one for the registration booth.' },
       { badge: 'ALL', wide: true, value: 'all', title: 'All lanes',
         sub: 'One shared screen — shows every arrival in order' },
       { badge: '1', value: '1', title: 'Lane 1', sub: 'Only guests checked in on lane 1' },
@@ -6612,18 +7038,45 @@ function enterMonitorMode() {
     const p = new URLSearchParams(window.location.search);
     const l = p.get('lane');
     if (l && /^[1-9]$/.test(l)) _monitorLane = l;
-    _monitorClean = p.get('clean') === '1';
+    /* Every screen in this setup faces guests, so the welcome is clean
+       by default — no countdown bar, no Continue button, no lane badge.
+       A staff-facing monitor can still ask for them with ?controls=1.
+       (?clean=1 used to be required, which meant a TV opened without it
+       showed a draining timer bar under every guest's name.) */
+    _monitorClean = p.get('controls') !== '1';
   } catch (e) {}
 
   el.classList.add('active');
   const badge = document.getElementById('monitor-lane-badge');
   if (badge) {
-    badge.textContent = _monitorLane === 'all' ? 'All lanes' : 'Lane ' + _monitorLane;
-    badge.style.display = _monitorClean ? 'none' : 'block';
+    /* A clean, guest-facing TV shows no lane number, no time, nothing
+       operational — just a plain title confirming what the screen is
+       for. A staff monitor (not clean) keeps the lane readout, since
+       that one IS meant to convey status at a glance. */
+    badge.textContent = _monitorClean ? 'GUEST CHECK-IN' : (_monitorLane === 'all' ? 'All lanes' : 'Lane ' + _monitorLane);
+    badge.style.display = 'block';
   }
-  // Start from "now" so opening a monitor mid-event doesn't replay
-  // everyone who already walked in.
-  _monitorLastSeenAt = Date.now();
+  /* ── NEVER TRUST THE TV'S CLOCK ─────────────────────────────────
+     This used to start the cursor at Date.now() — the TV's own clock —
+     so a monitor opened mid-event wouldn't replay everyone who had
+     already arrived. But every arrival is stamped by recordRecentCheckIn
+     with GOOGLE's clock, and the server only returns arrivals newer
+     than the cursor. The comparison mixed two clocks.
+
+     A display PC running fast by 30 seconds silently skipped a few
+     guests. Two minutes fast: 13 of 300 never shown. An hour fast —
+     one wrong setting on a venue PC — and the screen showed NOBODY,
+     all night, while looking perfectly healthy on its waiting screen.
+     The cursor only ever advances from server values that pass the
+     filter, so it could never catch up by itself.
+
+     Now the first poll is a priming read: it asks for everything still
+     held, moves the cursor to the newest SERVER timestamp it sees, and
+     displays nothing. Every later comparison is server-time against
+     server-time, and the display's clock is irrelevant. */
+  _monitorLastSeenAt = 0;
+  _monitorPriming = true;
+  _monitorLastOkAt = Date.now();
   pollForRecentCheckIn();
   // Polling every 2.5s meant a guest could stand at the desk for
   // several seconds before their name appeared. At one second the
@@ -6638,6 +7091,15 @@ function enterMonitorMode() {
 }
 
 async function pollForRecentCheckIn() {
+  /* Every welcome from this TV's own desk now arrives directly, in the
+     same tick, with no server involved. The network poll only matters
+     if that link isn't there — so once a direct welcome has arrived,
+     poll every 2s instead of every 400ms. Two TVs at 400ms is five
+     Apps Script requests a second, all night, competing with the
+     check-in saves that actually matter; this cuts that by 80% without
+     slowing anything a guest can see. */
+  if (_monitorGotBroadcast && !_monitorPriming && Date.now() - _monitorLastPollAt < 2000) return;
+  _monitorLastPollAt = Date.now();
   try {
     const url = SHEETS_URL + '?action=getRecentCheckIn'
       + '&token=' + encodeURIComponent(_sessionToken)
@@ -6649,11 +7111,35 @@ async function pollForRecentCheckIn() {
     const res = await fetch(url, { method: 'GET', signal: controller.signal });
     clearTimeout(timeoutId);
     const j = await res.json();
-    if (j.status === 'ok' && Array.isArray(j.checkins) && j.checkins.length) {
+
+    if (j.status !== 'ok') {
+      // Signed out is not going to fix itself — say so immediately.
+      if (/unauthori|session|expired|log ?in/i.test(String(j.message || ''))) setMonitorHealth('auth');
+      else if (Date.now() - _monitorLastOkAt > 15000) setMonitorHealth('offline');
+      return;
+    }
+    _monitorLastOkAt = Date.now();
+    setMonitorHealth('ok');
+
+    if (_monitorPriming) {
+      _monitorPriming = false;
+      (j.checkins || []).forEach(function (c) {
+        if (c && c.at > _monitorLastSeenAt) _monitorLastSeenAt = c.at;
+      });
+      return;                       // catch up silently — show nothing old
+    }
+
+    if (Array.isArray(j.checkins) && j.checkins.length) {
+      let added = false;
       j.checkins.forEach(function(c) {
         if (c.at > _monitorLastSeenAt) _monitorLastSeenAt = c.at;
+        // Skip anything this TV's own PC already showed instantly via
+        // broadcastCheckIn — the poll is a fallback, not a second copy.
+        if (monitorAlreadyShown(c.ts, c.idx)) return;
         _monitorQueue.push(c);
+        added = true;
       });
+      if (!added) return;
       // If several people arrive at once, don't let the backlog grow
       // into a long parade of stale names — keep it current.
       if (_monitorQueue.length > 8) _monitorQueue = _monitorQueue.slice(-8);
@@ -6662,8 +7148,9 @@ async function pollForRecentCheckIn() {
       drainMonitorQueue(true);
     }
   } catch (e) {
-    // Silent — the monitor keeps showing whatever it last showed and
-    // retries on the next poll. No one's watching a console.
+    // A blip is normal; only flag it once the silence is long enough
+    // to mean guests are genuinely being missed.
+    if (Date.now() - _monitorLastOkAt > 15000) setMonitorHealth('offline');
   }
 }
 
@@ -6711,8 +7198,35 @@ let _monitorFloorTimer = null;
 // and the lane badge.
 let _monitorClean = false;
 
+/* ── A PARTY ARRIVES TOGETHER ─────────────────────────────────────
+   A couple hands over two phones and the desk scans both passes in two
+   seconds. Queued one after another, the second guest waited out the
+   first one's minimum on-screen time before their name appeared — a
+   visible buffer, for two people standing side by side.
+
+   Members of the same booking now join the card that is already on
+   screen, instantly: "Welcome, Mr. Top & Ms. Gift — Table 7 · Seats 3,
+   4". No wait, and each person still sees their own name and seat. A
+   different booking still gets the guaranteed minimum before it can
+   take over, so nobody from the previous party is wiped off early. */
+let _monitorCurrent = null;       // { ts, table, people: [{name, seat}], dwell }
+
 function drainMonitorQueue(force) {
   if (!_monitorQueue.length) return;
+
+  if (_monitorShowing && _monitorCurrent && _monitorCurrent.ts) {
+    let merged = false;
+    _monitorQueue = _monitorQueue.filter(function (q) {
+      if (q && q.ts && q.ts === _monitorCurrent.ts) {
+        _monitorCurrent.people.push({ name: q.name, seat: q.seat });
+        merged = true;
+        return false;
+      }
+      return true;
+    });
+    if (merged) renderMonitorCard(_monitorQueue.length ? MONITOR_MIN_ON_SCREEN_MS : MONITOR_DWELL_MS);
+    if (!_monitorQueue.length) return;
+  }
   if (_monitorShowing && !force) return;
 
   if (_monitorShowing && force) {
@@ -6738,7 +7252,7 @@ function drainMonitorQueue(force) {
      are waiting, each gets the guaranteed minimum and the queue moves
      at that pace instead of stalling behind a long dwell. */
   const dwell = _monitorQueue.length ? MONITOR_MIN_ON_SCREEN_MS : MONITOR_DWELL_MS;
-  showMonitorWelcome(next.name, next.table, next.seat, dwell);
+  showMonitorWelcome(next.name, next.table, next.seat, dwell, next.ts);
 }
 
 // Skips the guest currently on screen and moves to the next, or back
@@ -6751,12 +7265,33 @@ function monitorContinue() {
   else resetMonitorToWaiting();
 }
 
-function showMonitorWelcome(name, table, seat, dwell) {
+function showMonitorWelcome(name, table, seat, dwell, ts) {
+  _monitorCurrent = { ts: ts || '', table: table, people: [{ name: name, seat: seat }] };
+  renderMonitorCard(dwell);
+}
+
+function joinNames(list) {
+  if (list.length <= 1) return list[0] || '';
+  return list.slice(0, -1).join(', ') + ' & ' + list[list.length - 1];
+}
+
+function renderMonitorCard(dwell) {
   if (_monitorResetTimeout) clearTimeout(_monitorResetTimeout);
   const el = document.getElementById('monitor-content');
+  if (!el || !_monitorCurrent) return;
+  const cur = _monitorCurrent;
+  const names = cur.people.map(function (p) { return p.name; });
+  const seats = cur.people.map(function (p) { return p.seat; }).filter(Boolean);
+  const table = cur.table;
+  // Table and seat come from the sheet — escape them like the name.
   const seatLine = table
-    ? `<p class="monitor-seat">Table ${table}${seat ? ' &middot; Seat ' + seat : ''}</p>`
+    ? `<p class="monitor-seat">Table ${escHtmlV(table)}${seats.length
+        ? ' &middot; ' + (seats.length > 1 ? 'Seats ' : 'Seat ') + escHtmlV(seats.join(', '))
+        : ''}</p>`
     : '';
+  // Longer lines for a party, so step the type down a little.
+  const nameStyle = names.length > 1 ? ' style="font-size:clamp(34px,4.6vw,76px)"' : '';
+  const name = joinNames(names);
   const queued = _monitorQueue.length;
   const controls = _monitorClean ? '' : `
       <div class="monitor-controls">
@@ -6770,7 +7305,7 @@ function showMonitorWelcome(name, table, seat, dwell) {
     <div class="monitor-welcome">
       <div class="monitor-check"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></div>
       <h1>Welcome,</h1>
-      <h2>${escHtmlV(name)}</h2>
+      <h2${nameStyle}>${escHtmlV(name)}</h2>
       <p class="monitor-to">to PBIS Legacy Night</p>
       ${seatLine}
       ${controls}
@@ -6802,7 +7337,7 @@ function resetMonitorToWaiting() {
     <div class="monitor-waiting">
       <div class="monitor-crest"><img src="${LOGO}" alt="PBIS" class="js-logo"></div>
       <h1>PBIS Legacy Night</h1>
-      <p>Please scan your ticket at the entrance</p>
+      <p>Please present your QR pass at registration</p>
     </div>`;
 }
 
@@ -8445,7 +8980,8 @@ function hwScannerKeydown(e) {
   const modalOpen = document.getElementById('qr-scanner-backdrop');
   const active = (doorsOpen && doorsOpen.classList.contains('active')) ||
                  (kioskOpen && kioskOpen.classList.contains('active')) ||
-                 (modalOpen && modalOpen.classList.contains('open'));
+                 (modalOpen && modalOpen.classList.contains('open')) ||
+                 isMonitorWindow();      // the TV window — see relayScanToDesk
   if (!active) return;
 
   // Never swallow real typing. If someone is in a text field, the only
@@ -8608,6 +9144,9 @@ function hwFlushBuffer(e, typing, t, kioskOpen) {
     if (t.id === 'doors-search' && typeof renderDoorsSearchResults === 'function') renderDoorsSearchResults();
     if (t.id === 'kiosk-input' && typeof kioskSearch === 'function') kioskSearch('');
   }
+  // On the TV window there is nothing to check in against — pass the
+  // scan to this computer's check-in window instead of dropping it.
+  if (isMonitorWindow()) { relayScanToDesk(buf); return; }
   _lastScanWasHardware = true;
   if (kioskOpen && kioskOpen.classList.contains('active')) kioskHandleScan(buf);
   else handleQRScanResult(buf);
