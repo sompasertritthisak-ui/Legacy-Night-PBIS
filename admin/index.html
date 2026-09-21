@@ -9820,6 +9820,32 @@ const FOLLOWUP_ALLOWED_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
 ══════════════════════════════════════════════════════════════════ */
 const TABLE_DEFAULTS = { count: 20, capacity: 10 };
 
+/* ── TABLES THAT DON'T HAVE THE STANDARD NUMBER OF SEATS ───────────
+   "Seats per table" is one number for the whole room. A few tables are
+   physically bigger, and they are listed here.
+
+   This is the ONLY place a table's seat count is decided. The floor
+   plan, the table cards, the "which table?" picker, the totals and the
+   printed seating sheet all ask seatsForTable() — so they can never
+   disagree about how many chairs a table has.
+
+   It lives in code rather than in the saved floor plan on purpose: the
+   plan is reconciled against the room settings every time it loads,
+   and that reconcile used to reset EVERY dinner table to the standard
+   count. A 12 saved into the plan would have quietly reverted to 10 the
+   next time anyone opened the Tables tab. An entry here survives that,
+   on every device, with nobody needing to remember to save.
+
+   Seat NUMBERS never change: a guest in seat 4 is still in seat 4. The
+   bigger tables simply gain seats 11 and 12.                        */
+const TABLE_SEAT_OVERRIDES = { 10: 12, 21: 12 };
+
+function seatsForTable(n, standard) {
+  const std = standard !== undefined ? standard : getSeatingConfig().capacity;
+  const o = TABLE_SEAT_OVERRIDES[parseInt(n, 10)];
+  return o !== undefined ? o : std;
+}
+
 function getSeatingConfig() {
   try {
     const raw = localStorage.getItem('legacy_seating_config');
@@ -10024,7 +10050,7 @@ function fpDefaultPlan(count, seats) {
       n: i + 1,
       x: Math.round(startX + col * (usableW / perRow) + (usableW / perRow) / 2),
       y: Math.round(FP.ball.y + 70 + row * 92),
-      seats: seats,
+      seats: seatsForTable(i + 1, seats),
     });
   }
   return { tables: tables };
@@ -10090,7 +10116,9 @@ function reconcilePlanWithConfig() {
   const fresh = fpDefaultPlan(cfg.count, cfg.capacity).tables;
   _floorPlan.tables = fresh.map(function(def) {
     const e = existing[def.n];
-    return e ? { n: def.n, x: e.x, y: e.y, seats: cfg.capacity } : def;
+    // Position kept exactly as arranged; only the chair count is set, and
+    // it comes from seatsForTable so the bigger tables keep their 12.
+    return e ? { n: def.n, x: e.x, y: e.y, seats: seatsForTable(def.n, cfg.capacity) } : def;
   // Cocktail tables aren't part of the dinner table count, so changing
   // that setting must not wipe them.
   }).concat(cocktails);
@@ -10483,7 +10511,8 @@ function renderTablesTab() {
                               .reduce(function(s, g) { return s + partyMembers(g).length; }, 0);
   const unseatedPeople = totalPeople - seatedPeople;
   const tablesUsed    = Object.keys(tables).filter(function(n) { return tables[n].length; }).length;
-  const capacityTotal = cfg.count * cfg.capacity;
+  let capacityTotal = 0;
+  for (let t = 1; t <= cfg.count; t++) capacityTotal += seatsForTable(t, cfg.capacity);
   // Everyone seated who still has no seat number of their own.
   let missingSeatNos = 0;
   guests.forEach(function(g) {
@@ -10528,8 +10557,9 @@ function renderTablesTab() {
     });
 
     const seated = peopleHere.length;
-    const over = seated > cfg.capacity;
-    const pct = Math.min(100, Math.round((seated / cfg.capacity) * 100));
+    const cap = seatsForTable(num, cfg.capacity);
+    const over = seated > cap;
+    const pct = Math.min(100, Math.round((seated / cap) * 100));
 
     const rows = peopleHere.map(function(item) {
       const p = item.p, g = item.g;
@@ -10560,10 +10590,10 @@ function renderTablesTab() {
       '</div>';
     }).join('') : '';
 
-    return '<div class="table-card' + (over ? ' over' : (seated >= cfg.capacity ? ' full' : '')) + '">' +
+    return '<div class="table-card' + (over ? ' over' : (seated >= cap ? ' full' : '')) + '">' +
       '<div class="table-card-header">' +
         '<span class="table-card-num">Table ' + num + '</span>' +
-        '<span class="table-card-fill' + (over ? ' over' : '') + '">' + seated + '/' + cfg.capacity + (over ? ' ⚠' : '') + '</span>' +
+        '<span class="table-card-fill' + (over ? ' over' : '') + '">' + seated + '/' + cap + (over ? ' ⚠' : '') + '</span>' +
       '</div>' +
       '<div class="table-card-bar"><div class="table-card-bar-fill' + (over ? ' over' : '') + '" style="width:' + pct + '%;"></div></div>' +
       (seated
@@ -10576,8 +10606,9 @@ function renderTablesTab() {
   const tableOptions = Array.from({ length: cfg.count }, function(_, i) { return i + 1; })
     .map(function(n) {
       const here = tables[n].reduce(function(s, g) { return s + partyMembers(g).length; }, 0);
-      const full = here >= cfg.capacity;
-      return '<option value="' + n + '"' + (full ? ' disabled' : '') + '>Table ' + n + ' (' + here + '/' + cfg.capacity + ')' + (full ? ' — full' : '') + '</option>';
+      const cap = seatsForTable(n, cfg.capacity);
+      const full = here >= cap;
+      return '<option value="' + n + '"' + (full ? ' disabled' : '') + '>Table ' + n + ' (' + here + '/' + cap + ')' + (full ? ' — full' : '') + '</option>';
     }).join('');
 
   const unassignedRows = unassigned.slice().reverse().map(function(g) {
@@ -10603,7 +10634,10 @@ function renderTablesTab() {
       '<div class="dash-stat-card"><div class="dash-stat-value">' + unseatedPeople + '</div><div class="dash-stat-label">Not Yet Seated</div>' +
         '<div class="stat-note">' + unassigned.length + ' booking' + (unassigned.length===1?'':'s') + ' to place</div></div>' +
       '<div class="dash-stat-card"><div class="dash-stat-value">' + capacityTotal + '</div><div class="dash-stat-label">Venue Capacity</div>' +
-        '<div class="stat-note">' + cfg.count + ' tables × ' + cfg.capacity + ' seats</div></div>' +
+        '<div class="stat-note">' + cfg.count + ' tables × ' + cfg.capacity + ' seats' + (function () {
+          const big = Object.keys(TABLE_SEAT_OVERRIDES).filter(function (k) { return +k <= cfg.count; });
+          return big.length ? ' · tables ' + big.join(' & ') + ' seat ' + TABLE_SEAT_OVERRIDES[big[0]] : '';
+        })() + '</div></div>' +
     '</div>' +
 
     (overflow.length
@@ -10874,7 +10908,7 @@ function openSeatingSheet() {
       '</tr>';
     }).join('');
     return '<div class="tblblock">' +
-      '<h3>Table ' + esc(k) + ' <span class="cnt">' + byTable[k].length + ' of ' + cfg.capacity + ' seats</span></h3>' +
+      '<h3>Table ' + esc(k) + ' <span class="cnt">' + byTable[k].length + ' of ' + seatsForTable(k, cfg.capacity) + ' seats</span></h3>' +
       '<table><thead><tr><th class="seatcol">Seat</th><th>Guest</th><th>Organisation</th><th>Meal</th><th class="tick">Arrived</th></tr></thead>' +
       '<tbody>' + rows + '</tbody></table></div>';
   }).join('');
