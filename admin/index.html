@@ -5670,6 +5670,10 @@ async function replayDoorJournal() {
   for (const e of list) {
     const r = await postToSheetsVerified({
       action: 'markCheckedIn', ts: e.ts, checked_in: true, idx: e.idx,
+      // A replay is always of arrivals from earlier. Marking it as old
+      // keeps hundreds of past welcomes off the TVs; the sheet and the
+      // other desk still record every one.
+      age_ms: Math.max(3600000, Date.now() - (Date.parse(e.at) || 0)),
       lane: e.lane, session_token: _sessionToken,
       staff_name: _currentUser ? _currentUser.name : '',
     });
@@ -5721,7 +5725,43 @@ function openRecoveryPanel() {
 const CHECKIN_QUEUE_KEY = 'legacy_pending_checkins';
 let _checkInQueue = [];
 let _queueRetryTimer = null;
-let _queueRetrying = false;
+let _queueRetrying = false;      // kept for compatibility with older callers
+
+/* ══════════════════════════════════════════════════════════════════
+   THE OUTBOX — every check-in is durable before it is sent
+   ──────────────────────────────────────────────────────────────────
+   The rule: a check-in the desk has shown on screen must reach the
+   sheet eventually, whatever the internet does, with nobody doing
+   anything. Three things used to break that rule:
+
+   1. It was only queued AFTER the network failed. On a slow link one
+      save could take three attempts of up to 15 seconds each — about
+      47 seconds during which the check-in lived only in memory. Close
+      the tab or lose the browser in that window and it never re-sent.
+      Now it is written to this PC's storage FIRST, and removed only
+      when the server confirms it.
+
+   2. The queue gave up. After 12 failed attempts an item was dropped,
+      and with the backoff capped at 30s that was roughly four minutes
+      of outage. A ten-minute WiFi drop silently discarded check-ins.
+      Now a network failure is never a reason to drop anything; only
+      a definitive refusal from the server removes an item.
+
+   3. Recovery crawled. After a SUCCESSFUL save the next item still
+      waited out the backoff of the item that had just succeeded — up
+      to 30s — so a backlog of 100 drained over many minutes. Now a
+      success is followed immediately by the next send, two at a time,
+      so the admin dashboard catches up within seconds of reconnecting.
+
+   Order is kept per guest: two entries for the same person (a
+   check-in then an undo) are never in flight together, so the sheet
+   always ends in the state the desk last chose.                    */
+const OUTBOX_CONCURRENCY = 2;
+let _outboxWasBacklogged = false;
+
+function outboxId() {
+  return 'o' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
 
 function loadCheckInQueue() {
   try {
@@ -5734,86 +5774,174 @@ function loadCheckInQueue() {
     try { sessionStorage.removeItem(CHECKIN_QUEUE_KEY); } catch (e) {}
     _checkInQueue = raw ? JSON.parse(raw) : [];
   } catch (e) { _checkInQueue = []; }
+  if (!Array.isArray(_checkInQueue)) _checkInQueue = [];
+  // Anything marked in-flight belonged to a page that no longer exists.
+  _checkInQueue.forEach(function (q) {
+    if (!q.id) q.id = outboxId();
+    q.inflight = false;
+    q.nextTryAt = 0;
+  });
+  persistCheckInQueue();
   updatePendingIndicator();
-  if (_checkInQueue.length) scheduleQueueRetry(2000);
+  if (_checkInQueue.length) { _outboxWasBacklogged = true; scheduleQueueRetry(500); }
 }
 
-// If the device drops off the venue WiFi and comes back, don't wait
-// out the backoff — try again straight away.
-window.addEventListener('online', function() {
-  if (_checkInQueue.length) {
-    if (_queueRetryTimer) { clearTimeout(_queueRetryTimer); _queueRetryTimer = null; }
-    scheduleQueueRetry(500);
-  }
+// The moment the network is back, send — don't wait out any backoff.
+window.addEventListener('online', function () {
+  if (!_checkInQueue.length) return;
+  _checkInQueue.forEach(function (q) { q.nextTryAt = 0; });
+  if (_queueRetryTimer) { clearTimeout(_queueRetryTimer); _queueRetryTimer = null; }
+  pumpOutbox();
 });
+
+// "online" does not fire when the WiFi stays connected but the internet
+// behind it comes back, so also nudge the outbox every 10 seconds.
+setInterval(function () { if (_checkInQueue.length) pumpOutbox(); }, 10000);
 
 function persistCheckInQueue() {
   try { localStorage.setItem(CHECKIN_QUEUE_KEY, JSON.stringify(_checkInQueue)); } catch (e) {}
 }
 
-function enqueueCheckIn(payload, personName) {
-  // Collapse any earlier queued entry for the same person — only the
-  // latest intended state matters (e.g. check-in then undo).
-  _checkInQueue = _checkInQueue.filter(function(q) {
-    return !(q.payload.ts === payload.ts && q.payload.idx === payload.idx);
+/* Adds a check-in to the outbox and returns the entry. `prev` is the
+   person's check-in state before this change, so a server refusal can
+   put it back exactly. */
+function enqueueCheckIn(payload, personName, prev) {
+  // An older entry for the same person that hasn't gone out yet is
+  // superseded — only the latest intention matters (check-in then undo).
+  // One already in flight can't be recalled; per-person ordering in
+  // pumpOutbox makes sure the newer one goes after it.
+  _checkInQueue = _checkInQueue.filter(function (q) {
+    return q.inflight || !(q.payload.ts === payload.ts && q.payload.idx === payload.idx);
   });
-  _checkInQueue.push({ payload: payload, personName: personName, attempts: 0, queuedAt: Date.now() });
+  const item = {
+    id: outboxId(), payload: payload, personName: personName,
+    attempts: 0, queuedAt: Date.now(), nextTryAt: 0, inflight: false,
+    prev: prev || null, announced: false,
+  };
+  _checkInQueue.push(item);
   persistCheckInQueue();
   updatePendingIndicator();
-  scheduleQueueRetry(3000);
+  return item;
 }
 
 function scheduleQueueRetry(delayMs) {
   if (_queueRetryTimer) return;
-  _queueRetryTimer = setTimeout(function() {
+  _queueRetryTimer = setTimeout(function () {
     _queueRetryTimer = null;
-    flushCheckInQueue();
-  }, delayMs);
+    pumpOutbox();
+  }, Math.max(0, delayMs));
 }
 
-async function flushCheckInQueue() {
-  if (_queueRetrying || !_checkInQueue.length) return;
-  if (!_sessionToken) { scheduleQueueRetry(5000); return; } // logged out — wait
-  _queueRetrying = true;
+// Older name, still called from a few places.
+function flushCheckInQueue() { return pumpOutbox(); }
 
-  // One at a time, oldest first, so we never pile more concurrent
-  // load onto a server that's already struggling.
-  const item = _checkInQueue[0];
-  item.attempts++;
-  item.payload.session_token = _sessionToken; // token may have been refreshed
+function isDefinitiveRefusal(msg) {
+  return /unauthorized|not found|cannot|permission|only specific|invalid|no longer/i.test(String(msg || ''));
+}
+
+function pumpOutbox() {
+  if (!_checkInQueue.length) return;
+  if (!_sessionToken) { scheduleQueueRetry(5000); return; }   // logged out — wait
+  if (navigator.onLine === false) return;                     // the 'online' event will wake us
+
+  const now = Date.now();
+  let running = _checkInQueue.filter(function (q) { return q.inflight; }).length;
+  const busyPeople = new Set(_checkInQueue.filter(function (q) { return q.inflight; })
+    .map(function (q) { return q.payload.ts + '|' + q.payload.idx; }));
+
+  for (let i = 0; i < _checkInQueue.length && running < OUTBOX_CONCURRENCY; i++) {
+    const q = _checkInQueue[i];
+    const who = q.payload.ts + '|' + q.payload.idx;
+    if (q.inflight || busyPeople.has(who) || (q.nextTryAt || 0) > now) continue;
+    busyPeople.add(who);
+    running++;
+    sendOutboxItem(q);
+  }
+
+  // Wake up again when the earliest waiting item is due.
+  const waiting = _checkInQueue.filter(function (q) { return !q.inflight; });
+  if (waiting.length) {
+    const next = Math.min.apply(null, waiting.map(function (q) { return q.nextTryAt || 0; }));
+    scheduleQueueRetry(Math.max(250, next - Date.now()));
+  }
+}
+
+async function sendOutboxItem(q) {
+  q.inflight = true;
+  q.attempts++;
+  q.payload.session_token = _sessionToken;             // may have been refreshed
+  // How long ago this really happened, measured on THIS device's clock
+  // (never compared with the server's). The server uses it to keep a
+  // check-in that is only now being saved — after an outage — off the
+  // welcome screens: that guest walked in minutes ago.
+  q.payload.age_ms = Math.max(0, Date.now() - q.queuedAt);
+  persistCheckInQueue();
 
   let result;
-  try {
-    // Verified too — otherwise a queued item could be dropped from the
-    // queue on a write the server actually refused.
-    result = await postToSheetsVerified(item.payload);
-  } catch (e) {
-    result = { status: 'error', message: 'Network error' };
-  }
+  try { result = await postToSheetsVerified(q.payload); }
+  catch (e) { result = { status: 'error', message: 'Network error' }; }
 
-  if (result && result.status !== 'error') {
-    _checkInQueue.shift();
-    persistCheckInQueue();
-    updatePendingIndicator();
-    if (!_checkInQueue.length) {
-      showDashToast('✓ All pending check-ins saved');
+  q.inflight = false;
+  const ok = result && result.status !== 'error';
+
+  if (ok) {
+    removeOutboxItem(q.id);
+    if (q.attempts === 1 && !q.announced) {
+      showDashToast(q.payload.checked_in ? '✓ ' + q.personName + ' checked in'
+                                         : '↩ Check-in undone for ' + q.personName);
     }
-  } else if (item.attempts >= 12) {
-    // Give up on this one after a long series of failures, but make it
-    // loud rather than silent — staff need to know to record it manually.
-    _checkInQueue.shift();
+  } else if (isDefinitiveRefusal(result && result.message)) {
+    // The server will never accept this one. Take it out, and put the
+    // screen back to the truth rather than leave something untrue.
+    removeOutboxItem(q.id);
+    forgetLocalChange(q.payload.ts, q.payload.idx);
+    revertOutboxItem(q);
+    showDashToast('⚠️ ' + q.personName + ': ' + ((result && result.message) || 'could not be saved'));
+  } else {
+    // Slow, busy or offline. The guest IS here — keep it and try again.
+    // Short, capped backoff: recovery must be quick once the link returns.
+    q.nextTryAt = Date.now() + Math.min(2000 * Math.pow(2, Math.min(q.attempts - 1, 3)), 15000);
+    _outboxWasBacklogged = true;
+    if (!q.announced) {
+      q.announced = true;
+      showDashToast('⏳ ' + q.personName + ' checked in — saving in background…');
+    }
     persistCheckInQueue();
     updatePendingIndicator();
-    showDashToast('⚠️ Could not save check-in for ' + item.personName + ' after repeated attempts — please note it manually.');
   }
+  pumpOutbox();                                          // straight on to the next
+}
 
-  _queueRetrying = false;
-  if (_checkInQueue.length) {
-    // Backoff grows with attempts, capped, so a long outage doesn't
-    // hammer the server but recovery is still quick once it returns.
-    const backoff = Math.min(2000 * Math.pow(1.6, Math.min(item.attempts, 6)), 30000);
-    scheduleQueueRetry(backoff);
+function removeOutboxItem(id) {
+  const before = _checkInQueue.length;
+  _checkInQueue = _checkInQueue.filter(function (q) { return q.id !== id; });
+  persistCheckInQueue();
+  updatePendingIndicator();
+  if (before && !_checkInQueue.length && _outboxWasBacklogged) {
+    _outboxWasBacklogged = false;
+    showDashToast('✓ All pending check-ins saved');
+    // Back online and caught up: pull the latest from the sheet so this
+    // desk also picks up everything the other desk did in the meantime.
+    try { if (typeof loadDashboardData === 'function') loadDashboardData(); } catch (e) {}
   }
+}
+
+function revertOutboxItem(q) {
+  try {
+    const g = _dashGuestsCache.find(function (x) { return x.ts === q.payload.ts; });
+    if (!g) return;
+    const ck = parseIndividualCheckins(g);
+    const idx = q.payload.idx;
+    // Only undo what WE set — a newer change for this person wins.
+    const cur = ck[idx];
+    if (cur && !!cur.checked_in !== !!q.payload.checked_in) return;
+    if (q.prev) ck[idx] = q.prev; else delete ck[idx];
+    g.individual_checkins = JSON.stringify(ck);
+    const any = Object.keys(ck).some(function (k) { return ck[k] && ck[k].checked_in; });
+    g.checked_in = any;
+    if (!any) g.checked_in_at = '';
+    scheduleCheckInRenders();
+  } catch (e) {}
 }
 
 function updatePendingIndicator() {
@@ -5941,50 +6069,21 @@ function markGuestCheckedIn(ts, checkedIn, idx, personName) {
   const payload = { action: 'markCheckedIn', ts: ts, checked_in: checkedIn, idx: idx, lane: _doorsLane, session_token: _sessionToken, staff_name: _currentUser ? _currentUser.name : '' };
   if (clearingNoShow) payload.clear_no_show = true;
 
-  /* ── DON'T DIAL A DEAD LINE ──────────────────────────────────────
-     postToSheetsVerified retries three times with a 1.2s backoff
-     before giving up, which is right for a flaky connection. But when
-     the device KNOWS it has no network, those three round trips are
-     certain to fail: the check-in sits unqueued for 2.4 seconds and
-     the pending badge doesn't move, so staff can't tell whether it
-     registered. Across a 300-guest list that is 900 doomed requests.
-
-     navigator.onLine is only trustworthy in one direction — false
-     genuinely means no network, while true can still mean "connected
-     to venue WiFi that goes nowhere". So it is used only as a
-     shortcut for the definitely-offline case; everything else takes
-     the normal path with its retries intact. */
+  /* Into the outbox first — durable on this PC before any network call
+     — then send straight away. The outbox owns everything from here:
+     the save, the retries however long the internet is out, putting the
+     screen back if the server refuses, and the "saved" confirmation.
+     The TV was already told above and never waits for any of this. */
+  let prevEntry = null;
+  try { prevEntry = (JSON.parse(prevState.individual_checkins || '{}') || {})[idx] || null; } catch (e) {}
+  enqueueCheckIn(payload, personName, prevEntry);
   if (navigator.onLine === false) {
-    enqueueCheckIn(payload, personName);
-    showDashToast('📴 ' + personName + ' checked in — offline, will save when the connection returns');
+    showDashToast('📴 ' + personName + (checkedIn ? ' checked in' : ' undone') +
+                  ' — offline, will save when the connection returns');
+    _outboxWasBacklogged = true;
     return;
   }
-
-  postToSheetsVerified(payload).then((result) => {
-    if (result.status === 'error') {
-      const msg = String(result.message || '');
-      // A definitive rejection (bad session, guest genuinely gone,
-      // role not permitted) means retrying will never work — roll back
-      // so the dashboard doesn't show something untrue.
-      const isDefinitive = /unauthorized|not found|cannot|permission|only specific|invalid|no longer/i.test(msg);
-
-      if (isDefinitive) {
-        forgetLocalChange(ts, idx);          // refused — never re-apply it
-        Object.assign(guest, prevState);
-        renderCheckInTab(); renderOverviewTab(); renderGuestListTab(); renderOverdueTab(); renderTablesTab();
-        showDashToast('⚠️ ' + (msg || 'Could not save.'));
-        return;
-      }
-
-      // Otherwise it's a slow/busy server or a flaky connection. The
-      // guest IS here — keep the check-in on screen and retry in the
-      // background rather than losing it.
-      enqueueCheckIn(payload, personName);
-      showDashToast('⏳ ' + personName + ' checked in — saving in background…');
-      return;
-    }
-    showDashToast(checkedIn ? `✓ ${personName} checked in` : `↩ Check-in undone for ${personName}`);
-  });
+  pumpOutbox();
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -6267,11 +6366,45 @@ function isMonitorWindow() {
   return !!(m && m.classList.contains('active'));
 }
 
+/* The guest touch screen. If it shares a laptop with a check-in desk,
+   a guest tapping it gives it keyboard focus — and the next barcode
+   scan would type into it and vanish. It hands scans to the desk
+   exactly as the TV window does. */
+function isGplanWindow() {
+  const g = document.getElementById('gplan-view');
+  return !!(g && g.classList.contains('active'));
+}
+
+/* The desk tells its TV it is alive every few seconds, over the same
+   in-PC channel the welcomes use — no internet involved. While that
+   heartbeat is arriving the TV has everything it needs even with the
+   internet completely down, so it must not show "Reconnecting…" to
+   guests. That notice now appears only when the TV has lost BOTH its
+   own desk AND the network — a genuine problem worth seeing. */
+let _lastDeskHeartbeat = 0;
+const DESK_HEARTBEAT_MS = 4000;
+setInterval(function () {
+  try {
+    if (isMonitorWindow() || _isDisplayMode) return;
+    if (!document.body.classList.contains('dashboard-active')) return;
+    lanePost({ type: 'desk-alive', lane: _doorsLane });
+  } catch (e) {}
+}, DESK_HEARTBEAT_MS);
+
+function deskLinkAlive() { return Date.now() - _lastDeskHeartbeat < 15000; }
+
 function onLaneMessage(msg) {
   if (!msg || !msg.type) return;
+  if (msg.type === 'desk-alive') {
+    if (isMonitorWindow()) {
+      _lastDeskHeartbeat = Date.now();
+      if (_monitorHealth === 'offline') setMonitorHealth('ok');
+    }
+    return;
+  }
   if (msg.type === 'checkin')    { if (isMonitorWindow()) monitorReceiveBroadcast(msg); return; }
   if (msg.type === 'scan-relay') { if (!isMonitorWindow()) deskReceiveRelayedScan(msg); return; }
-  if (msg.type === 'scan-ack')   { if (isMonitorWindow()) monitorReceiveAck(msg); return; }
+  if (msg.type === 'scan-ack')   { if (isMonitorWindow() || isGplanWindow()) monitorReceiveAck(msg); return; }
 }
 
 /* ══════════════════════════════════════════════════════════════════
@@ -6302,7 +6435,8 @@ function relayScanToDesk(data) {
   lanePost({ type: 'scan-relay', id: id, data: data, lane: _monitorLane });
   _relayPending.set(id, setTimeout(function () {
     _relayPending.delete(id);
-    setMonitorHealth('nodesk');
+    if (isMonitorWindow()) setMonitorHealth('nodesk');
+    else { try { showDashToast('⚠️ A pass was scanned on this screen, but no check-in window is open on this laptop. Open Doors Mode and scan again.'); } catch (e) {} }
     try { playScanFeedback('error'); } catch (e) {}
   }, RELAY_ACK_MS));
   // A keystroke is a user action, so browsers usually allow this.
@@ -7115,7 +7249,7 @@ async function pollForRecentCheckIn() {
     if (j.status !== 'ok') {
       // Signed out is not going to fix itself — say so immediately.
       if (/unauthori|session|expired|log ?in/i.test(String(j.message || ''))) setMonitorHealth('auth');
-      else if (Date.now() - _monitorLastOkAt > 15000) setMonitorHealth('offline');
+      else if (Date.now() - _monitorLastOkAt > 15000 && !deskLinkAlive()) setMonitorHealth('offline');
       return;
     }
     _monitorLastOkAt = Date.now();
@@ -7133,6 +7267,10 @@ async function pollForRecentCheckIn() {
       let added = false;
       j.checkins.forEach(function(c) {
         if (c.at > _monitorLastSeenAt) _monitorLastSeenAt = c.at;
+        // A late arrival is a backlog save sent after an outage: the guest
+        // walked in minutes ago and their own desk's TV already welcomed
+        // them directly. Move past it; never put it on screen.
+        if (c.late) return;
         // Skip anything this TV's own PC already showed instantly via
         // broadcastCheckIn — the poll is a fallback, not a second copy.
         if (monitorAlreadyShown(c.ts, c.idx)) return;
@@ -7150,7 +7288,7 @@ async function pollForRecentCheckIn() {
   } catch (e) {
     // A blip is normal; only flag it once the silence is long enough
     // to mean guests are genuinely being missed.
-    if (Date.now() - _monitorLastOkAt > 15000) setMonitorHealth('offline');
+    if (Date.now() - _monitorLastOkAt > 15000 && !deskLinkAlive()) setMonitorHealth('offline');
   }
 }
 
@@ -8981,7 +9119,8 @@ function hwScannerKeydown(e) {
   const active = (doorsOpen && doorsOpen.classList.contains('active')) ||
                  (kioskOpen && kioskOpen.classList.contains('active')) ||
                  (modalOpen && modalOpen.classList.contains('open')) ||
-                 isMonitorWindow();      // the TV window — see relayScanToDesk
+                 isMonitorWindow() ||    // the TV window — see relayScanToDesk
+                 isGplanWindow();        // the guest touch screen, same reason
   if (!active) return;
 
   // Never swallow real typing. If someone is in a text field, the only
@@ -9146,7 +9285,7 @@ function hwFlushBuffer(e, typing, t, kioskOpen) {
   }
   // On the TV window there is nothing to check in against — pass the
   // scan to this computer's check-in window instead of dropping it.
-  if (isMonitorWindow()) { relayScanToDesk(buf); return; }
+  if (isMonitorWindow() || isGplanWindow()) { relayScanToDesk(buf); return; }
   _lastScanWasHardware = true;
   if (kioskOpen && kioskOpen.classList.contains('active')) kioskHandleScan(buf);
   else handleQRScanResult(buf);
@@ -9846,16 +9985,44 @@ function seatsForTable(n, standard) {
   return o !== undefined ? o : std;
 }
 
+/* ── HOW MANY TABLES EXIST: THE SAVED FLOOR PLAN DECIDES ─────────────
+   "Tables × seats" is stored per laptop, and a laptop that has never
+   had it set assumed 20 tables. Every time the floor plan loaded, it
+   was trimmed to that count — so on any fresh laptop (a new touch
+   screen, a replacement desk) tables 21 onward silently vanished:
+   missing from the guest touch screen, their guests shown as
+   unseated, and if anyone pressed Save there, deleted for everyone.
+
+   The saved floor plan is shared by every device; this setting is
+   not. So the plan now sets the floor: a laptop never shows fewer
+   dinner tables than the saved plan contains. Removing tables is
+   still possible, but only as a deliberate act — changing the setting
+   in the Tables tab (which then has to be saved to take effect for
+   everyone), never as a side effect of opening a page. */
+let _seatingShrinkAllowed = false;
+
+function planDinnerTableMax() {
+  try {
+    if (!_floorPlan || !Array.isArray(_floorPlan.tables)) return 0;
+    return _floorPlan.tables.reduce(function (m, t) {
+      if (!t || t.kind === 'cocktail' || (parseInt(t.n, 10) || 0) >= 1000) return m;
+      return Math.max(m, parseInt(t.n, 10) || 0);
+    }, 0);
+  } catch (e) { return 0; }       // e.g. called before the plan variable exists
+}
+
 function getSeatingConfig() {
+  let count = TABLE_DEFAULTS.count, capacity = TABLE_DEFAULTS.capacity;
   try {
     const raw = localStorage.getItem('legacy_seating_config');
     if (raw) {
       const cfg = JSON.parse(raw);
-      const count = parseInt(cfg.count, 10), cap = parseInt(cfg.capacity, 10);
-      if (count >= 1 && count <= 200 && cap >= 1 && cap <= 50) return { count: count, capacity: cap };
+      const c = parseInt(cfg.count, 10), k = parseInt(cfg.capacity, 10);
+      if (c >= 1 && c <= 200 && k >= 1 && k <= 50) { count = c; capacity = k; }
     }
   } catch (e) {}
-  return { count: TABLE_DEFAULTS.count, capacity: TABLE_DEFAULTS.capacity };
+  if (!_seatingShrinkAllowed) count = Math.max(count, planDinnerTableMax());
+  return { count: count, capacity: capacity };
 }
 
 function saveSeatingConfig(count, capacity) {
@@ -9866,7 +10033,10 @@ function saveSeatingConfig(count, capacity) {
   // leaving cocktail tables alone. Without this the setting changed but
   // the floor plan quietly kept the old number of tables.
   if (_fpLoaded && _floorPlan) {
-    reconcilePlanWithConfig();
+    // The one place a smaller number is allowed to remove tables: the
+    // admin just chose it. It still only reaches other devices on Save.
+    _seatingShrinkAllowed = true;
+    try { reconcilePlanWithConfig(); } finally { _seatingShrinkAllowed = false; }
     _fpDirty = true;
   }
   showDashToast('✓ Seating set to ' + c + ' tables × ' + k + ' seats');
@@ -10056,18 +10226,78 @@ function fpDefaultPlan(count, seats) {
   return { tables: tables };
 }
 
+/* ══════════════════════════════════════════════════════════════════
+   THE FLOOR PLAN MUST SURVIVE A BAD CONNECTION — AND NEVER BE LOST
+   ──────────────────────────────────────────────────────────────────
+   The table layout lived only on the server. If fetching it failed —
+   no internet, or just a hiccup as the Tables tab opened — the code
+   quietly substituted a DEFAULT GRID. Two consequences:
+
+   · The guest touch screen showed every table in the wrong place,
+     with no hint anything was wrong. Worse than showing nothing.
+
+   · Far more serious: that default grid could be SAVED. Someone sees
+     a messy layout, drags one table to "fix" it, presses Save once the
+     connection is back — and the arranged floor plan is replaced with
+     the default grid for every device. Nothing warned them.
+
+   Now every laptop keeps the last layout it successfully loaded or
+   saved. Offline, it shows that. And Save is refused unless the
+   layout on screen came fresh from the server this session, so a
+   stand-in can never overwrite the real thing. A stand-in quietly
+   upgrades itself to the real layout as soon as the server answers. */
+const FLOORPLAN_CACHE_KEY = 'legacy_floorplan_v1';
+let _fpSource = 'none';          // 'server' | 'cache' | 'default'
+let _fpUpgradeTimer = null;
+
+function cacheFloorPlan(plan) {
+  try { localStorage.setItem(FLOORPLAN_CACHE_KEY, JSON.stringify({ at: Date.now(), plan: plan })); } catch (e) {}
+}
+function readCachedFloorPlan() {
+  try {
+    const raw = localStorage.getItem(FLOORPLAN_CACHE_KEY);
+    const o = raw ? JSON.parse(raw) : null;
+    return (o && o.plan && Array.isArray(o.plan.tables) && o.plan.tables.length) ? o.plan : null;
+  } catch (e) { return null; }
+}
+
 async function loadFloorPlan() {
   const cfg = getSeatingConfig();
+  let fromServer = null;
   try {
+    const controller = new AbortController();
+    const timer = setTimeout(function () { controller.abort(); }, 12000);
     const url = SHEETS_URL + '?action=getFloorPlan&token=' + encodeURIComponent(_sessionToken) + '&_=' + Date.now();
-    const res = await fetch(url);
+    const res = await fetch(url, { signal: controller.signal });
+    clearTimeout(timer);
     const j = await res.json();
     if (j.status === 'ok' && j.plan && Array.isArray(j.plan.tables) && j.plan.tables.length) {
-      _floorPlan = j.plan;
+      fromServer = j.plan;
     }
-  } catch (e) { /* fall through to a default layout */ }
+  } catch (e) { /* handled below */ }
 
-  if (!_floorPlan) _floorPlan = fpDefaultPlan(cfg.count, cfg.capacity);
+  if (fromServer) {
+    // Never clobber a layout someone is part-way through editing.
+    if (!_fpDirty || _fpSource !== 'server') {
+      _floorPlan = fromServer;
+      _fpSource = 'server';
+      cacheFloorPlan(fromServer);
+      _fpDirty = false;
+    }
+    if (_fpUpgradeTimer) { clearInterval(_fpUpgradeTimer); _fpUpgradeTimer = null; }
+  } else if (_fpSource !== 'server') {
+    const cached = readCachedFloorPlan();
+    if (cached) { _floorPlan = cached; _fpSource = 'cache'; }
+    else if (!_floorPlan) { _floorPlan = fpDefaultPlan(cfg.count, cfg.capacity); _fpSource = 'default'; }
+    // Keep trying quietly; swap in the real layout the moment it arrives.
+    if (!_fpUpgradeTimer) {
+      _fpUpgradeTimer = setInterval(function () {
+        if (_fpSource !== 'server' && !_fpDirty) loadFloorPlan().then(function () {
+          try { if (document.body.classList.contains('gplan-active')) renderGuestFloorPlan(); } catch (e) {}
+        });
+      }, 20000);
+    }
+  }
   migrateOldPreFunctionTables();
   reconcilePlanWithConfig();
   _fpLoaded = true;
@@ -10126,8 +10356,20 @@ function reconcilePlanWithConfig() {
 
 async function saveFloorPlan() {
   if (!_floorPlan) return;
+  // Only a layout that came fresh from the server may be saved over it.
+  if (_fpSource !== 'server') {
+    appAlert({
+      title: 'Not saved — protecting your floor plan',
+      message: _fpSource === 'cache'
+        ? 'This laptop is showing its saved copy of the layout because the server could not be reached. Saving it could overwrite changes made elsewhere.'
+        : 'The real layout has not loaded on this laptop, so this is only a placeholder grid. Saving it would replace your arranged floor plan for everyone.',
+      sub: 'Reconnect, then reopen the Tables tab. Your changes on this screen have not been sent anywhere.',
+    });
+    return;
+  }
   const r = await postToSheets({ action: 'saveFloorPlan', plan: _floorPlan, session_token: _sessionToken });
   if (r && r.status === 'error') { showDashToast('⚠️ ' + (r.message || 'Could not save the floor plan.')); return; }
+  cacheFloorPlan(_floorPlan);
   _fpDirty = false;
   showDashToast('✓ Floor plan saved for everyone');
   renderTablesTab();
