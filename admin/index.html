@@ -10424,12 +10424,29 @@ function fpChairs(cx, cy, seats, r, start) {
    A table can also be TURNED (Tables tab → tap a table → Turn table),
    stored as `rot` degrees on top of that. The arrow always points at the
    stage regardless, so a turned table still shows which way to face. */
-function fpStageAngle(x, y) {
-  const st = FP.stage;
-  const nx = Math.max(st.x, Math.min(x, st.x + st.w));
-  const ny = Math.max(st.y, Math.min(y, st.y + st.h));
-  if (nx === x && ny === y) return Math.PI;             // (a table on the stage itself)
-  return Math.atan2(ny - y, nx - x);
+/* ONE direction for the whole room: straight at the stage wall.
+
+   The first version aimed each table at the NEAREST CORNER of the stage.
+   For the row level with the stage that is straight across, but every
+   row above and below it tilted — seat 1 and the arrow swung round to
+   point diagonally at the stage's corner, so the room looked scattered
+   rather than laid out. Guests at a gala face the stage the way an
+   audience does: all in the same direction, towards the stage wall.
+
+   So every table now faces the same way — perpendicular to the wall the
+   stage stands against — whatever row it is in. Seat 1 is the chair on
+   that side, the one closest to the stage wall, and the arrow points
+   straight at it with no tilt. The direction is worked out from where
+   the stage sits in the room, so it stays right if the stage moves. */
+function fpStageAngle() {
+  const st = FP.stage, b = FP.ball;
+  const gaps = [
+    { a: Math.PI,       d: st.x - b.x },                       // stage on the left wall
+    { a: 0,             d: (b.x + b.w) - (st.x + st.w) },      // right wall
+    { a: -Math.PI / 2,  d: st.y - b.y },                       // top wall
+    { a: Math.PI / 2,   d: (b.y + b.h) - (st.y + st.h) },      // bottom wall
+  ];
+  return gaps.reduce(function (m, g) { return g.d < m.d ? g : m; }).a;
 }
 
 function fpSeatOneAngle(t) {
@@ -10448,6 +10465,53 @@ function fpStageArrow(t, rTip, rBase, cls) {
   const hw = (rTip - rBase) * 0.46;
   const p = [tipX, tipY, bX - sn * hw, bY + c * hw, bX + sn * hw, bY - c * hw].map(function (v) { return v.toFixed(1); });
   return '<polygon class="' + cls + '" points="' + p[0] + ',' + p[1] + ' ' + p[2] + ',' + p[3] + ' ' + p[4] + ',' + p[5] + '"><title>Stage this way</title></polygon>';
+}
+
+/* ── STRAIGHTEN ROWS AND COLUMNS ────────────────────────────────────
+   Tables placed by dragging end up a few pixels off each other, so a
+   "row" wanders up and down. This lines them up: tables that are
+   roughly level are put exactly level, tables roughly one above the
+   other exactly in a column.
+
+   Each row takes its MEDIAN height, not its average, so a row of five
+   well-placed tables stays exactly where it is and only the one stray
+   moves to meet it. Only dinner tables are touched; cocktail stands
+   are left alone. It moves tables only — every guest keeps their table
+   number and seat number — and, like any move, it needs Save to reach
+   other devices, so it can simply be undone by reloading instead. */
+function fpClusterAxis(tables, key, tol) {
+  const sorted = tables.slice().sort(function (a, b) { return a[key] - b[key]; });
+  const groups = [];
+  sorted.forEach(function (t) {
+    const g = groups[groups.length - 1];
+    if (g && t[key] - g[g.length - 1][key] <= tol) g.push(t); else groups.push([t]);
+  });
+  return groups;
+}
+function fpMedian(nums) {
+  const a = nums.slice().sort(function (x, y) { return x - y; }), m = Math.floor(a.length / 2);
+  return a.length % 2 ? a[m] : Math.round((a[m - 1] + a[m]) / 2);
+}
+function fpStraightenLayout() {
+  if (!_floorPlan) return 0;
+  const dinner = _floorPlan.tables.filter(function (t) { return !isCocktail(t); });
+  let moved = 0;
+  fpClusterAxis(dinner, 'y', 50).forEach(function (row) {
+    const y = fpMedian(row.map(function (t) { return t.y; }));
+    row.forEach(function (t) { if (t.y !== y) { t.y = y; moved++; } });
+  });
+  fpClusterAxis(dinner, 'x', 50).forEach(function (col) {
+    const x = fpMedian(col.map(function (t) { return t.x; }));
+    col.forEach(function (t) { if (t.x !== x) { t.x = x; moved++; } });
+  });
+  return moved;
+}
+function straightenFloorPlan() {
+  const n = fpStraightenLayout();
+  if (!n) { showDashToast('Tables are already in straight rows and columns.'); return; }
+  _fpDirty = true;
+  renderTablesTab();
+  showDashToast('✓ Tables lined up. Guests keep their seats. Press "Save layout for everyone" to keep it.');
 }
 
 function fpTurnTable(n, step) {
@@ -11162,6 +11226,7 @@ function buildFloorPlanPanel() {
             '<button class="fp-mode' + (_fpShowNames ? ' active' : '') + '" onclick="setFpShowNames(' + (!_fpShowNames) + ')" title="Show or hide guest names on the plan">🏷 Names</button>' +
           '</span>'
         : '') +
+      (canEdit && _fpMode === 'move' ? '<button class="dash-btn" style="margin-left:8px;" onclick="straightenFloorPlan()" title="Line tables up in straight rows and columns. Guests keep their seats.">▦ Straighten rows</button>' : '') +
       (canEdit && _fpMode === 'move' ? '<button class="dash-btn" style="margin-left:8px;" onclick="addCocktailTable()">+ Cocktail table</button>' : '') +
       (_fpDirty && canEdit ? '<button class="dash-btn-gold" style="margin-left:8px;" onclick="saveFloorPlan()">Save layout for everyone</button>' : '') +
     '</div>' +
