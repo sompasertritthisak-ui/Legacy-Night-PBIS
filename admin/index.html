@@ -993,6 +993,15 @@ body.role-usher .seating-config{display:none;}
 .fp-chair circle{fill:#fff;stroke:#c9c2ad;stroke-width:1.5;transition:fill .12s ease,stroke .12s ease;}
 .fp-chair.taken circle{fill:#2d9e5f;stroke:#1c7a49;}
 .fp-chair.drop-target circle{fill:#e8c96e;stroke:#8a6a26;stroke-width:2.5;}
+.fp-stage-arrow{fill:#0a2818;opacity:.78;pointer-events:none;}
+.gp-stage-arrow{fill:#0a2818;opacity:.8;pointer-events:none;}
+.fp-turn{display:flex;align-items:center;gap:8px;margin:14px 0 6px;padding:10px 12px;border:1px solid #e6ddc6;border-radius:12px;background:#fff;}
+.fp-turn-lbl{font-size:12px;font-weight:600;color:#6e6b5f;margin-right:auto;}
+.fp-turn-btn{width:36px;height:36px;border-radius:10px;border:1.5px solid #d6bc68;background:#fbf7ea;color:#0a2818;font-size:18px;line-height:1;cursor:pointer;}
+.fp-turn-btn:hover{background:#f3e8c6;}
+.fp-turn-deg{min-width:82px;text-align:center;font-size:12px;font-weight:700;color:#0a2818;}
+.fp-turn-reset{height:36px;padding:0 12px;border-radius:10px;border:none;background:#0a2818;color:#e8c96e;font-size:12px;font-weight:700;cursor:pointer;}
+.fp-turn-note{font-size:11.5px;color:#8a6a26;margin:0 2px 8px;}
 .fp-table-group{cursor:default;}
 .fp-svg.mode-move .fp-table-group{cursor:grab;}
 .fp-table-group.dragging{cursor:grabbing;opacity:.85;}
@@ -6868,7 +6877,7 @@ function renderGuestFloorPlan() {
     const isHi = _gplanHighlight && _gplanHighlight.table === t.n;
     const occupied = people.length;
 
-    const chairs = fpChairs(t.x, t.y, t.seats, cocktail ? 30 : CHAIR_R).map(function(ch, i) {
+    const chairs = fpChairs(t.x, t.y, t.seats, cocktail ? 30 : CHAIR_R, fpSeatOneAngle(t)).map(function(ch, i) {
       const taken = people.some(function(item) { return parseInt(item.p.seat, 10) === i + 1; });
       const mine = _gplanHighlight && parseInt(_gplanHighlight.seat, 10) === i + 1 && isHi;
       return '<circle class="gp-chair' + (taken ? ' taken' : '') + (mine ? ' mine' : '') + '" cx="' + ch.x.toFixed(1) + '" cy="' + ch.y.toFixed(1) + '" r="' + (mine ? 11 : 8) + '"/>';
@@ -6878,6 +6887,7 @@ function renderGuestFloorPlan() {
       (isHi ? '<circle class="gp-ring" cx="' + t.x + '" cy="' + t.y + '" r="' + (CHAIR_R + 22) + '"/>' : '') +
       chairs +
       '<circle class="gp-disc' + (cocktail ? ' cocktail' : '') + '" cx="' + t.x + '" cy="' + t.y + '" r="' + tR + '"/>' +
+      (cocktail ? '' : fpStageArrow(t, tR - 2, tR - 13, 'gp-stage-arrow')) +
       '<text class="gp-num" x="' + t.x + '" y="' + (t.y + (cocktail ? 2 : 3)) + '">' + fpLabel(t) + '</text>' +
       // An oversized invisible target, so a fingertip doesn't have to be precise.
       '<circle class="gp-hit" cx="' + t.x + '" cy="' + t.y + '" r="' + (CHAIR_R + 14) + '"/>' +
@@ -10178,7 +10188,11 @@ function fpZoneAt(y, x) {
 // Cocktail tables are numbered from here so they never collide with
 // dinner table numbers, however many dinner tables get configured.
 const FP_COCKTAIL_BASE = 1000;
-const isCocktail = function(t) { return t.kind === 'cocktail'; };
+// A cocktail table is numbered from 1001. The number is checked as well
+// as `kind`, because older saves dropped `kind` on the way through the
+// server — which then made reconcile treat 1001 as an unknown dinner
+// table and delete it on the next load.
+const isCocktail = function(t) { return !!t && (t.kind === 'cocktail' || (parseInt(t.n, 10) || 0) >= 1000); };
 const fpLabel = function(t) { return isCocktail(t) ? 'C' + (t.n - FP_COCKTAIL_BASE) : String(t.n); };
 
 function addCocktailTable() {
@@ -10348,7 +10362,10 @@ function reconcilePlanWithConfig() {
     const e = existing[def.n];
     // Position kept exactly as arranged; only the chair count is set, and
     // it comes from seatsForTable so the bigger tables keep their 12.
-    return e ? { n: def.n, x: e.x, y: e.y, seats: seatsForTable(def.n, cfg.capacity) } : def;
+    if (!e) return def;
+    const kept = { n: def.n, x: e.x, y: e.y, seats: seatsForTable(def.n, cfg.capacity) };
+    if (Number(e.rot)) kept.rot = Number(e.rot);          // a turned table stays turned
+    return kept;
   // Cocktail tables aren't part of the dinner table count, so changing
   // that setting must not wipe them.
   }).concat(cocktails);
@@ -10378,13 +10395,74 @@ async function saveFloorPlan() {
 function setFpMode(m) { _fpMode = m; renderTablesTab(); }
 
 // Chair positions around a round table.
-function fpChairs(cx, cy, seats, r) {
+/* Chair positions around a round table. `start` is the angle of seat 1;
+   the rest follow clockwise. Only WHERE a chair is drawn depends on
+   this — which guest sits in which numbered seat is untouched, and a
+   chair always carries its own seat number (data-seat), so dragging a
+   guest onto it assigns the right seat wherever it happens to be drawn. */
+function fpChairs(cx, cy, seats, r, start) {
+  const a0 = (start === undefined || start === null) ? -Math.PI / 2 : start;
   const out = [];
   for (let i = 0; i < seats; i++) {
-    const a = (Math.PI * 2 * i) / seats - Math.PI / 2;
+    const a = a0 + (Math.PI * 2 * i) / seats;
     out.push({ i: i, x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r });
   }
   return out;
+}
+
+/* ── SEAT 1 IS THE SEAT CLOSEST TO THE STAGE ─────────────────────────
+   Seat 1 used to be drawn at twelve o'clock on every table, whatever
+   direction the stage was in — so at table 1 the guest in seat 1 sat
+   on the far side from the stage rather than nearest it.
+
+   Now each dinner table works out the direction of the stage from where
+   the table actually stands — towards the NEAREST point of the stage,
+   not its middle, because "closest to the stage" is about distance —
+   and puts seat 1 there, the others following clockwise. Move a table
+   and its seat 1 follows round automatically; there is nothing to set.
+
+   A table can also be TURNED (Tables tab → tap a table → Turn table),
+   stored as `rot` degrees on top of that. The arrow always points at the
+   stage regardless, so a turned table still shows which way to face. */
+function fpStageAngle(x, y) {
+  const st = FP.stage;
+  const nx = Math.max(st.x, Math.min(x, st.x + st.w));
+  const ny = Math.max(st.y, Math.min(y, st.y + st.h));
+  if (nx === x && ny === y) return Math.PI;             // (a table on the stage itself)
+  return Math.atan2(ny - y, nx - x);
+}
+
+function fpSeatOneAngle(t) {
+  if (!t || isCocktail(t)) return -Math.PI / 2;         // standing tables are unchanged
+  return fpStageAngle(t.x, t.y) + (Number(t.rot) || 0) * Math.PI / 180;
+}
+
+// A small arrow just inside the table's rim, pointing at the stage.
+function fpStageArrow(t, rTip, rBase, cls) {
+  const a = fpStageAngle(t.x, t.y);
+  const c = Math.cos(a), sn = Math.sin(a);
+  const tipX = t.x + c * rTip, tipY = t.y + sn * rTip;
+  const bX = t.x + c * rBase, bY = t.y + sn * rBase;
+  // Deeper than it is wide, so the direction reads at a glance. (A wide,
+  // shallow wedge was correct but looked as if it pointed sideways.)
+  const hw = (rTip - rBase) * 0.46;
+  const p = [tipX, tipY, bX - sn * hw, bY + c * hw, bX + sn * hw, bY - c * hw].map(function (v) { return v.toFixed(1); });
+  return '<polygon class="' + cls + '" points="' + p[0] + ',' + p[1] + ' ' + p[2] + ',' + p[3] + ' ' + p[4] + ',' + p[5] + '"><title>Stage this way</title></polygon>';
+}
+
+function fpTurnTable(n, step) {
+  if (!_floorPlan) return;
+  const t = _floorPlan.tables.find(function (x) { return x.n === n; });
+  if (!t || isCocktail(t)) return;
+  if (step === 'reset') {
+    delete t.rot;
+  } else {
+    let r = (Number(t.rot) || 0) + step;
+    r = ((r + 180) % 360 + 360) % 360 - 180;             // keep within -180…179
+    if (r === 0) delete t.rot; else t.rot = r;
+  }
+  _fpDirty = true;
+  renderTablesTab();
 }
 
 // Everyone currently sitting at a given table, in seat order.
@@ -10429,7 +10507,7 @@ function buildFloorPlanSVG() {
     const over = occupied > t.seats;
     const cls = 'fp-table' + (over ? ' over' : (occupied >= t.seats ? ' full' : (occupied ? ' part' : '')));
 
-    const chairs = fpChairs(t.x, t.y, t.seats, tChairR).map(function(ch) {
+    const chairs = fpChairs(t.x, t.y, t.seats, tChairR, fpSeatOneAngle(t)).map(function(ch) {
       const seatNo = ch.i + 1;
       const item = bySeat[seatNo];
       const title = item ? escHtmlV(item.p.name) + ' — seat ' + seatNo : 'Table ' + t.n + ', seat ' + seatNo + ' (free)';
@@ -10457,6 +10535,7 @@ function buildFloorPlanSVG() {
       (_fpSelected === t.n ? '<circle class="fp-sel-ring" cx="' + t.x + '" cy="' + t.y + '" r="' + (tChairR + 16) + '"/>' : '') +
       chairs +
       '<circle class="' + cls + (cocktail ? ' fp-cocktail' : '') + '" cx="' + t.x + '" cy="' + t.y + '" r="' + tR + '"/>' +
+      (cocktail ? '' : fpStageArrow(t, tR - 2, tR - 12, 'fp-stage-arrow')) +
       '<text class="fp-table-num' + (cocktail ? ' sm' : '') + '" x="' + t.x + '" y="' + (t.y + (cocktail ? 1 : -2)) + '">' + label + '</text>' +
       (cocktail ? '' : '<text class="fp-table-cnt" x="' + t.x + '" y="' + (t.y + 12) + '">' + occupied + '/' + t.seats + '</text>') +
       (unseatedHere ? '<circle class="fp-warn" cx="' + (t.x + tR - 4) + '" cy="' + (t.y - tR + 4) + '" r="7"/>' +
@@ -10982,6 +11061,16 @@ function buildFpSidePanel(todo, chips, canEdit) {
         '<div class="fp-side-zone">' + escHtmlV(fpZoneAt(t.y, t.x)) + '</div>' +
         (people.length ? '<div class="fp-seat-list">' + rows + '</div>'
                        : '<div class="dash-empty" style="padding:18px 8px;">Nobody seated here yet.</div>') +
+        (canEdit && !isCocktail(t)
+          ? '<div class="fp-turn">' +
+              '<span class="fp-turn-lbl">Turn table</span>' +
+              '<button class="fp-turn-btn" title="Turn anticlockwise 15°" onclick="fpTurnTable(' + t.n + ', -15)">↺</button>' +
+              '<span class="fp-turn-deg">' + (Number(t.rot) ? (Number(t.rot) > 0 ? '+' : '') + Number(t.rot) + '°' : 'Facing stage') + '</span>' +
+              '<button class="fp-turn-btn" title="Turn clockwise 15°" onclick="fpTurnTable(' + t.n + ', 15)">↻</button>' +
+              (Number(t.rot) ? '<button class="fp-turn-reset" onclick="fpTurnTable(' + t.n + ', \'reset\')">Face stage</button>' : '') +
+            '</div>' +
+            (Number(t.rot) ? '<div class="fp-turn-note">Turned tables need <b>Save</b> like moved ones.</div>' : '')
+          : '') +
         '<button class="fp-back" onclick="fpSelectTable(' + t.n + ')">← Back to list</button>';
     }
   }
