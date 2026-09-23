@@ -858,6 +858,48 @@ body.role-manager .vip-star-btn{display:none !important;}
 body.role-manager .table-seat-input,
 body.role-manager .table-assign-select{pointer-events:none;background:transparent;border-color:transparent;color:var(--gray-mid);}
 
+/* ── HOSPITALITY (look-up only) ────────────────────────────────────
+   One shared login for about ten people, so it is the narrowest
+   account in the system: find a guest, see their table and seat. Only
+   the Guest List and Tables tabs exist for it; every other tab, and
+   every control that changes anything, is gone — including check-in,
+   which this account has no reason to touch. Doors Mode is not
+   available either. The server refuses the same actions on its own,
+   so this is tidiness rather than the protection itself. */
+body.role-hospitality #dtab-overview,
+body.role-hospitality #dtab-approvals,
+body.role-hospitality #dtab-checkin,
+body.role-hospitality #dtab-overdue,
+body.role-hospitality #dtab-vip,
+body.role-hospitality #dtab-qrgen,
+body.role-hospitality #dtab-followup,
+body.role-hospitality #dtab-activitylog,
+body.role-hospitality #dtab-categories,
+body.role-hospitality #dtab-verify,
+body.role-hospitality #dtab-postevent{display:none !important;}
+
+body.role-hospitality .dash-btn-doors,
+body.role-hospitality .dash-checkin-btn,
+body.role-hospitality .dash-checkin-undo,
+body.role-hospitality .dash-noshow-btn,
+body.role-hospitality .dash-noshow-undo,
+body.role-hospitality .dash-approve-btn,
+body.role-hospitality .dash-approve-undo,
+body.role-hospitality .dash-row-action,
+body.role-hospitality .dash-row-action-delete,
+body.role-hospitality .dash-btn-gold,
+body.role-hospitality .followup-compose-btn,
+body.role-hospitality #edit-guest-save-btn,
+body.role-hospitality #add-guest-save-btn,
+body.role-hospitality .table-guest-chip button,
+body.role-hospitality .vip-star-btn,
+body.role-hospitality .fp-seat-clear,
+body.role-hospitality .fp-turn,
+body.role-hospitality #export-csv-btn{display:none !important;}
+
+body.role-hospitality .table-seat-input,
+body.role-hospitality .table-assign-select{pointer-events:none;background:transparent;border-color:transparent;color:var(--gray-mid);}
+
 /* Doors Mode is an action surface — managers don't get it at all */
 body.role-manager .dash-btn-doors{display:none !important;}
 
@@ -3107,7 +3149,7 @@ const GUEST_EDIT_EXTRA_NAMES = ['Da', 'Kop', 'Top', 'Stamp'];
 
 function canEditOrVip() {
   if (!_currentUser) return false;
-  if (_currentUser.role === 'usher' || _currentUser.role === 'manager') return false;
+  if (_currentUser.role === 'usher' || isViewOnlyRole(_currentUser.role)) return false;
   if (GUEST_EDIT_TEAMS.indexOf(_currentUser.team) !== -1) return true;
   return GUEST_EDIT_EXTRA_NAMES.indexOf(_currentUser.name) !== -1;
 }
@@ -3366,12 +3408,22 @@ function enterLegacyDashboard() {
     if(subtitle) subtitle.textContent = `Panyathip British International School · Logged in as ${_currentUser.name}`;
   }
 
-  document.body.classList.remove('role-usher', 'role-manager', 'role-marketing');
+  document.body.classList.remove('role-usher', 'role-manager', 'role-marketing', 'role-hospitality');
   const oldNotice = document.getElementById('dash-marketing-notice');
   if (oldNotice) oldNotice.remove();
 
   if (_currentUser && _currentUser.role === 'usher') {
     document.body.classList.add('role-usher');
+  } else if (_currentUser && _currentUser.role === 'hospitality') {
+    document.body.classList.add('role-hospitality');
+    if (!document.getElementById('dash-marketing-notice')) {
+      const notice = document.createElement('div');
+      notice.id = 'dash-marketing-notice';
+      notice.className = 'dash-manager-notice';
+      notice.textContent = '👁 Hospitality — look up a guest’s table and seat. This account cannot change anything.';
+      const dbView = document.getElementById('dashboard-view');
+      if (dbView) dbView.insertBefore(notice, dbView.firstChild);
+    }
   } else if (_currentUser && _currentUser.role === 'manager') {
     document.body.classList.add('role-manager');
     if (!document.getElementById('dash-marketing-notice')) {
@@ -3412,6 +3464,12 @@ function enterLegacyDashboard() {
     const checkinTabBtn = document.getElementById('dtab-checkin');
     if (checkinTabBtn) switchDashTab('checkin', checkinTabBtn);
     enterDoorsMode();
+  }
+
+  // Hospitality: Overview is hidden for them, so open on the guest list.
+  if (_currentUser && _currentUser.role === 'hospitality') {
+    const glTabBtn = document.getElementById('dtab-guestlist');
+    if (glTabBtn) switchDashTab('guestlist', glTabBtn);
   }
 
   try {
@@ -6369,6 +6427,11 @@ function lanePost(msg) {
   if (_laneChannel) { try { _laneChannel.postMessage(msg); } catch (e) {} }
   laneBroadcastFallback(msg);
 }
+
+/* Roles that may look but never change anything. One list, asked
+   everywhere, so a new read-only role can't be half-applied. */
+const VIEW_ONLY_ROLES = ['manager', 'hospitality'];
+function isViewOnlyRole(role) { return VIEW_ONLY_ROLES.indexOf(role) !== -1; }
 
 function isMonitorWindow() {
   const m = document.getElementById('monitor-view');
@@ -10662,7 +10725,7 @@ function fpBeginDrag(e) {
     if (_fpSelected !== null) fpSelectTable(_fpSelected);   // tap empty space to clear
     return;
   }
-  const canEdit = !(_currentUser && (_currentUser.role === 'usher' || _currentUser.role === 'manager'));
+  const canEdit = !(_currentUser && (_currentUser.role === 'usher' || isViewOnlyRole(_currentUser.role)));
   if (!canEdit) return;
 
   // Dragging a TABLE (rearrange mode)
@@ -10682,7 +10745,7 @@ function fpBeginDrag(e) {
 
 // Dragging a GUEST from the side list onto the plan.
 function fpBeginGuestDrag(e, ts, idx) {
-  const canEdit = !(_currentUser && (_currentUser.role === 'usher' || _currentUser.role === 'manager'));
+  const canEdit = !(_currentUser && (_currentUser.role === 'usher' || isViewOnlyRole(_currentUser.role)));
   if (!canEdit) return;
   const chip = e.currentTarget;
   const ghost = document.createElement('div');
@@ -10908,7 +10971,7 @@ function renderTablesTab() {
   const countEl = document.getElementById('tables-tab-count');
   if (countEl) countEl.textContent = unassigned.length;
 
-  const canEdit = !(_currentUser && _currentUser.role === 'usher');
+  const canEdit = !(_currentUser && (_currentUser.role === 'usher' || isViewOnlyRole(_currentUser.role)));
 
   // ── Table cards: every PERSON listed, each with their own seat ──
   // A search narrows the chart to the tables containing a match, so
@@ -11042,7 +11105,7 @@ function renderTablesTab() {
           '<button class="fp-mode' + (_tablesView === 'list' ? ' active' : '') + '" onclick="setTablesView(\'list\')">☰ List</button>' +
           '<button class="fp-mode' + (_tablesView === 'plan' ? ' active' : '') + '" onclick="setTablesView(\'plan\')">▦ Floor plan</button>' +
         '</span>' +
-        '<button class="dash-btn" onclick="rebuildAttendeeSheet()" style="margin-left:8px;" title="Refreshes the All Attendees tab in the spreadsheet">📋 Refresh Attendee Sheet</button>' +
+        (canEdit ? '<button class="dash-btn" onclick="rebuildAttendeeSheet()" style="margin-left:8px;" title="Refreshes the All Attendees tab in the spreadsheet">📋 Refresh Attendee Sheet</button>' : '') +
         '<button class="dash-btn" onclick="openGuestFloorPlan()" style="margin-left:8px;" title="Opens the guest-facing seating chart for a touchscreen">📺 Guest Screen</button>' +
         '<button class="dash-btn" onclick="openSeatingSheet()" style="margin-left:8px;">🖨 Print Sheet</button>' +
       '</div>' +
@@ -11179,7 +11242,7 @@ function buildFloorPlanPanel() {
   if (!_fpLoaded) {
     return '<div class="dash-panel"><div class="dash-empty">Loading the floor plan…</div></div>';
   }
-  const canEdit = !(_currentUser && (_currentUser.role === 'usher' || _currentUser.role === 'manager'));
+  const canEdit = !(_currentUser && (_currentUser.role === 'usher' || isViewOnlyRole(_currentUser.role)));
 
   // Anyone without a table, or with a table but no seat — these are
   // what you drag onto the plan.
