@@ -745,6 +745,7 @@ body.dashboard-active #dashboard-view{display:block !important;}
 .doors-result-name{color:#fff;font-size:16.5px;font-weight:600;}
 .doors-result-btn{background:linear-gradient(135deg,#2d9e5f,#3dbf72);color:#fff;border:none;padding:13px 24px;border-radius:100px;font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;flex-shrink:0;}
 .doors-result-btn:active{transform:scale(0.96);}
+.doors-result-flag{display:block;font-size:11.5px;font-weight:600;color:#b7791f;margin-top:2px;}
 .doors-result-arrived{color:#8adfa6;font-size:13.5px;font-weight:700;flex-shrink:0;}
 .doors-empty{color:rgba(255,255,255,0.5);text-align:center;padding:24px;font-size:14px;}
 #cmdk-backdrop{align-items:flex-start;padding-top:min(120px,12vh);}
@@ -5433,6 +5434,10 @@ function renderCheckInTab() {
     }
   });
 
+  // People marked as not attending drop out of the check-in list, the
+  // same as they do from seating. They remain findable in Doors Mode
+  // by name in case they turn up after all.
+  people = people.filter(p => !isPersonNotAttending(p.g || _dashGuestsCache.find(g => g.ts === p.ts), p.idx));
   const filtered = people.filter(p => !_checkinSearchTerm || p.name.toLowerCase().includes(_checkinSearchTerm.toLowerCase()));
   const arrivedCount = people.filter(p => p.checked_in).length;
 
@@ -6097,6 +6102,23 @@ function markGuestCheckedIn(ts, checkedIn, idx, personName) {
   guest.individual_checkins = JSON.stringify(checkins);
   rememberLocalChange(ts, idx, checkedIn);     // survives a stale reload — see reapplyLocalOverlay
 
+  /* They turned up after all. Clear this one person's not-attending
+     flag so they reappear in seating and the plan; anyone else on the
+     booking who isn't coming stays flagged. The server does the same
+     thing independently. */
+  if (checkedIn) {
+    const ns = parseIndividualNoShows(guest);
+    if (ns[idx]) {
+      delete ns[idx];
+      guest.individual_no_shows = JSON.stringify(ns);
+    }
+    const partyN = partyMembers(guest).length;
+    let absentN = 0;
+    for (let k = 0; k < partyN; k++) if (ns[k] && ns[k].no_show) absentN++;
+    guest.no_show = absentN === partyN && partyN > 0;
+    if (!guest.no_show) guest.no_show_at = '';
+  }
+
   // Aggregate party-level status, kept in sync for every other view
   // that already reads guest.checked_in (Guest List, Overview stats).
   const anyoneCheckedIn = Object.keys(checkins).some(k => checkins[k] && checkins[k].checked_in);
@@ -6171,34 +6193,54 @@ function renderOverdueTab() {
   const guests = _dashGuestsCache;
 
   const countEl = document.getElementById('overdue-tab-count');
-  if (countEl) countEl.textContent = guests.filter(g => g.no_show).length;
+  if (countEl) countEl.textContent = guests.reduce(function (n, g) {
+    return n + partyMembers(g).filter(function (m) { return isPersonNotAttending(g, m.idx); }).length;
+  }, 0);
 
   if (!guests.length) {
     el.innerHTML = `<div class="dash-panel"><div class="dash-empty">No RSVPs yet.</div></div>`;
     return;
   }
 
-  const noShowGuests = guests.filter(g => g.no_show);
-  const pendingGuests = guests.filter(g => !g.checked_in && !g.no_show).filter(g =>
-    !_overdueSearchTerm || (g.fname+' '+g.lname).toLowerCase().includes(_overdueSearchTerm.toLowerCase())
+  /* One row per PERSON, not per booking. The whole point is that a
+     main guest can drop out while the guest they brought still comes,
+     so each member is listed and marked on their own. */
+  const everyone = [];
+  guests.forEach(function (g) {
+    partyMembers(g).forEach(function (m) {
+      const checks = parseIndividualCheckins(g);
+      everyone.push({
+        g: g, idx: m.idx, name: m.name,
+        checked_in: !!(checks[m.idx] && checks[m.idx].checked_in),
+        not_attending: isPersonNotAttending(g, m.idx),
+        at: (parseIndividualNoShows(g)[m.idx] || {}).at || g.no_show_at || '',
+      });
+    });
+  });
+  const noShowGuests  = everyone.filter(p => p.not_attending);
+  const pendingGuests = everyone.filter(p => !p.checked_in && !p.not_attending).filter(p =>
+    !_overdueSearchTerm || p.name.toLowerCase().includes(_overdueSearchTerm.toLowerCase())
   );
+  const who = p => escHtmlV(p.name) + (p.idx > 0
+    ? '<span style="display:block;font-size:11px;color:var(--gray-mid);font-weight:500;">guest of ' + escHtmlV((p.g.fname||'') + ' ' + (p.g.lname||'')).trim() + '</span>'
+    : '');
 
-  const pendingRows = pendingGuests.slice().reverse().map(g => `
+  const pendingRows = pendingGuests.slice().reverse().map(p => `
     <tr>
-      <td style="font-weight:600;color:var(--navy);white-space:nowrap;">${g.fname||'—'} ${g.lname||''}</td>
-      <td><a href="mailto:${g.email}" style="color:var(--gold);text-decoration:none;font-size:12px;">${g.email||'—'}</a></td>
-      <td>${g.organization||'—'}</td>
-      <td style="white-space:nowrap;"><button class="dash-noshow-btn" onclick="markGuestNoShow('${g.ts}',true)">Mark No-Show</button></td>
+      <td style="font-weight:600;color:var(--navy);white-space:nowrap;">${who(p)}</td>
+      <td><a href="mailto:${escHtmlV(p.g.email)}" style="color:var(--gold);text-decoration:none;font-size:12px;">${escHtmlV(p.g.email)||'—'}</a></td>
+      <td>${escHtmlV(p.g.organization)||'—'}</td>
+      <td style="white-space:nowrap;"><button class="dash-noshow-btn" onclick="markGuestNoShow('${jsAttr(p.g.ts)}',true,${p.idx},'${jsAttr(p.name)}')">Not attending</button></td>
     </tr>`).join('');
 
-  const noShowRows = noShowGuests.slice().reverse().map(g => `
+  const noShowRows = noShowGuests.slice().reverse().map(p => `
     <tr>
-      <td style="font-weight:600;color:var(--navy);white-space:nowrap;">${g.fname||'—'} ${g.lname||''}</td>
-      <td><a href="mailto:${g.email}" style="color:var(--gold);text-decoration:none;font-size:12px;">${g.email||'—'}</a></td>
-      <td>${g.organization||'—'}</td>
+      <td style="font-weight:600;color:var(--navy);white-space:nowrap;">${who(p)}</td>
+      <td><a href="mailto:${escHtmlV(p.g.email)}" style="color:var(--gold);text-decoration:none;font-size:12px;">${escHtmlV(p.g.email)||'—'}</a></td>
+      <td>${escHtmlV(p.g.organization)||'—'}</td>
       <td style="white-space:nowrap;">
-        <span class="dash-noshow-pill">⏰ No-Show${g.no_show_at ? ' · ' + new Date(g.no_show_at).toLocaleDateString('en-GB') : ''}</span>
-        <button class="dash-noshow-undo" onclick="markGuestNoShow('${g.ts}',false)">Undo</button>
+        <span class="dash-noshow-pill">⏰ Not attending${p.at ? ' · ' + new Date(p.at).toLocaleDateString('en-GB') : ''}</span>
+        <button class="dash-noshow-undo" onclick="markGuestNoShow('${jsAttr(p.g.ts)}',false,${p.idx},'${jsAttr(p.name)}')">Undo</button>
       </td>
     </tr>`).join('');
 
@@ -6234,33 +6276,47 @@ function renderOverdueTab() {
     </div>`;
 }
 
-async function markGuestNoShow(ts, noShow) {
+async function markGuestNoShow(ts, noShow, idx, personName) {
   const guest = _dashGuestsCache.find(g => g.ts === ts);
   if (!guest) return;
 
-  if (noShow && guest.checked_in) {
-    showDashToast(`⚠️ ${guest.fname} already checked in — can't mark as no-show.`);
+  idx = (idx === undefined || idx === null) ? 0 : parseInt(idx, 10) || 0;
+  const person = personName || (partyMembers(guest)[idx] || {}).name || guest.fname || 'this guest';
+  const checks = parseIndividualCheckins(guest);
+  if (noShow && checks[idx] && checks[idx].checked_in) {
+    showDashToast(`⚠️ ${person} already checked in — can't mark as not attending.`);
     return;
   }
 
   if (noShow) {
     const ok = await appConfirm({
-      title: 'Mark as No-Show?',
-      message: `Mark <strong>${guest.fname || 'this guest'} ${guest.lname || ''}</strong> as a no-show?`,
-      sub: "This records that they RSVP'd but never arrived. If they check in later, it clears automatically.",
-      confirmLabel: 'Mark No-Show',
+      title: 'Mark as not attending?',
+      message: `Mark <strong>${escHtmlV(person)}</strong> as not attending?`,
+      sub: 'They disappear from seating, the table plan and the check-in list. Anyone else on the same booking is unaffected. ' +
+           'If they turn up after all, checking them in clears this.',
+      confirmLabel: 'Not attending',
       danger: true,
     });
     if (!ok) return;
   }
 
-  const prevState = { no_show: guest.no_show, no_show_at: guest.no_show_at };
-  guest.no_show = noShow;
-  guest.no_show_at = noShow ? new Date().toISOString() : '';
+  const prevState = { no_show: guest.no_show, no_show_at: guest.no_show_at,
+                      individual_no_shows: guest.individual_no_shows };
+  const map = parseIndividualNoShows(guest);
+  const stamp = new Date().toISOString();
+  if (noShow) map[idx] = { no_show: true, at: stamp }; else delete map[idx];
+  guest.individual_no_shows = JSON.stringify(map);
+  const party = partyMembers(guest).length;
+  let absent = 0;
+  for (let k = 0; k < party; k++) if (map[k] && map[k].no_show) absent++;
+  guest.no_show = absent === party;                 // the booking only when NOBODY is coming
+  guest.no_show_at = guest.no_show ? stamp : '';
   renderOverdueTab();
   renderOverviewTab();
+  renderTablesTab();
+  renderCheckInTab();
 
-  postToSheets({ action: 'markNoShow', ts: ts, no_show: noShow, session_token: _sessionToken, staff_name: _currentUser ? _currentUser.name : '' }).then((result) => {
+  postToSheets({ action: 'markNoShow', ts: ts, no_show: noShow, idx: idx, session_token: _sessionToken, staff_name: _currentUser ? _currentUser.name : '' }).then((result) => {
     if (result.status === 'error') {
       Object.assign(guest, prevState);
       renderOverdueTab(); renderOverviewTab();
@@ -6866,7 +6922,7 @@ function gplanSearch(qRaw) {
   const hits = [];
   (_dashGuestsCache || []).forEach(function(g) {
     if (!g.table_number) return;
-    seatedPartyMembers(g).forEach(function(p) {
+    attendingMembers(g).forEach(function(p) {
       if (String(p.name || '').toLowerCase().indexOf(q) !== -1) hits.push({ p: p, g: g });
     });
   });
@@ -7005,7 +7061,7 @@ function renderGuestFloorPlan() {
   }
 
   const seatedPeople = (_dashGuestsCache || []).filter(function(g) { return g.table_number; })
-    .reduce(function(s, g) { return s + partyMembers(g).length; }, 0);
+    .reduce(function(s, g) { return s + attendingCount(g); }, 0);
   side.innerHTML =
     '<div class="gplan-intro">' +
       '<div class="gplan-intro-icon">🪑</div>' +
@@ -7139,7 +7195,7 @@ function kioskSearch(qRaw) {
   (_dashGuestsCache || []).forEach(function(g) {
     const track = String(g.track_id || '').toLowerCase();
     const trackMatch = track && (track === q || track.replace(/^ln-/, '') === q.replace(/^ln-/, ''));
-    seatedPartyMembers(g).forEach(function(p) {
+    attendingMembers(g).forEach(function(p) {
       const name = String(p.name || '').toLowerCase();
       if (trackMatch || name.indexOf(q) !== -1) hits.push({ p: p, g: g });
     });
@@ -9518,7 +9574,9 @@ function renderDoorsSearchResults() {
     const partySize = partySizeOf(g);
     for (let idx = 0; idx < partySize; idx++) {
       const name = idx === 0 ? (`${g.fname||''} ${g.lname||''}`.trim() || 'Guest') : ((additional[idx-1] && additional[idx-1].name) || 'Guest ' + idx);
-      people.push({ ts: g.ts, idx: idx, name: name, checked_in: !!(checkins[idx] && checkins[idx].checked_in) });
+      people.push({ ts: g.ts, idx: idx, name: name,
+                    checked_in: !!(checkins[idx] && checkins[idx].checked_in),
+                    not_attending: isPersonNotAttending(g, idx) });
     }
   });
 
@@ -9532,7 +9590,9 @@ function renderDoorsSearchResults() {
     if (p.checked_in) {
       return `<div class="doors-result-row"><span class="doors-result-name">${escHtmlV(p.name)}</span><span class="doors-result-arrived">✓ Arrived</span></div>`;
     }
-    return `<div class="doors-result-row"><span class="doors-result-name">${escHtmlV(p.name)}</span><button class="doors-result-btn" onclick="doorsCheckIn('${jsAttr(p.ts)}',${p.idx},'${jsAttr(p.name)}')">Check In</button></div>`;
+    return `<div class="doors-result-row"><span class="doors-result-name">${escHtmlV(p.name)}` +
+      (p.not_attending ? '<span class="doors-result-flag">marked not attending</span>' : '') +
+      `</span><button class="doors-result-btn" onclick="doorsCheckIn('${jsAttr(p.ts)}',${p.idx},'${jsAttr(p.name)}')">Check In</button></div>`;
   }).join('');
 }
 
@@ -10117,13 +10177,27 @@ function saveSeatingConfig(count, capacity) {
 }
 
 // Accepts "3", "3,4", "3-5", "3, 5, 9" — whatever staff naturally type.
+/* ── AN EMPTY SLOT IS A POSITION, NOT NOTHING ───────────────────────
+   Seat numbers are stored as one list per booking, in party order:
+   the first entry is the main guest's seat, the second their first
+   companion's, and so on. Empty entries used to be thrown away.
+
+   That quietly broke the exact case where a main guest cannot come
+   and only their companion is seated. Seating the companion (party
+   position 2) stored ",3" — and reading it back dropped the empty
+   first entry, so seat 3 was handed to the MAIN guest instead, who
+   isn't even coming. On screen the companion's seat "reverted" to the
+   first guest.
+
+   An empty slot is kept as an empty slot, so every later person stays
+   at their own position. */
 function parseSeatList(raw) {
   const s = String(raw == null ? '' : raw).trim();
   if (!s) return [];
   const out = [];
   s.split(/[,;]/).forEach(function(part) {
     const p = part.trim();
-    if (!p) return;
+    if (!p) { out.push(''); return; }
     const range = /^(\d+)\s*[-–—]\s*(\d+)$/.exec(p);
     if (range) {
       let a = parseInt(range[1], 10), b = parseInt(range[2], 10);
@@ -10153,6 +10227,37 @@ function partyMembers(g) {
 
 // Pairs each person with their seat. Extra people beyond the seats
 // entered show as unassigned rather than silently sharing a number.
+/* ── WHO IS ACTUALLY COMING ─────────────────────────────────────────
+   Not attending is recorded per person (the server's "Individual No
+   Shows" column), because a booking is a party and its members don't
+   always share a decision: the guest who RSVP'd may be unable to come
+   while the guest they brought still attends. One Yes/No for the whole
+   booking wrote off the companions too.
+
+   Everything that plans or counts the evening — seating, table cards,
+   totals, the guest touch screen, the printed sheet — asks for
+   attendingMembers() and so never sees the people who aren't coming.
+
+   Two places deliberately still show them:
+     · Doors Mode name search, so that if someone turns up after all,
+       staff can still find and check them in (which clears the flag).
+     · The Guest List, marked "Not attending", so a booking can still
+       be found and the decision undone.                            */
+function parseIndividualNoShows(guest) {
+  try { return JSON.parse(guest.individual_no_shows || '{}') || {}; } catch (e) { return {}; }
+}
+function isPersonNotAttending(guest, idx) {
+  if (!guest) return false;
+  const m = parseIndividualNoShows(guest);
+  if (m[idx] && m[idx].no_show) return true;
+  // Bookings written off before per-person flags existed.
+  return !!guest.no_show && !Object.keys(m).length;
+}
+function attendingMembers(g) {
+  return seatedPartyMembers(g).filter(function (p) { return !isPersonNotAttending(g, p.idx); });
+}
+function attendingCount(g) { return attendingMembers(g).length; }
+
 function seatedPartyMembers(g) {
   const seats = parseSeatList(g.seat_number);
   return partyMembers(g).map(function(p, i) {
@@ -10597,7 +10702,7 @@ function fpPeopleAtTable(n) {
   const out = [];
   _dashGuestsCache.forEach(function(g) {
     if (parseInt(g.table_number, 10) !== n) return;
-    seatedPartyMembers(g).forEach(function(p) { out.push({ p: p, g: g }); });
+    attendingMembers(g).forEach(function(p) { out.push({ p: p, g: g }); });
   });
   return out;
 }
@@ -10897,7 +11002,9 @@ function fpSeatGuest(ts, idx, tableNo, seatNo) {
   seats[idx] = String(seatNo);
 
   guest.table_number = tableNo;
-  guest.seat_number = seats.join(',').replace(/(^,+|,+$)/g, '');
+  // Keep leading empties — they hold earlier party members' places.
+  // Only trailing ones can go, since nothing follows them.
+  guest.seat_number = seats.join(',').replace(/,+$/, '');
   renderTablesTab();
 
   postToSheets({
@@ -10954,9 +11061,9 @@ function renderTablesTab() {
 
   // Headcount is PEOPLE, not bookings — a party of three is three
   // seats, and that's the number the venue and caterer care about.
-  const totalPeople   = guests.reduce(function(s, g) { return s + partyMembers(g).length; }, 0);
+  const totalPeople   = guests.reduce(function(s, g) { return s + attendingCount(g); }, 0);
   const seatedPeople  = guests.filter(function(g) { return g.table_number; })
-                              .reduce(function(s, g) { return s + partyMembers(g).length; }, 0);
+                              .reduce(function(s, g) { return s + attendingCount(g); }, 0);
   const unseatedPeople = totalPeople - seatedPeople;
   const tablesUsed    = Object.keys(tables).filter(function(n) { return tables[n].length; }).length;
   let capacityTotal = 0;
@@ -10965,7 +11072,7 @@ function renderTablesTab() {
   let missingSeatNos = 0;
   guests.forEach(function(g) {
     if (!g.table_number) return;
-    seatedPartyMembers(g).forEach(function(p) { if (!p.seat) missingSeatNos++; });
+    attendingMembers(g).forEach(function(p) { if (!p.seat) missingSeatNos++; });
   });
 
   const countEl = document.getElementById('tables-tab-count');
@@ -10992,7 +11099,7 @@ function renderTablesTab() {
     const partiesHere = tables[num];
     const peopleHere = [];
     partiesHere.forEach(function(g) {
-      seatedPartyMembers(g).forEach(function(p) { peopleHere.push({ p: p, g: g }); });
+      attendingMembers(g).forEach(function(p) { peopleHere.push({ p: p, g: g }); });
     });
     // Order by seat number where known, so the card reads like the
     // physical table rather than like the order people replied.
@@ -11026,10 +11133,19 @@ function renderTablesTab() {
     // the people above.
     const seatInputs = canEdit ? partiesHere.map(function(g) {
       const safeTs = String(g.ts).replace(/'/g, "\\'");
-      const n = partyMembers(g).length;
+      const n = attendingCount(g);
+      /* Name this row after whoever is actually coming. Labelling it
+         with the person who RSVP'd was misleading once they had been
+         marked as not attending: their name still headed a row of
+         seats that now belong entirely to their guests. */
+      const coming = attendingMembers(g);
+      const label = coming.length
+        ? coming[0].name + (coming.length > 1 ? ' <em>+' + (coming.length - 1) + '</em>' : '')
+        : escHtmlV(((g.fname||'') + ' ' + (g.lname||'')).trim());
       return '<div class="seat-alloc">' +
-        '<span class="seat-alloc-name">' + escHtmlV(((g.fname||'') + ' ' + (g.lname||'')).trim()) +
-          (n > 1 ? ' <em>+' + (n-1) + '</em>' : '') + '</span>' +
+        '<span class="seat-alloc-name">' + (coming.length ? escHtmlV(coming[0].name) +
+          (coming.length > 1 ? ' <em>+' + (coming.length - 1) + '</em>' : '')
+          : escHtmlV(((g.fname||'') + ' ' + (g.lname||'')).trim())) + '</span>' +
         '<input type="text" class="table-seat-input" value="' + escHtmlV(g.seat_number || '') + '"' +
           ' placeholder="' + (n > 1 ? 'e.g. 3-' + (2 + n) : 'e.g. 3') + '"' +
           ' onchange="updateGuestSeat(\'' + safeTs + '\', this.value)"' +
@@ -11053,7 +11169,7 @@ function renderTablesTab() {
 
   const tableOptions = Array.from({ length: cfg.count }, function(_, i) { return i + 1; })
     .map(function(n) {
-      const here = tables[n].reduce(function(s, g) { return s + partyMembers(g).length; }, 0);
+      const here = tables[n].reduce(function(s, g) { return s + attendingCount(g); }, 0);
       const cap = seatsForTable(n, cfg.capacity);
       const full = here >= cap;
       return '<option value="' + n + '"' + (full ? ' disabled' : '') + '>Table ' + n + ' (' + here + '/' + cap + ')' + (full ? ' — full' : '') + '</option>';
