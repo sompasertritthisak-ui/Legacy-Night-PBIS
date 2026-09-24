@@ -10154,9 +10154,11 @@ const TABLE_DEFAULTS = { count: 20, capacity: 10 };
    next time anyone opened the Tables tab. An entry here survives that,
    on every device, with nobody needing to remember to save.
 
-   Seat NUMBERS never change: a guest in seat 4 is still in seat 4. The
-   bigger tables simply gain seats 11 and 12.                        */
-const TABLE_SEAT_OVERRIDES = { 10: 12, 21: 12 };
+   Seat NUMBERS never change: a guest in seat 4 is still in seat 4. A
+   bigger table simply gains seats 11 and 12; taking a table off this
+   list removes those two chairs again, so check nobody was sitting in
+   them first.                                                        */
+const TABLE_SEAT_OVERRIDES = { 21: 12 };
 
 function seatsForTable(n, standard) {
   const std = standard !== undefined ? standard : getSeatingConfig().capacity;
