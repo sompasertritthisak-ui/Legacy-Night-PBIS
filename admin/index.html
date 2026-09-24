@@ -4844,7 +4844,11 @@ function renderOverviewTab() {
     const noShowCount     = guests.filter(g => g.no_show).length;
     const withEmailCount  = guests.filter(g => g.email).length;
     const followUpSent    = guests.filter(g => g.followup_sent).length;
-    const totalHeadcount  = guests.reduce((sum, g) => sum + (parseInt(g.guest_count, 10) || 1), 0);
+    /* Expected in the room = people still coming. Counting guests who
+       have said they can't make it inflated the capacity bar and the
+       headline attendee figure. Catering totals further down keep the
+       declared Guest Count deliberately — the food was ordered on it. */
+    const totalHeadcount  = guests.reduce((sum, g) => sum + attendingCount(g), 0);
     const waitlistedCount = guests.filter(g => g.status === 'Waitlisted').length;
     const capacityPct     = Math.min(100, Math.round((totalHeadcount / VENUE_CAPACITY) * 100) || 0);
     const sortedDaysCount = new Set(guests.filter(g => g.ts && !isNaN(new Date(g.ts))).map(g => new Date(g.ts).toISOString().slice(0,10))).size;
@@ -5137,7 +5141,9 @@ function renderGuestListTab() {
         <td colspan="2" style="font-size:12px;">${a.main_course || '<span style="opacity:0.5;">No meal chosen</span>'}</td>
         <td style="font-size:12px;">${a.message ? '💬 ' + a.message : ''}</td>
         <td style="font-size:11.5px;opacity:0.7;">guest of ${g.fname || ''}</td>
-        <td>${inYet ? '<span class="dash-arrived-pill">✓ Arrived</span>' : '<span style="color:var(--gray-mid);font-size:12px;">Not yet</span>'}</td>
+        <td>${inYet ? '<span class="dash-arrived-pill">✓ Arrived</span>'
+              : (isPersonNotAttending(g, idx) ? '<span class="dash-noshow-pill">⏰ Not attending</span>'
+                                              : '<span style="color:var(--gray-mid);font-size:12px;">Not yet</span>')}</td>
         <td></td>
       </tr>`;
     }).join('');
@@ -5155,7 +5161,10 @@ function renderGuestListTab() {
       <td><a href="mailto:${g.email}" style="color:var(--gold);text-decoration:none;font-size:12px;">${g.email||'—'}</a></td>
       <td>${g.organization||'—'}</td>
       <td${partyTitle}>${count > 1 ? `<span class="dash-party-pill">👥 ${count}</span>` : '1'}${hasDietary ? ' <span title="Has dietary notes">🍽️</span>' : ''}</td>
-      <td>${g.checked_in ? '<span class="dash-arrived-pill">✓ Arrived</span>' : '<span style="color:var(--gray-mid);font-size:12px;">Not yet</span>'}</td>
+      <td>${(parseIndividualCheckins(g)[0] || {}).checked_in
+              ? '<span class="dash-arrived-pill">✓ Arrived</span>'
+              : (isPersonNotAttending(g, 0) ? '<span class="dash-noshow-pill">⏰ Not attending</span>'
+                                            : '<span style="color:var(--gray-mid);font-size:12px;">Not yet</span>')}</td>
       <td style="white-space:nowrap;">
         <button class="dash-row-action-view" onclick="openGuestDetailModal('${g.ts}')" title="View Details" aria-label="View details">👁️</button>
         ${editBtn}
@@ -5285,7 +5294,10 @@ function renderVipTab() {
       <td style="font-weight:600;color:var(--navy);white-space:nowrap;">${unstarBtn} <span style="cursor:pointer;" onclick="openGuestDetailModal('${g.ts}')">${fullName}</span></td>
       <td>${g.table_number ? 'Table ' + g.table_number : '<span style="color:var(--gray-mid);">Unassigned</span>'}</td>
       <td>${g.course_main || '<span style="color:var(--gray-mid);">—</span>'}</td>
-      <td>${g.checked_in ? '<span class="dash-arrived-pill">✓ Arrived</span>' : '<span style="color:var(--gray-mid);font-size:12px;">Not yet</span>'}</td>
+      <td>${(parseIndividualCheckins(g)[0] || {}).checked_in
+              ? '<span class="dash-arrived-pill">✓ Arrived</span>'
+              : (isPersonNotAttending(g, 0) ? '<span class="dash-noshow-pill">⏰ Not attending</span>'
+                                            : '<span style="color:var(--gray-mid);font-size:12px;">Not yet</span>')}</td>
       <td>${g.approved ? '<span style="color:#2d9e5f;font-weight:600;font-size:12px;">✓ Approved</span>' : '<span style="color:var(--gray-mid);font-size:12px;">Pending</span>'}</td>
       <td style="white-space:nowrap;">
         <button class="dash-row-action-view" onclick="openGuestDetailModal('${g.ts}')" title="View Details" aria-label="View details">👁️</button>
@@ -9548,14 +9560,17 @@ function exitDoorsMode() {
 function updateDoorsCounter() {
   const el = document.getElementById('doors-counter');
   if (!el) return;
+  /* Count only the people who are actually expected. Including those
+     marked as not attending made the total unreachable: the door would
+     still read "48 / 52 checked in" at the end of a night where four
+     guests had told us they weren't coming. */
   let total = 0, checkedIn = 0;
   _dashGuestsCache.forEach(function(g) {
     const checkins = parseIndividualCheckins(g);
-    const partySize = partySizeOf(g);
-    total += partySize;
-    for (let idx = 0; idx < partySize; idx++) {
-      if (checkins[idx] && checkins[idx].checked_in) checkedIn++;
-    }
+    attendingMembers(g).forEach(function(p) {
+      total++;
+      if (checkins[p.idx] && checkins[p.idx].checked_in) checkedIn++;
+    });
   });
   el.textContent = `${checkedIn} / ${total} checked in`;
 }
@@ -11175,8 +11190,9 @@ function renderTablesTab() {
       return '<option value="' + n + '"' + (full ? ' disabled' : '') + '>Table ' + n + ' (' + here + '/' + cap + ')' + (full ? ' — full' : '') + '</option>';
     }).join('');
 
-  const unassignedRows = unassigned.slice().reverse().map(function(g) {
-    const members = partyMembers(g);
+  const unassignedRows = unassigned.filter(function (g) { return attendingCount(g) > 0; })
+    .slice().reverse().map(function(g) {
+    const members = attendingMembers(g);
     const names = members.map(function(m) { return escHtmlV(m.name); }).join('<br>');
     return '<tr>' +
       '<td style="font-weight:600;color:var(--navy);">' + names + '</td>' +
@@ -11364,7 +11380,8 @@ function buildFloorPlanPanel() {
   // what you drag onto the plan.
   const todo = [];
   _dashGuestsCache.forEach(function(g) {
-    seatedPartyMembers(g).forEach(function(p) {
+    // Someone marked as not attending is not waiting for a seat.
+    attendingMembers(g).forEach(function(p) {
       const seated = g.table_number && p.seat;
       if (!seated) todo.push({ g: g, p: p });
     });
@@ -11439,7 +11456,8 @@ function openSeatingSheet() {
 
   const everyone = [];
   guests.forEach(function(g) {
-    seatedPartyMembers(g).forEach(function(p) {
+    // The sheet is what the room is set for, so it lists who is coming.
+    attendingMembers(g).forEach(function(p) {
       everyone.push({
         name: p.name,
         isCompanion: p.isCompanion,
