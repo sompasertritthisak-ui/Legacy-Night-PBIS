@@ -745,6 +745,7 @@ body.dashboard-active #dashboard-view{display:block !important;}
 .doors-result-name{color:#fff;font-size:16.5px;font-weight:600;}
 .doors-result-btn{background:linear-gradient(135deg,#2d9e5f,#3dbf72);color:#fff;border:none;padding:13px 24px;border-radius:100px;font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;flex-shrink:0;}
 .doors-result-btn:active{transform:scale(0.96);}
+.byhand-toggle{font-size:12.5px;color:var(--gray-mid);display:inline-flex;align-items:center;gap:6px;cursor:pointer;}
 .doors-result-flag{display:block;font-size:11.5px;font-weight:600;color:#b7791f;margin-top:2px;}
 .doors-result-arrived{color:#8adfa6;font-size:13.5px;font-weight:700;flex-shrink:0;}
 .doors-empty{color:rgba(255,255,255,0.5);text-align:center;padding:24px;font-size:14px;}
@@ -6328,7 +6329,11 @@ async function markGuestNoShow(ts, noShow, idx, personName) {
   renderTablesTab();
   renderCheckInTab();
 
-  postToSheets({ action: 'markNoShow', ts: ts, no_show: noShow, idx: idx, session_token: _sessionToken, staff_name: _currentUser ? _currentUser.name : '' }).then((result) => {
+  /* postToSheetsVerified, not postToSheets: the plain one is sent
+     "no-cors" and cannot read the reply, so it reports success even
+     when the server refused — leaving the screen showing a change that
+     was never saved. */
+  postToSheetsVerified({ action: 'markNoShow', ts: ts, no_show: noShow, idx: idx, session_token: _sessionToken, staff_name: _currentUser ? _currentUser.name : '' }).then((result) => {
     if (result.status === 'error') {
       Object.assign(guest, prevState);
       renderOverdueTab(); renderOverviewTab();
@@ -10081,6 +10086,26 @@ let _followUpFiles = [];       // array of File objects staged for the guest cur
 let _followUpTargetTs = null;  // ts of the guest currently open in the modal
 let _followUpSearchTerm = '';
 
+/* ── THE REMINDER ───────────────────────────────────────────────────
+   Pre-filled so nobody has to retype it, and still fully editable
+   before sending.
+
+   Two deliberate differences from the wording as first drafted:
+
+   · No "Dear [Guest Name]," line. The email template already opens
+     with the guest's real name, so including it here greeted everyone
+     twice.
+
+   · The closing line promises the agenda and the QR code, and both
+     are genuinely attached (see followUpAttachmentsFor). A party of
+     several people gets one code per person, each named after them,
+     because a single "your QR code" could only ever be right for one
+     member of the party.                                           */
+const FOLLOWUP_DEFAULT_SUBJECT = 'Tomorrow: PBIS 25th Legacy Night \u2014 Your Arrival Details';
+const FOLLOWUP_DEFAULT_MESSAGE = "We are delighted to welcome you to the PBIS 25th Legacy Night tomorrow! As we prepare to celebrate this special milestone together, please find the essential event details below:\n\n\u2022 Date: Friday, 25 September 2026\n\u2022 Time: 4:30 PM\n\u2022 Venue: Holiday Inn Vientiane\n\u2022 Parking: Basement parking is available at both the Holiday Inn Vientiane and the adjoining Crowne Plaza. Should the basement reach capacity, overflow parking is available just across the street at Chao Anou Park. We recommend allowing a little extra time to park and make your way to the hall.\n\nUpon Arrival: Please have your personal QR Code ready on your phone. Kindly present it at the Registration Booth, where our team will assist you with check-in and provide your table number.\n\nA Note on Gifts: Your presence at this celebration is the greatest gift we could ask for, and we kindly request that guests do not bring flowers or gifts. However, if you wish to mark the occasion, we would be deeply honoured by a donation to the Panyathip Foundation. All contributions will go directly toward supporting our ongoing community and educational projects.\n\nThe official event agenda and your personal QR code are attached to this email for your reference.\n\nWe look forward to welcoming you and sharing a truly memorable evening together!";
+let _followUpBulkSubject = FOLLOWUP_DEFAULT_SUBJECT;
+let _followUpBulkMessage = FOLLOWUP_DEFAULT_MESSAGE;
+
 const FOLLOWUP_MAX_FILE_BYTES = 20 * 1024 * 1024;   // 20MB per file
 const FOLLOWUP_MAX_TOTAL_BYTES = 24 * 1024 * 1024;  // ~24MB combined (Gmail's own cap is ~25MB per message)
 const FOLLOWUP_ALLOWED_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
@@ -11907,8 +11932,87 @@ async function sendPostEventEmail(subject, message, audience, recipientCount) {
 ══════════════════════════════════════════════════════════════════ */
 let _fuBulk = null;
 
+/* ── WHO A REMINDER MAY GO TO ───────────────────────────────────────
+   This used to be "anyone with an email address", which was fine when
+   the reminder was only words. It is not fine now that every reminder
+   carries the guest's PASS: that would have emailed a working ticket
+   to bookings nobody ever approved, to waitlisted bookings, and to
+   people who had already told us they cannot come — alongside a
+   message welcoming them tomorrow.
+
+   A reminder goes to a booking only if it is approved, not
+   waitlisted, and still has at least one person coming.
+
+   Already sent is skipped by default too, so running the send a
+   second time (a slip, or finishing an interrupted run) tops up the
+   ones that were missed instead of sending everyone a duplicate.
+   Untick the box to deliberately send again.                       */
+let _followUpResend = false;
+
+function followUpIsEligible(g) {
+  if (!g || !g.email || !g.email.trim()) return false;
+  if (!g.approved) return false;
+  if (/waitlist/i.test(String(g.status || ''))) return false;
+  if (attendingCount(g) === 0) return false;
+  return true;
+}
 function followUpRecipients() {
-  return (_dashGuestsCache || []).filter(function (g) { return g.email && g.email.trim(); });
+  return (_dashGuestsCache || []).filter(function (g) {
+    if (!followUpIsEligible(g)) return false;
+    if (!_followUpResend && g.followup_sent) return false;
+    return true;
+  });
+}
+function followUpSkipReasons() {
+  const all = _dashGuestsCache || [];
+  return {
+    noEmail:   all.filter(function (g) { return !(g.email && g.email.trim()); }).length,
+    unapproved: all.filter(function (g) { return g.email && g.email.trim() && !g.approved; }).length,
+    waitlist:  all.filter(function (g) { return g.email && g.email.trim() && g.approved && /waitlist/i.test(String(g.status || '')); }).length,
+    cancelled: all.filter(function (g) { return g.email && g.email.trim() && g.approved && !/waitlist/i.test(String(g.status || '')) && attendingCount(g) === 0; }).length,
+    already:   all.filter(function (g) { return followUpIsEligible(g) && g.followup_sent; }).length,
+  };
+}
+function toggleFollowUpResend() { _followUpResend = !_followUpResend; renderFollowUpTab(); }
+
+function resetFollowUpMessage() {
+  _followUpBulkSubject = FOLLOWUP_DEFAULT_SUBJECT;
+  _followUpBulkMessage = FOLLOWUP_DEFAULT_MESSAGE;
+  renderFollowUpTab();
+  showDashToast('↺ Standard reminder restored');
+}
+
+/* ── THE PASSES THAT GO WITH A REMINDER ─────────────────────────────
+   A reminder is ONE email per booking, but a pass is one QR per
+   person: a party of three holds three different codes. So the
+   reminder carries every attending person's code, each named after
+   them, rather than a single "your QR code" that could only ever be
+   right for one of them.
+
+   The codes are built here in the browser by the same renderer the
+   passes themselves use, so they are identical to the ones already in
+   guests' inboxes — either one scans.
+
+   People marked as not attending are left out: sending a pass to
+   someone who has told us they can't come is worse than sending
+   nothing. One code failing to render never stops the reminder; the
+   guest still gets the message, the agenda and everyone else's pass. */
+async function followUpAttachmentsFor(guest) {
+  const files = [];
+  for (const person of attendingMembers(guest)) {
+    try {
+      const blob = await generateQRBlobFor(guest.ts, person.idx);
+      const safe = String(person.name || 'Guest').replace(/[^A-Za-z0-9 ._-]/g, '').trim().slice(0, 40) || 'Guest';
+      files.push({
+        base64: await blobToBase64(blob),
+        mimeType: 'image/png',
+        filename: 'Legacy-Night-Pass-' + safe.replace(/\s+/g, '-') + '.png',
+        // Shown inside the email under this person's name, as well as attached.
+        passName: person.name,
+      });
+    } catch (e) {}
+  }
+  return files;
 }
 
 async function startBulkFollowUp() {
@@ -11921,14 +12025,24 @@ async function startBulkFollowUp() {
 
   const targets = followUpRecipients();
   if (!targets.length) { showDashToast('No guests have an email address on file.'); return; }
-  const noEmail = (_dashGuestsCache || []).length - targets.length;
+  const skip = followUpSkipReasons();
+  const noEmail = skip.noEmail;
+
+  const skipped = [];
+  if (skip.noEmail)    skipped.push(skip.noEmail + ' with no email address');
+  if (skip.unapproved) skipped.push(skip.unapproved + ' not approved');
+  if (skip.waitlist)   skipped.push(skip.waitlist + ' waitlisted');
+  if (skip.cancelled)  skipped.push(skip.cancelled + ' where nobody is attending');
+  if (!_followUpResend && skip.already) skipped.push(skip.already + ' already sent this reminder');
 
   const ok = await appConfirm({
-    title: 'Send this to ' + targets.length + ' guests?',
-    message: 'Every guest with an email address receives <strong>the same message</strong>, sent individually.',
-    sub: 'Sent one at a time so a single failure can\'t stop the rest, and you can pause or stop at any point. ' +
-         'Attachments are not included in a bulk send \u2014 open a guest individually if someone needs a file.' +
-         (noEmail ? ' <strong>' + noEmail + '</strong> guest(s) have no email address and will be skipped.' : ''),
+    title: 'Send this to ' + targets.length + ' bookings?',
+    message: 'Each booking receives <strong>the same message</strong>, sent individually, with the event agenda and ' +
+             'every attending guest\'s own QR pass attached.',
+    sub: 'Sent one at a time so a single failure can\'t stop the rest, and you can pause or stop at any point.' +
+         (skipped.length ? '<br><br><strong>Skipped:</strong> ' + skipped.join(', ') + '.' : '') +
+         (_followUpResend && skip.already ? '<br><br>⚠️ <strong>Resend is on</strong> — ' + skip.already +
+            ' booking(s) who already had this reminder will get it again.' : ''),
     confirmLabel: '✉️ Send to ' + targets.length,
   });
   if (!ok) return;
@@ -11956,7 +12070,7 @@ async function runBulkFollowUp() {
         ts: guest.ts,
         subject: st.subject,
         message: st.message,
-        files: [],
+        files: await followUpAttachmentsFor(guest),
         session_token: _sessionToken,
         staff_name: _currentUser ? _currentUser.name : ''
       });
@@ -12055,12 +12169,21 @@ function renderFollowUpTab() {
           <button class="dash-btn-gold" onclick="startBulkFollowUp()">✉️ Send to Everyone</button>
         </div>
         <label class="bulk-msg-label">Subject
-          <input type="text" id="fu-bulk-subject" placeholder="e.g. A reminder about Legacy Night">
+          <input type="text" id="fu-bulk-subject" placeholder="e.g. A reminder about Legacy Night"
+                 value="${escHtmlV(_followUpBulkSubject)}" oninput="_followUpBulkSubject=this.value">
         </label>
         <label class="bulk-msg-label" style="margin-top:12px;">Message
-          <textarea id="fu-bulk-message" class="followup-textarea" style="margin-top:7px;" placeholder="Write the message every guest will receive…"></textarea>
+          <textarea id="fu-bulk-message" class="followup-textarea" style="margin-top:7px;" placeholder="Write the message every guest will receive…"
+                    oninput="_followUpBulkMessage=this.value">${escHtmlV(_followUpBulkMessage)}</textarea>
         </label>
-        <p class="bulk-note">📎 Attachments aren't included in a bulk send — files here are unique per guest, so open someone individually if they need one.</p>
+        <div class="bulk-note" style="margin-top:8px;">
+          <button class="dash-btn" onclick="resetFollowUpMessage()">↺ Reset to the standard reminder</button>
+          <label class="byhand-toggle" style="margin-left:12px;"><input type="checkbox"${_followUpResend ? ' checked' : ''} onchange="toggleFollowUpResend()"> Also send again to guests who already received it</label>
+          <span style="margin-left:10px;">The greeting (“Dear …”), the guests’ QR passes, the sign-off (“Warm regards, The PBIS Team”) and the Date / Time / Venue panel are all added by the email itself — no need to type them here.</span>
+        </div>
+        <label style="display:none;">
+        </label>
+        <p class="bulk-note">📎 Every reminder carries the event agenda and each attending guest's own QR pass automatically — a party of three gets three codes, named for each person. Add other files by opening a guest individually.</p>
         <div id="fu-bulk-progress"></div>
       </div>
       <div class="dash-search-row">
@@ -12183,6 +12306,11 @@ async function sendIndividualFollowUpEmail() {
     const files = await Promise.all(_followUpFiles.map(async f => ({
       filename: f.name, mimeType: f.type, base64: await fileToBase64(f)
     })));
+
+    // Send this booking's passes too, so an individual reminder says
+    // the same thing as the bulk one and means it.
+    const guestForQr = _dashGuestsCache.find(function (g) { return g.ts === ts; });
+    if (guestForQr) files.push.apply(files, await followUpAttachmentsFor(guestForQr));
 
     const payload = {
       action: 'sendFollowUpEmail',
