@@ -12064,13 +12064,23 @@ async function runBulkFollowUp() {
   while (st.queue.length && !st.stopped && !st.paused) {
     const guest = st.queue.shift();
     const name = ((guest.fname || '') + ' ' + (guest.lname || '')).trim() || 'Guest';
+
+    /* Build this booking's passes first, and notice if none came out.
+       The message tells the guest their code is shown above, so a
+       reminder that went without one is worth knowing about rather
+       than disappearing into a "sent" count. */
+    const passFiles = await followUpAttachmentsFor(guest);
+    if (!passFiles.length && attendingCount(guest) > 0) {
+      st.noPass = (st.noPass || 0) + 1;
+      st.noPassNames = (st.noPassNames || []).concat(name);
+    }
     try {
       const r = await postToSheetsVerified({
         action: 'sendFollowUpEmail',
         ts: guest.ts,
         subject: st.subject,
         message: st.message,
-        files: await followUpAttachmentsFor(guest),
+        files: passFiles,
         session_token: _sessionToken,
         staff_name: _currentUser ? _currentUser.name : ''
       });
@@ -12087,7 +12097,9 @@ async function runBulkFollowUp() {
     const failed = st.failed.length;
     showDashToast(st.stopped
       ? '⏹ Stopped — ' + st.done + ' processed, ' + failed + ' failed'
-      : '✓ Finished — ' + (st.done - failed) + ' sent' + (failed ? ', ' + failed + ' failed' : ''));
+      : '✓ Finished — ' + (st.done - failed) + ' sent' + (failed ? ', ' + failed + ' failed' : '') +
+        (st.noPass ? ' · ⚠️ ' + st.noPass + ' went without a QR pass (' + st.noPassNames.slice(0, 5).join(', ') +
+                     (st.noPass > 5 ? '…' : '') + ') — resend those individually' : ''));
     renderFuBulkProgress();
   }
 }
@@ -12315,12 +12327,20 @@ async function sendIndividualFollowUpEmail() {
     const payload = {
       action: 'sendFollowUpEmail',
       ts: ts,
+      /* Send the subject. Without it the server fell back to "Your Event
+         Pass Is Ready", so a reminder sent to one guest arrived with the
+         wrong subject line AND the wrong badge in the header, while the
+         bulk send to everyone else said the right thing. */
+      subject: (document.getElementById('fu-bulk-subject') || {}).value || _followUpBulkSubject || FOLLOWUP_DEFAULT_SUBJECT,
       message: message,
       files: files,
       session_token: _sessionToken,
       staff_name: _currentUser ? _currentUser.name : ''
     };
-    const result = await postToSheets(payload);
+    /* Verified, not the plain post: the plain one is sent "no-cors" and
+       cannot read the reply, so a refusal by the server looked like a
+       successful send and the guest was marked as having been emailed. */
+    const result = await postToSheetsVerified(payload);
 
     if (result.status === 'error') {
       showDashToast('⚠️ Could not reach the server — the email was NOT sent. Check your connection and try again.');
