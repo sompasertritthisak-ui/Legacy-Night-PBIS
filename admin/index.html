@@ -4742,8 +4742,14 @@ function buildExecutiveSummary(guests) {
     let arrivedPeople = 0;
     guests.forEach(g => {
       try {
+        /* Count only people who are actually on the booking. Sweeping
+           every record counted leftovers too — a check-in recorded for
+           someone later removed from a party still said "arrived", so
+           the attendance figure read higher than the number of people
+           who walked in. */
         const ci = JSON.parse(g.individual_checkins || '{}');
-        arrivedPeople += Object.keys(ci).filter(k => ci[k] && ci[k].checked_in).length;
+        const party = partyMembers(g).length;
+        for (let i = 0; i < party; i++) if (ci[i] && ci[i].checked_in) arrivedPeople += 1;
       } catch (e) { if (g.checked_in) arrivedPeople += 1; }
     });
     const arrivedPct = headcount ? Math.round((arrivedPeople / headcount) * 100) : 0;
