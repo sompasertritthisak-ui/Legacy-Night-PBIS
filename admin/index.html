@@ -5281,6 +5281,19 @@ let _checkinSearchTerm = '';
 
 let _vipSearchTerm = '';
 
+/* The seat for the VIP themselves — position 1 of the booking, the
+   person this row is named after. Where they brought guests, those
+   seats are shown after theirs so the whole party can be found at a
+   glance, which is the point of looking a VIP up in the first place. */
+function vipSeatCell(g) {
+  const people = attendingMembers(g);
+  const mine = (people.find(function (p) { return p.idx === 0; }) || {}).seat || '';
+  const others = people.filter(function (p) { return p.idx !== 0 && p.seat; }).map(function (p) { return p.seat; });
+  if (!mine && !others.length) return '<span style="color:var(--gray-mid);">—</span>';
+  return (mine ? 'Seat ' + escHtmlV(mine) : '<span style="color:var(--gray-mid);">no seat</span>') +
+    (others.length ? '<span style="display:block;font-size:11.5px;color:var(--gray-mid);">guests: ' + escHtmlV(others.join(', ')) + '</span>' : '');
+}
+
 function renderVipTab() {
   const el = document.getElementById('dash-tab-content-vip');
   const guests = _dashGuestsCache;
@@ -5326,7 +5339,8 @@ function renderVipTab() {
     return `
     <tr class="dash-vip-row">
       <td style="font-weight:600;color:var(--navy);white-space:nowrap;">${unstarBtn} <span style="cursor:pointer;" onclick="openGuestDetailModal('${g.ts}')">${fullName}</span></td>
-      <td>${g.table_number ? 'Table ' + g.table_number : '<span style="color:var(--gray-mid);">Unassigned</span>'}</td>
+      <td>${g.table_number ? 'Table ' + escHtmlV(g.table_number) : '<span style="color:var(--gray-mid);">Unassigned</span>'}</td>
+      <td>${vipSeatCell(g)}</td>
       <td>${g.course_main || '<span style="color:var(--gray-mid);">—</span>'}</td>
       <td>${(parseIndividualCheckins(g)[0] || {}).checked_in
               ? '<span class="dash-arrived-pill">✓ Arrived</span>'
@@ -5346,7 +5360,7 @@ function renderVipTab() {
       <div class="followup-warn" style="margin-bottom:16px;">VIP guests get an automatic email to the Events Team the moment they check in via QR scan — including their table, main course, and dietary notes.</div>
       <div class="dash-table-wrap">
         <table class="dash-table">
-          <thead><tr><th>Guest Name</th><th>Table</th><th>Main Course</th><th>Check-In</th><th>Ticket Status</th><th></th></tr></thead>
+          <thead><tr><th>Guest Name</th><th>Table</th><th>Seat</th><th>Main Course</th><th>Check-In</th><th>Ticket Status</th><th></th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
       </div>
