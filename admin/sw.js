@@ -39,7 +39,7 @@
    activate handler deletes every cache that isn't the current name,
    so a bump guarantees stale copies are dropped rather than lingering
    alongside the new ones. */
-const CACHE = 'legacy-night-v2';
+const CACHE = 'legacy-night-v3';   // bumped 25 Sep: welcome-screen type rescaled
 
 /* Only the scope root is precached by name.
 
