@@ -10200,7 +10200,7 @@ const TABLE_DEFAULTS = { count: 20, capacity: 10 };
    bigger table simply gains seats 11 and 12; taking a table off this
    list removes those two chairs again, so check nobody was sitting in
    them first.                                                        */
-const TABLE_SEAT_OVERRIDES = { 21: 12 };
+const TABLE_SEAT_OVERRIDES = { 1: 11, 8: 11, 13: 11, 21: 12 };
 
 function seatsForTable(n, standard) {
   const std = standard !== undefined ? standard : getSeatingConfig().capacity;
