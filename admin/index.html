@@ -677,18 +677,30 @@ body.dashboard-active #dashboard-view{display:block !important;}
 .ticket-view-close:active{transform:scale(0.97);}
 #monitor-view.active{display:flex;}
 .monitor-waiting{opacity:0.85;}
-.monitor-crest{width:140px;height:140px;margin:0 auto 30px;}
+/* ── THE WELCOME SCREEN SIZES ITSELF TO THE SCREEN ─────────────────
+   These were clamp(min, Xvw, MAX) with hard pixel ceilings, and the
+   crest was a fixed 140px. On a 1080p TV the ceiling is never reached,
+   so everything looked right. On a 4K TV the page is twice as wide in
+   CSS pixels, yet the name still stopped at 84px and the crest stayed
+   140px — so on two identical televisions, the one running at a higher
+   resolution showed everything at half the size.
+
+   Sizing from vmin with a floor and no ceiling makes the screen render
+   the same proportions at any resolution or display scaling: at 4K
+   every size simply doubles, as the screen does. The max() floor keeps
+   it readable if the window is ever small. */
+.monitor-crest{width:max(96px,13vmin);height:max(96px,13vmin);margin:0 auto 3vmin;}
 .monitor-crest img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 4px 20px rgba(201,168,76,0.35));}
-.monitor-waiting h1{font-family:'Cinzel',serif;font-weight:700;font-size:clamp(28px,4vw,48px);color:var(--gold-light);margin:0 0 12px;}
-.monitor-waiting p{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:clamp(16px,2vw,24px);color:rgba(255,255,255,0.6);}
+.monitor-waiting h1{font-family:'Cinzel',serif;font-weight:700;font-size:max(26px,4.6vmin);color:var(--gold-light);margin:0 0 12px;}
+.monitor-waiting p{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:max(15px,2.3vmin);color:rgba(255,255,255,0.6);}
 .monitor-welcome{animation:monitorWelcomeIn 0.6s ease;}
 @keyframes monitorWelcomeIn{from{opacity:0;transform:scale(0.92);}to{opacity:1;transform:scale(1);}}
-.monitor-welcome .monitor-check{width:100px;height:100px;margin:0 auto 24px;border-radius:50%;background:linear-gradient(135deg,#2d9e5f,#3dbf72);display:flex;align-items:center;justify-content:center;box-shadow:0 0 60px rgba(45,158,95,0.5);}
+.monitor-welcome .monitor-check{width:max(72px,9vmin);height:max(72px,9vmin);margin:0 auto 2.4vmin;border-radius:50%;background:linear-gradient(135deg,#2d9e5f,#3dbf72);display:flex;align-items:center;justify-content:center;box-shadow:0 0 60px rgba(45,158,95,0.5);}
 .monitor-welcome .monitor-check svg{width:52px;height:52px;stroke:#fff;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;}
-.monitor-welcome h1{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:clamp(24px,3vw,36px);color:rgba(255,255,255,0.7);margin:0 0 8px;}
-.monitor-welcome h2{font-family:'Cinzel',serif;font-weight:700;font-size:clamp(40px,7vw,84px);background-image:linear-gradient(100deg,#8a6a26 0%,var(--gold) 20%,var(--gold-light) 38%,var(--gold) 55%,#8a6a26 72%,var(--gold) 88%,#8a6a26 100%);background-size:220% auto;background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin:0;animation:goldShimmer 7s linear infinite;}
-.monitor-to{margin:10px 0 0;font-family:'Cormorant Garamond',serif;font-style:italic;font-size:clamp(20px,2.4vw,32px);color:rgba(255,255,255,0.62);letter-spacing:.01em;}
-.monitor-seat{margin:22px 0 0;font-family:'DM Sans',sans-serif;font-size:clamp(20px,3vw,34px);font-weight:700;color:var(--gold-light);letter-spacing:0.02em;}
+.monitor-welcome h1{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:max(22px,3.2vmin);color:rgba(255,255,255,0.7);margin:0 0 8px;}
+.monitor-welcome h2{font-family:'Cinzel',serif;font-weight:700;font-size:max(40px,8vmin);background-image:linear-gradient(100deg,#8a6a26 0%,var(--gold) 20%,var(--gold-light) 38%,var(--gold) 55%,#8a6a26 72%,var(--gold) 88%,#8a6a26 100%);background-size:220% auto;background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin:0;animation:goldShimmer 7s linear infinite;}
+.monitor-to{margin:10px 0 0;font-family:'Cormorant Garamond',serif;font-style:italic;font-size:max(18px,2.6vmin);color:rgba(255,255,255,0.62);letter-spacing:.01em;}
+.monitor-seat{margin:2.4vmin 0 0;font-family:'DM Sans',sans-serif;font-size:max(20px,3.4vmin);font-weight:700;color:var(--gold-light);letter-spacing:0.02em;}
 #doors-mode-view.active{display:flex;}
 .doors-header{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid rgba(201,168,76,0.25);flex-wrap:wrap;gap:12px;}
 .doors-header-left{display:flex;flex-direction:column;gap:4px;}
@@ -2042,7 +2054,7 @@ button,.dash-tab,.fp-chip,.cat-chip,.kiosk-hit,.gplan-hit{touch-action:manipulat
 
 <div id="monitor-view">
   <div id="monitor-health" style="display:none;position:absolute;bottom:18px;left:50%;transform:translateX(-50%);z-index:6;padding:8px 18px;border-radius:999px;background:rgba(0,0,0,0.45);border:1px solid rgba(232,201,110,0.35);color:rgba(255,255,255,0.78);font-size:13px;letter-spacing:0.04em;"></div>
-  <div id="monitor-lane-badge" style="display:none;position:absolute;top:18px;right:24px;z-index:5;font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(232,201,110,0.65);font-weight:700;"></div>
+  <div id="monitor-lane-badge" style="display:none;position:absolute;top:18px;right:24px;z-index:5;font-size:max(12px,1.3vmin);letter-spacing:0.14em;text-transform:uppercase;color:rgba(232,201,110,0.65);font-weight:700;"></div>
   <div id="monitor-content">
     <div class="monitor-waiting">
       <div class="monitor-crest"><img src="" alt="PBIS" class="js-logo"></div>
@@ -7622,7 +7634,7 @@ function renderMonitorCard(dwell) {
         : ''}</p>`
     : '';
   // Longer lines for a party, so step the type down a little.
-  const nameStyle = names.length > 1 ? ' style="font-size:clamp(34px,4.6vw,76px)"' : '';
+  const nameStyle = names.length > 1 ? ' style="font-size:max(32px,6vmin)"' : '';
   const name = joinNames(names);
   const queued = _monitorQueue.length;
   const controls = _monitorClean ? '' : `
