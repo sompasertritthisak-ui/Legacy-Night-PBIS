@@ -6681,19 +6681,40 @@ setInterval(function () {
 
 function deskLinkAlive() { return Date.now() - _lastDeskHeartbeat < 15000; }
 
-// Shows which build this screen is actually running (&build=1).
+/* Live diagnostics for a screen that isn't showing guests (&build=1).
+   When a welcome doesn't appear there are only a few possible reasons,
+   and none of them are visible from the screen itself — so it now says
+   which one it is, and keeps saying it as things change:
+
+     DESK LINK   the check-in window on THIS computer, the instant path
+     SERVER      the network path, used for other computers' desks
+     LANE        this screen only shows its own lane's guests
+     LOGIN       the network path needs a signed-in screen           */
 function showBuildStamp() {
   try {
     if (document.getElementById('display-build-stamp')) return;
     const d = document.createElement('div');
     d.id = 'display-build-stamp';
-    d.textContent = 'build ' + DISPLAY_BUILD + '  ·  ' + window.innerWidth + '\u00d7' + window.innerHeight +
-                    ' css px  ·  dpr ' + (window.devicePixelRatio || 1);
-    d.style.cssText = 'position:fixed;left:12px;bottom:10px;z-index:9999;font:600 13px/1.3 monospace;' +
-                      'color:#e8c96e;background:rgba(0,0,0,.6);padding:6px 10px;border-radius:6px;';
+    d.style.cssText = 'position:fixed;left:12px;bottom:10px;z-index:9999;font:600 12.5px/1.5 monospace;' +
+                      'color:#e8c96e;background:rgba(0,0,0,.72);padding:8px 12px;border-radius:6px;white-space:pre;';
     document.body.appendChild(d);
+    const paint = function () {
+      const deskAge = _lastDeskHeartbeat ? Math.round((Date.now() - _lastDeskHeartbeat) / 1000) + 's ago' : 'never';
+      const pollAge = _monitorLastOkAt ? Math.round((Date.now() - _monitorLastOkAt) / 1000) + 's ago' : 'never';
+      d.textContent =
+        'build ' + DISPLAY_BUILD + '\n' +
+        'screen    ' + window.innerWidth + '\u00d7' + window.innerHeight + ' css px · dpr ' + (window.devicePixelRatio || 1) + '\n' +
+        'lane      ' + _monitorLane + '\n' +
+        'login     ' + (_sessionToken ? 'signed in' : 'NOT SIGNED IN — network path cannot work') + '\n' +
+        'desk link ' + (deskLinkAlive() ? 'alive (' + deskAge + ')' : 'NOT CONNECTED (' + deskAge + ')') + '\n' +
+        'server    ' + (pollAge === 'never' ? 'no reply yet' : 'last reply ' + pollAge) + '\n' +
+        'welcomed  ' + _monitorShownCount + ' guest(s) so far';
+    };
+    paint();
+    setInterval(paint, 1000);
   } catch (e) {}
 }
+let _monitorShownCount = 0;
 
 function onLaneMessage(msg) {
   if (!msg || !msg.type) return;
@@ -7726,6 +7747,7 @@ function joinNames(list) {
 }
 
 function renderMonitorCard(dwell) {
+  _monitorShownCount++;
   if (_monitorResetTimeout) clearTimeout(_monitorResetTimeout);
   const el = document.getElementById('monitor-content');
   if (!el || !_monitorCurrent) return;
