@@ -656,6 +656,8 @@ body.dashboard-active #dashboard-view{display:block !important;}
 
 /* ── DOORS MODE ── */
 .dash-btn-doors{background:rgba(201,168,76,0.18);border-color:rgba(201,168,76,0.45);}
+.dash-btn-lane{background:rgba(45,158,95,0.16);border-color:rgba(45,158,95,0.45);}
+.dash-btn-lane.unset{background:rgba(183,121,31,0.22);border-color:rgba(183,121,31,0.6);}
 #doors-mode-view{display:none;position:fixed;inset:0;background:linear-gradient(160deg,var(--navy),var(--deep));z-index:450;flex-direction:column;overflow-y:auto;}
 
 /* ── RECEPTION MONITOR ── */
@@ -695,21 +697,28 @@ body.dashboard-active #dashboard-view{display:block !important;}
    when the two stand side by side. Width is unaffected by the toolbar,
    so both now match whether or not anyone remembered to press F11.
 
+   Each size is written twice on purpose: a plain vw value first, then
+   the refined max(px, min(vw, vh)). A browser that does not understand
+   the CSS min()/max() functions — an older Safari, say — throws that
+   second line away and keeps the first, so the screen still scales
+   with the display instead of collapsing to a 16px default. A browser
+   that understands both simply uses the later one.
+
    The vh term is a ceiling, not the driver: it only binds in a window
    far shorter than a television, where width-driven text would
    overflow. The px floor keeps it readable in a small window. */
-.monitor-crest{width:max(96px,min(7.3vw,18vh));height:max(96px,min(7.3vw,18vh));margin:0 auto 3vh;}
+.monitor-crest{width:7.3vw;height:7.3vw;width:max(96px,min(7.3vw,18vh));height:max(96px,min(7.3vw,18vh));margin:0 auto 3vh;}
 .monitor-crest img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 4px 20px rgba(201,168,76,0.35));}
-.monitor-waiting h1{font-family:'Cinzel',serif;font-weight:700;font-size:max(26px,min(2.6vw,6.4vh));color:var(--gold-light);margin:0 0 12px;}
-.monitor-waiting p{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:max(15px,min(1.3vw,3.2vh));color:rgba(255,255,255,0.6);}
+.monitor-waiting h1{font-family:'Cinzel',serif;font-weight:700;font-size:2.6vw;font-size:max(26px,min(2.6vw,6.4vh));color:var(--gold-light);margin:0 0 12px;}
+.monitor-waiting p{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1.3vw;font-size:max(15px,min(1.3vw,3.2vh));color:rgba(255,255,255,0.6);}
 .monitor-welcome{animation:monitorWelcomeIn 0.6s ease;}
 @keyframes monitorWelcomeIn{from{opacity:0;transform:scale(0.92);}to{opacity:1;transform:scale(1);}}
-.monitor-welcome .monitor-check{width:max(72px,min(5.05vw,12.5vh));height:max(72px,min(5.05vw,12.5vh));margin:0 auto 2.4vh;border-radius:50%;background:linear-gradient(135deg,#2d9e5f,#3dbf72);display:flex;align-items:center;justify-content:center;box-shadow:0 0 60px rgba(45,158,95,0.5);}
+.monitor-welcome .monitor-check{width:5.05vw;height:5.05vw;width:max(72px,min(5.05vw,12.5vh));height:max(72px,min(5.05vw,12.5vh));margin:0 auto 2.4vh;border-radius:50%;background:linear-gradient(135deg,#2d9e5f,#3dbf72);display:flex;align-items:center;justify-content:center;box-shadow:0 0 60px rgba(45,158,95,0.5);}
 .monitor-welcome .monitor-check svg{width:52px;height:52px;stroke:#fff;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;}
-.monitor-welcome h1{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:max(22px,min(1.8vw,4.4vh));color:rgba(255,255,255,0.7);margin:0 0 8px;}
-.monitor-welcome h2{font-family:'Cinzel',serif;font-weight:700;font-size:max(40px,min(4.5vw,11vh));background-image:linear-gradient(100deg,#8a6a26 0%,var(--gold) 20%,var(--gold-light) 38%,var(--gold) 55%,#8a6a26 72%,var(--gold) 88%,#8a6a26 100%);background-size:220% auto;background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin:0;animation:goldShimmer 7s linear infinite;}
-.monitor-to{margin:10px 0 0;font-family:'Cormorant Garamond',serif;font-style:italic;font-size:max(18px,min(1.45vw,3.6vh));color:rgba(255,255,255,0.62);letter-spacing:.01em;}
-.monitor-seat{margin:2.4vh 0 0;font-family:'DM Sans',sans-serif;font-size:max(20px,min(1.9vw,4.7vh));font-weight:700;color:var(--gold-light);letter-spacing:0.02em;}
+.monitor-welcome h1{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1.8vw;font-size:max(22px,min(1.8vw,4.4vh));color:rgba(255,255,255,0.7);margin:0 0 8px;}
+.monitor-welcome h2{font-family:'Cinzel',serif;font-weight:700;font-size:4.5vw;font-size:max(40px,min(4.5vw,11vh));background-image:linear-gradient(100deg,#8a6a26 0%,var(--gold) 20%,var(--gold-light) 38%,var(--gold) 55%,#8a6a26 72%,var(--gold) 88%,#8a6a26 100%);background-size:220% auto;background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin:0;animation:goldShimmer 7s linear infinite;}
+.monitor-to{margin:10px 0 0;font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1.45vw;font-size:max(18px,min(1.45vw,3.6vh));color:rgba(255,255,255,0.62);letter-spacing:.01em;}
+.monitor-seat{margin:2.4vh 0 0;font-family:'DM Sans',sans-serif;font-size:1.9vw;font-size:max(20px,min(1.9vw,4.7vh));font-weight:700;color:var(--gold-light);letter-spacing:0.02em;}
 #doors-mode-view.active{display:flex;}
 .doors-header{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid rgba(201,168,76,0.25);flex-wrap:wrap;gap:12px;}
 .doors-header-left{display:flex;flex-direction:column;gap:4px;}
@@ -901,6 +910,7 @@ body.role-hospitality #dtab-categories,
 body.role-hospitality #dtab-verify,
 body.role-hospitality #dtab-postevent{display:none !important;}
 
+body.role-hospitality .dash-btn-lane,
 body.role-hospitality .dash-btn-doors,
 body.role-hospitality .dash-checkin-btn,
 body.role-hospitality .dash-checkin-undo,
@@ -1479,6 +1489,7 @@ button,.dash-tab,.fp-chip,.cat-chip,.kiosk-hit,.gplan-hit{touch-action:manipulat
       <button class="dash-btn" id="dash-resync-btn" onclick="loadDashboardData()">↻ Resync</button>
       <button class="dash-btn" onclick="openHelpOverlay()" title="What does each tab do?">❓ Help</button>
       <button class="dash-btn" onclick="openCommandPalette()" title="Search guests or jump to a tab (Ctrl/Cmd+K)">🔍 Search</button>
+      <button class="dash-btn dash-btn-lane" id="dash-lane-chip" onclick="chooseDeskLane(true)" title="Which registration desk this device is at. Check-ins from here appear on that lane's TV.">🎫 Desk: —</button>
       <button class="dash-btn dash-btn-doors" onclick="enterDoorsMode()">🚪 Doors Mode</button>
       <button class="dash-btn" onclick="chooseMonitorLane()" title="Opens a full-screen 'Welcome' display for a screen at the door">📺 Open Monitor</button>
       <button class="dash-btn" onclick="openSelfCheckInKiosk()" title="Opens the self-service screen where a guest can scan or type their own name">🙋 Guest Kiosk</button>
@@ -5622,7 +5633,12 @@ function resolvePersonName(guest, idx) {
    and adding a tap there would slow the door queue down.            */
 let _pendingCheckIn = null;
 
-function confirmManualCheckIn(ts, checkedIn, idx, personName) {
+async function confirmManualCheckIn(ts, checkedIn, idx, personName) {
+  // Undo needs no lane; a new check-in does.
+  if (checkedIn && !(await ensureLaneChosen())) {
+    showDashToast('Pick which desk this is first — it decides which TV shows the guest.');
+    return;
+  }
   const guest = _dashGuestsCache.find(g => g.ts === ts);
   _pendingCheckIn = { ts: ts, checkedIn: checkedIn, idx: idx, personName: personName };
 
@@ -6126,7 +6142,65 @@ function setDoorsLane(n) {
   _doorsLane = n;
   try { localStorage.setItem('legacy_doors_lane', String(n)); } catch (e) {}
   renderDoorsLaneButtons();
+  renderLaneChip();
   showDashToast('Lane ' + n + ' selected');
+}
+
+/* ── WHICH DESK IS THIS DEVICE AT? ─────────────────────────────────
+   A check-in carries the lane of the device that made it, and each TV
+   shows only its own lane. On the two desk laptops that is set once in
+   Doors Mode and forgotten about.
+
+   A third laptop checking people in by name is different: the lane
+   defaulted to 1 and nothing asked. Someone helping at desk 2 would
+   have had every guest they checked in welcomed on the WRONG
+   television, with no hint anything was off.
+
+   So a device that has never been told which desk it is at is asked
+   before it can check anybody in, and the answer is shown in the
+   header from then on, where it can be changed in one click.
+
+   Note this crosses machines over the network, not the direct link a
+   desk has to its own TV: expect a second or two, and it needs the
+   internet. A desk checking in on its OWN laptop still shows instantly
+   and works offline. */
+function laneChosenOnThisDevice() {
+  try { return !!localStorage.getItem('legacy_doors_lane'); } catch (e) { return false; }
+}
+
+function renderLaneChip() {
+  const el = document.getElementById('dash-lane-chip');
+  if (!el) return;
+  const chosen = laneChosenOnThisDevice();
+  el.textContent = chosen ? '🎫 Desk: Lane ' + _doorsLane : '🎫 Choose your desk';
+  el.classList.toggle('unset', !chosen);
+}
+
+/* Asks which desk this is. `force` means the person clicked the chip;
+   otherwise it only asks when the device has never been told. */
+async function chooseDeskLane(force) {
+  if (!force && laneChosenOnThisDevice()) return true;
+  const picked = await appChoose({
+    title: 'Which registration desk is this?',
+    message: 'Guests you check in here are welcomed on <strong>that desk\'s TV</strong>.',
+    sub: 'Pick the desk this device is standing at. You can change it any time from the header.',
+    choices: [
+      { badge: '1', wide: true, value: '1', title: 'Lane 1', sub: 'Welcomes appear on lane 1\'s screen' },
+      { badge: '2', wide: true, value: '2', title: 'Lane 2', sub: 'Welcomes appear on lane 2\'s screen' },
+      { badge: '3', wide: true, value: '3', title: 'Lane 3', sub: 'Only if a third desk is running' },
+    ],
+  });
+  if (!picked) return laneChosenOnThisDevice();
+  setDoorsLane(parseInt(picked, 10) || 1);
+  renderLaneChip();
+  return true;
+}
+
+// Nothing may check a guest in until this device knows its desk.
+async function ensureLaneChosen() {
+  if (laneChosenOnThisDevice()) return true;
+  if (_currentUser && isViewOnlyRole(_currentUser.role)) return true;   // can't check in anyway
+  return await chooseDeskLane(false);
 }
 
 function loadDoorsLane() {
@@ -6135,6 +6209,7 @@ function loadDoorsLane() {
     if (saved >= 1 && saved <= 3) _doorsLane = saved;
   } catch (e) {}
   renderDoorsLaneButtons();
+  renderLaneChip();
 }
 
 function renderDoorsLaneButtons() {
@@ -6605,6 +6680,20 @@ setInterval(function () {
 }, DESK_HEARTBEAT_MS);
 
 function deskLinkAlive() { return Date.now() - _lastDeskHeartbeat < 15000; }
+
+// Shows which build this screen is actually running (&build=1).
+function showBuildStamp() {
+  try {
+    if (document.getElementById('display-build-stamp')) return;
+    const d = document.createElement('div');
+    d.id = 'display-build-stamp';
+    d.textContent = 'build ' + DISPLAY_BUILD + '  ·  ' + window.innerWidth + '\u00d7' + window.innerHeight +
+                    ' css px  ·  dpr ' + (window.devicePixelRatio || 1);
+    d.style.cssText = 'position:fixed;left:12px;bottom:10px;z-index:9999;font:600 13px/1.3 monospace;' +
+                      'color:#e8c96e;background:rgba(0,0,0,.6);padding:6px 10px;border-radius:6px;';
+    document.body.appendChild(d);
+  } catch (e) {}
+}
 
 function onLaneMessage(msg) {
   if (!msg || !msg.type) return;
@@ -7392,6 +7481,7 @@ function enterMonitorMode() {
        (?clean=1 used to be required, which meant a TV opened without it
        showed a draining timer bar under every guest's name.) */
     _monitorClean = p.get('controls') !== '1';
+    if (p.get('build') === '1') showBuildStamp();
   } catch (e) {}
 
   el.classList.add('active');
@@ -7550,6 +7640,13 @@ let _monitorFloorTimer = null;
 // ?monitor=1&clean=1 to hide the Continue button, the countdown bar
 // and the lane badge.
 let _monitorClean = false;
+
+/* A version this page can be asked for out loud. When two screens
+   disagree about how something looks, the first question is whether
+   they are running the same code — and there was no way to tell from
+   the screen itself. Open a display with &build=1 and it shows this in
+   the corner. Bump it whenever the welcome screen's look changes. */
+const DISPLAY_BUILD = '2026-09-25c · width-scaled type';
 
 /* ── A PARTY ARRIVES TOGETHER ─────────────────────────────────────
    A couple hands over two phones and the desk scans both passes in two
