@@ -1147,6 +1147,33 @@ body.role-usher .cat-chip,body.role-manager .cat-chip{cursor:default;}
 #hw-scan-ping{position:fixed;bottom:88px;left:50%;transform:translateX(-50%) translateY(14px);z-index:999998;background:var(--navy);color:var(--gold-light);font-size:12.5px;font-weight:700;padding:9px 18px;border-radius:100px;font-family:'DM Sans',sans-serif;opacity:0;pointer-events:none;transition:opacity .18s ease,transform .18s ease;box-shadow:0 6px 20px rgba(0,0,0,.3);}
 #hw-scan-ping.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
+/* ── Guest-facing screens: no pale edge ───────────────────────────
+   The floor plan, the kiosk and the welcome screen are fixed overlays,
+   but the PAGE behind them keeps the dashboard's cream background. On
+   a touch screen that shows up as a pale border: a drag rubber-bands
+   the overlay and the cream underneath appears at the edge, and any
+   rounding or rendering gap shows it too. Painting the page itself
+   dark in these modes means there is nothing pale left to reveal, and
+   overscroll-behavior stops the bounce in the first place. */
+body.gplan-active,body.kiosk-active,body.monitor-active{
+  background:#050f0a;overscroll-behavior:none;overflow:hidden;}
+/* Scoped to these modes only — a page-wide dark canvas would show as a
+   dark strip below short pages on the admin dashboard. */
+html:has(body.gplan-active),html:has(body.kiosk-active),html:has(body.monitor-active){
+  background:#050f0a;overscroll-behavior:none;}
+
+/* And the same again, keyed on the OVERLAY being open rather than on a
+   class someone remembered to add. Two surfaces had no class at all:
+   the ticket view a guest sees when they scan their own pass with a
+   phone, and Doors Mode at the desk. Written this way, any full-screen
+   surface is covered the moment it opens, including ones added later. */
+html:has(#gplan-view.active),html:has(#monitor-view.active),html:has(#kiosk-view.active),
+html:has(#ticket-view.active),html:has(#doors-mode-view.active){
+  background:#050f0a;overscroll-behavior:none;}
+body:has(#gplan-view.active),body:has(#monitor-view.active),body:has(#kiosk-view.active),
+body:has(#ticket-view.active),body:has(#doors-mode-view.active){
+  background:#050f0a;overscroll-behavior:none;overflow:hidden;}
+
 /* ── Guest floor plan (65" touchscreen) ── */
 #gplan-view{display:none;position:fixed;inset:0;z-index:900;background:linear-gradient(168deg,#0b2a19 0%,#050f0a 62%,#0a2818 100%);color:var(--cream);overflow:hidden;flex-direction:column;}
 #gplan-view.active{display:flex;}
@@ -7333,6 +7360,7 @@ function enterMonitorMode() {
   } catch (e) {}
 
   el.classList.add('active');
+  document.body.classList.add('monitor-active');   // paints the page dark too — see the CSS note
   const badge = document.getElementById('monitor-lane-badge');
   if (badge) {
     /* A clean, guest-facing TV shows no lane number, no time, nothing
