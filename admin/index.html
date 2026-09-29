@@ -12157,6 +12157,12 @@ async function sendPostEventEmail(subject, message, audience, recipientCount) {
     totalFailed += (r.failed || 0);
     if (Array.isArray(r.failures)) allFailures.push.apply(allFailures, r.failures);
 
+    if (r.quota_hit) {
+      showDashToast('⛔ Gmail\'s daily sending limit was reached after ' + totalSent + ' — ' +
+        r.remaining + ' still to go. Their cards are not lost: press send again tomorrow and ' +
+        'only those still waiting will receive one.');
+      break;
+    }
     if (!r.remaining) {
       showDashToast('💌 Done — ' + totalSent + ' thank-you email(s) sent' +
         (totalFailed ? ', ' + totalFailed + ' failed' : '') +
