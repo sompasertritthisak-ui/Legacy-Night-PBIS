@@ -12084,25 +12084,64 @@ function confirmSendPostEventEmail() {
   );
 }
 
+/* The server sends as many as it safely can in one execution and says
+   how many are left; this keeps asking until none are. Each guest is
+   marked as thanked the moment their email goes, so a repeated pass
+   only picks up the ones still waiting and nobody is thanked twice —
+   even if the connection drops halfway and the whole thing is started
+   again tomorrow. */
 async function sendPostEventEmail(subject, message, audience, recipientCount) {
   const btn = document.getElementById('postevent-send-btn');
-  if (btn) { btn.disabled = true; btn.textContent = 'Sending to ' + recipientCount + ' guests…'; }
+  const say = function (t) { if (btn) btn.textContent = t; };
+  if (btn) btn.disabled = true;
 
-  const result = await postToSheetsOnce({
-    action: 'sendPostEventEmail',
-    subject: subject,
-    message: message,
-    audience: audience,
-    session_token: _sessionToken,
-    staff_name: _currentUser ? _currentUser.name : ''
-  });
+  let totalSent = 0, totalFailed = 0, rounds = 0;
+  const allFailures = [];
 
-  if (result.status === 'error') {
-    showDashToast('⚠️ Could not reach the server — nothing was sent. Check your connection and try again.');
-  } else {
-    showDashToast(`💌 Sending to ${recipientCount} guests — check the Activity Log in a moment to confirm it went through.`);
+  while (rounds < 12) {
+    rounds++;
+    say('Sending… ' + totalSent + ' of ' + recipientCount);
+    const r = await postToSheetsVerified({
+      action: 'sendPostEventEmail',
+      subject: subject,
+      message: message,
+      audience: audience,
+      session_token: _sessionToken,
+      staff_name: _currentUser ? _currentUser.name : ''
+    });
+
+    if (!r || r.status === 'error') {
+      showDashToast('⚠️ ' + ((r && r.message) || 'Could not reach the server') +
+        (totalSent ? ' — ' + totalSent + ' already went out; press send again to finish the rest.'
+                   : ' — nothing was sent. Try again.'));
+      break;
+    }
+
+    totalSent += (r.sent || 0);
+    totalFailed += (r.failed || 0);
+    if (Array.isArray(r.failures)) allFailures.push.apply(allFailures, r.failures);
+
+    if (!r.remaining) {
+      showDashToast('💌 Done — ' + totalSent + ' thank-you email(s) sent' +
+        (totalFailed ? ', ' + totalFailed + ' failed' : '') +
+        (r.already_sent ? ' · ' + r.already_sent + ' had already been thanked' : '') +
+        (r.duplicates ? ' · ' + r.duplicates + ' duplicate address(es) skipped' : ''));
+      break;
+    }
+    if (r.sent === 0) {            // making no progress — stop rather than spin
+      showDashToast('⚠️ Stopped with ' + r.remaining + ' still to send. Check the Activity Log, then press send again.');
+      break;
+    }
   }
 
+  if (allFailures.length) {
+    await appConfirm({
+      title: totalFailed + ' could not be delivered',
+      message: 'Everyone else was thanked. These addresses were refused:',
+      sub: allFailures.slice(0, 12).map(function (f) { return escHtmlV(f); }).join('<br>'),
+      confirmLabel: 'OK',
+    });
+  }
   if (btn) { btn.disabled = false; btn.textContent = '💌 Review & Send'; }
 }
 
