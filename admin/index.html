@@ -12029,7 +12029,7 @@ function renderPostEventTab() {
 
   el.innerHTML = `
     <div class="dash-panel">
-      <div class="followup-warn">This sends the <strong>same message to every matching guest at once</strong> — unlike Follow Up, which is always one guest at a time. Waitlisted guests are never included, since they didn't attend. This can't be undone once sent, so double-check your message and audience before confirming.</div>
+      <div class="followup-warn">This sends the <strong>Thank You card to every matching guest at once</strong> — unlike Follow Up, which is always one guest at a time. Waitlisted guests are never included, since they didn't attend. This can't be undone once sent, so double-check your message and audience before confirming.</div>
 
       <label style="display:block;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--navy);margin-bottom:8px;">Audience</label>
       <div class="postevent-audience">
@@ -12044,10 +12044,10 @@ function renderPostEventTab() {
       </div>
 
       <label style="display:block;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--navy);margin:20px 0 8px;">Subject</label>
-      <input type="text" id="postevent-subject" placeholder="Thank You — PBIS Legacy Night" style="width:100%;padding:12px 14px;border:1.5px solid var(--gray);border-radius:9px;font-size:15px;font-family:'DM Sans',sans-serif;background:var(--cream);">
+      <input type="text" id="postevent-subject" value="Thank You — PBIS Legacy Night" placeholder="Thank You — PBIS Legacy Night" style="width:100%;padding:12px 14px;border:1.5px solid var(--gray);border-radius:9px;font-size:15px;font-family:'DM Sans',sans-serif;background:var(--cream);">
 
-      <label style="display:block;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--navy);margin:16px 0 8px;">Message</label>
-      <textarea class="followup-textarea" id="postevent-message" placeholder="Thank you for celebrating 25 years with us...">Thank you for being part of PBIS Legacy Night — celebrating 25 years of Panyathip British International School. It meant a great deal to have you with us for this milestone.</textarea>
+      <label style="display:block;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--navy);margin:16px 0 8px;">Message <span style="text-transform:none;letter-spacing:0;font-weight:500;color:var(--gray-mid);">— optional</span></label>
+      <textarea class="followup-textarea" id="postevent-message" placeholder="Leave blank to send the Thank You card as designed. Anything written here is added inside the card, beneath the standard wording."></textarea>
 
       <div class="edit-guest-actions">
         <button class="form-submit" id="postevent-send-btn" onclick="confirmSendPostEventEmail()" style="background:linear-gradient(135deg,var(--gold),var(--gold-light));">💌 Review &amp; Send</button>
@@ -12067,7 +12067,7 @@ function confirmSendPostEventEmail() {
   const audience = document.querySelector('input[name="postevent-audience"]:checked').value;
 
   if (!subject) { showDashToast('⚠️ Write a subject line before sending.'); return; }
-  if (!message) { showDashToast('⚠️ Write a message before sending.'); return; }
+  // No message needed: the card carries the wording on its own.
 
   const guests = _dashGuestsCache;
   const recipientCount = audience === 'checkedin'
