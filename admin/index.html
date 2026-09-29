@@ -12024,8 +12024,20 @@ function renderPostEventTab() {
     return;
   }
 
-  const allCount = guests.filter(g => g.email && g.status !== 'Waitlisted').length;
-  const checkedInCount = guests.filter(g => g.email && g.checked_in && g.status !== 'Waitlisted').length;
+  /* Two numbers per audience: how many there are, and how many of them
+     still need the card. Showing only the first made a completed send
+     look untouched. */
+  const allPool = guests.filter(g => g.email && g.status !== 'Waitlisted');
+  const checkedPool = guests.filter(g => g.email && g.checked_in && g.status !== 'Waitlisted');
+  const allCount = allPool.length, checkedInCount = checkedPool.length;
+  const allLeft = allPool.filter(g => !g.thankyou_sent).length;
+  const checkedLeft = checkedPool.filter(g => !g.thankyou_sent).length;
+  const leftLabel = function (total, left) {
+    if (!total) return '';
+    if (!left) return ' <span style="color:var(--green);font-weight:600;">· all thanked</span>';
+    if (left === total) return '';
+    return ' <span style="color:var(--gray-mid);">· ' + left + ' still to send</span>';
+  };
 
   el.innerHTML = `
     <div class="dash-panel">
@@ -12035,11 +12047,11 @@ function renderPostEventTab() {
       <div class="postevent-audience">
         <label class="postevent-audience-option">
           <input type="radio" name="postevent-audience" value="all" checked onchange="updatePostEventRecipientCount()">
-          <span>All Confirmed Guests <strong>(${allCount})</strong></span>
+          <span>All Confirmed Guests <strong>(${allCount})</strong>${leftLabel(allCount, allLeft)}</span>
         </label>
         <label class="postevent-audience-option">
           <input type="radio" name="postevent-audience" value="checkedin" onchange="updatePostEventRecipientCount()">
-          <span>Checked-In Guests Only <strong>(${checkedInCount})</strong></span>
+          <span>Checked-In Guests Only <strong>(${checkedInCount})</strong>${leftLabel(checkedInCount, checkedLeft)}</span>
         </label>
       </div>
 
@@ -12070,15 +12082,27 @@ function confirmSendPostEventEmail() {
   // No message needed: the card carries the wording on its own.
 
   const guests = _dashGuestsCache;
-  const recipientCount = audience === 'checkedin'
-    ? guests.filter(g => g.email && g.checked_in && g.status !== 'Waitlisted').length
-    : guests.filter(g => g.email && g.status !== 'Waitlisted').length;
+  /* What is actually left to send. The count used to include guests
+     already thanked, so it read 128 even after most had their card —
+     which made a finished run look unfinished. */
+  const pool = audience === 'checkedin'
+    ? guests.filter(g => g.email && g.checked_in && g.status !== 'Waitlisted')
+    : guests.filter(g => g.email && g.status !== 'Waitlisted');
+  const alreadyThanked = pool.filter(g => g.thankyou_sent).length;
+  const recipientCount = pool.length - alreadyThanked;
+  if (!recipientCount && alreadyThanked) {
+    showDashToast('✓ All ' + alreadyThanked + ' of them have already been thanked — nothing left to send.');
+    return;
+  }
 
   if (!recipientCount) { showDashToast('⚠️ No matching guests to send to.'); return; }
 
   openDangerConfirm(
     'Send to ' + recipientCount + ' Guests?',
-    `This sends "${subject}" to ${recipientCount} guest${recipientCount===1?'':'s'} (${audience === 'checkedin' ? 'checked-in guests only' : 'all confirmed guests'}) right now. This can't be undone once sent.`,
+    `This sends "${subject}" to ${recipientCount} guest${recipientCount===1?'':'s'} who have not had it yet ` +
+    `(${audience === 'checkedin' ? 'checked-in guests only' : 'all confirmed guests'})` +
+    (alreadyThanked ? `. ${alreadyThanked} already received it and will be skipped` : '') +
+    `. This can't be undone once sent.`,
     'SEND',
     function() { sendPostEventEmail(subject, message, audience, recipientCount); }
   );
@@ -12098,8 +12122,20 @@ async function sendPostEventEmail(subject, message, audience, recipientCount) {
   let totalSent = 0, totalFailed = 0, rounds = 0;
   const allFailures = [];
 
+  /* Never send more than there are guests to send to. A stale read on
+     the server once made every round look like fresh work, and this
+     loop obediently went round again and again — guests got the card
+     several times. The server side is fixed, but this is the backstop:
+     the loop cannot exceed the number of recipients, whatever the
+     server claims is left. */
+  const ceiling = Math.max(recipientCount, 1);
+
   while (rounds < 12) {
     rounds++;
+    if (totalSent >= ceiling) {
+      showDashToast('✓ ' + totalSent + ' sent — stopping, that is everyone.');
+      break;
+    }
     say('Sending… ' + totalSent + ' of ' + recipientCount);
     const r = await postToSheetsVerified({
       action: 'sendPostEventEmail',
@@ -12130,6 +12166,10 @@ async function sendPostEventEmail(subject, message, audience, recipientCount) {
     }
     if (r.sent === 0) {            // making no progress — stop rather than spin
       showDashToast('⚠️ Stopped with ' + r.remaining + ' still to send. Check the Activity Log, then press send again.');
+      break;
+    }
+    if (totalSent > ceiling) {     // more sent than there are guests: something is wrong
+      showDashToast('⚠️ Stopped — more messages went out than there are guests. Tell Top before sending again.');
       break;
     }
   }
